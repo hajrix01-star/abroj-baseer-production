@@ -2764,3 +2764,241 @@ msgstr "تم تسجيل المبلغ المُعاد."
 #: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.js:0
 msgid "Purchase"
 msgstr "مشتريات"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.js:0
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Search"
+msgstr "بحث"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.js:0
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Search movements"
+msgstr "البحث في الحركات"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.js:0
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "All movements"
+msgstr "كل الحركات"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.js:0
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "No matching movements."
+msgstr "لا توجد حركات مطابقة."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.js:0
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Next"
+msgstr "التالي"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.js:0
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Previous"
+msgstr "السابق"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.js:0
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Action"
+msgstr "الإجراء"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.js:0
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Settle"
+msgstr "تسوية"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.js:0
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Settle carried balance"
+msgstr "تسوية الرصيد المرحّل"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.js:0
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Settle against purchases"
+msgstr "التسوية بالمشتريات"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.js:0
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Choose how to settle the representative's current balance."
+msgstr "اختر طريقة تسوية رصيد المندوب الحالي."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.js:0
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Could not load movements."
+msgstr "تعذر تحميل الحركات."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash.py:0
+msgid "Enter a correction reason and reversal date."
+msgstr "أدخل سبب التصحيح وتاريخ العكس."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash.py:0
+msgid "Choose a valid movement and reversal date."
+msgstr "اختر حركة صالحة وتاريخًا للعكس."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash.py:0
+msgid "This save request was already used for another movement."
+msgstr "استُخدم طلب الحفظ هذا لحركة أخرى بالفعل."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash.py:0
+msgid "Choose a posted funding movement in the active company."
+msgstr "اختر حركة تسليم عهدة مرحلة في الشركة الحالية."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash.py:0
+msgid "The reversal date cannot precede the funding date."
+msgstr "لا يمكن أن يسبق تاريخ العكس تاريخ تسليم العهدة."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash.py:0
+msgid "This funding movement has already been reversed."
+msgstr "عُكست حركة تسليم العهدة هذه مسبقًا."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash.py:0
+msgid "The original entry is not eligible for reversal."
+msgstr "القيد الأصلي غير مؤهل للعكس."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash.py:0
+msgid "Foreign-currency funding entries cannot be reversed by this action."
+msgstr "لا يمكن عكس قيود العهدة بالعملة الأجنبية من هذا الإجراء."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash.py:0
+msgid "The reversal date is in a locked accounting period."
+msgstr "تاريخ العكس يقع في فترة محاسبية مقفلة."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash.py:0
+msgid "A matched or settled funding entry cannot be reversed here."
+msgstr "لا يمكن عكس قيد عهدة تمت مطابقته أو تسويته من هنا."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash.py:0
+msgid "The available representative balance is insufficient to reverse this funding."
+msgstr "رصيد المندوب المتاح لا يكفي لعكس هذه العهدة."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash.py:0
+msgid "A reversal must reference its original funding movement."
+msgstr "يجب ربط العكس بحركة تسليم العهدة الأصلية."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash.py:0
+msgid "Reversal of %(name)s: %(reason)s"
+msgstr "عكس %(name)s: %(reason)s"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.js:0
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "More matching movements are available. Monthly totals include all movements."
+msgstr "توجد حركات مطابقة أخرى. تشمل إجماليات الشهر جميع الحركات."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.js:0
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Reversed this month"
+msgstr "العهد المعكوسة هذا الشهر"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.js:0
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Petty cash reversal"
+msgstr "عكس عهدة"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.js:0
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Reverse petty cash entry"
+msgstr "عكس قيد العهدة"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.js:0
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Reverse"
+msgstr "عكس"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.js:0
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Reverse entry"
+msgstr "عكس القيد"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.js:0
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Reversal date"
+msgstr "تاريخ العكس"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.js:0
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Enter a reason and reversal date."
+msgstr "أدخل سبب العكس وتاريخه."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.js:0
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "The entry was reversed. You can record the correct petty cash entry."
+msgstr "تم عكس القيد. يمكنك تسجيل العهدة الصحيحة."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.js:0
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Could not reverse the entry."
+msgstr "تعذر عكس القيد."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.js:0
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Reverse the complete entry, then record the correct petty cash entry. The original remains in the history."
+msgstr "اعكس القيد كاملًا، ثم سجل العهدة الصحيحة. يبقى القيد الأصلي في السجل."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Reason"
+msgstr "السبب"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.js:0
+msgid "Select the representative as the invoice payment source."
+msgstr "اختر المندوب مصدرًا للدفع عند تسجيل الفاتورة."

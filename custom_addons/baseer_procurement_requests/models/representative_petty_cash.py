@@ -295,7 +295,7 @@ class RepresentativePettyCash(models.Model):
     name = fields.Char(default='New', readonly=True, copy=False, index=True)
     company_id = fields.Many2one('res.company', required=True, readonly=True, index=True, default=lambda self: self.env.company)
     currency_id = fields.Many2one(related='company_id.currency_id', readonly=True)
-    movement_type = fields.Selection([('funding', 'Funding'), ('return', 'Return')], required=True, readonly=True, default='funding')
+    movement_type = fields.Selection([('funding', 'Funding'), ('return', 'Return'), ('reversal', 'Funding reversal')], required=True, readonly=True, default='funding')
     representative_partner_id = fields.Many2one('res.partner', required=True, readonly=True, ondelete='restrict', check_company=True, index=True)
     procurement_request_id = fields.Many2one('baseer.procurement.request', readonly=True, ondelete='restrict', check_company=True, index=True)
     origin_id = fields.Many2one('baseer.procurement.representative.advance', readonly=True, ondelete='restrict', check_company=True, index=True)
@@ -303,6 +303,7 @@ class RepresentativePettyCash(models.Model):
     movement_date = fields.Date(required=True, readonly=True, default=fields.Date.context_today, index=True)
     amount = fields.Monetary(required=True, readonly=True, currency_field='currency_id')
     external_reference = fields.Char(readonly=True, copy=False)
+    reversal_reason = fields.Char(readonly=True, copy=False)
     transfer_proof = fields.Binary(readonly=True, copy=False, attachment=True)
     transfer_proof_filename = fields.Char(readonly=True, copy=False)
     client_token = fields.Char(required=True, readonly=True, copy=False, index=True)
@@ -323,16 +324,25 @@ class RepresentativePettyCash(models.Model):
             ON baseer_procurement_representative_advance (company_id, payment_journal_id, external_reference)
             WHERE external_reference IS NOT NULL AND external_reference <> ''
         ''')
+        self.env.cr.execute('''
+            CREATE UNIQUE INDEX IF NOT EXISTS baseer_rep_pc_funding_reversal_unique
+            ON baseer_procurement_representative_advance (origin_id)
+            WHERE movement_type = 'reversal' AND state = 'posted'
+        ''')
 
     @api.depends('amount', 'return_ids.amount', 'return_ids.state')
     def _compute_returned_amount(self):
         posted_returns = self.read_group([
-            ('origin_id', 'in', self.ids), ('state', '=', 'posted'),
+            ('origin_id', 'in', self.ids), ('state', '=', 'posted'), ('movement_type', '=', 'return'),
         ], ['origin_id', 'amount:sum'], ['origin_id']) if self.ids else []
         totals = {row['origin_id'][0]: row['amount'] for row in posted_returns if row['origin_id']}
+        reversals = self.read_group([
+            ('origin_id', 'in', self.ids), ('state', '=', 'posted'), ('movement_type', '=', 'reversal'),
+        ], ['origin_id', 'amount:sum'], ['origin_id']) if self.ids else []
+        reversed_totals = {row['origin_id'][0]: row['amount'] for row in reversals if row['origin_id']}
         for record in self:
             record.returned_amount = totals.get(record.id, 0.0)
-            record.remaining_amount = record.amount - record.returned_amount if record.movement_type == 'funding' else 0.0
+            record.remaining_amount = record.amount - record.returned_amount - reversed_totals.get(record.id, 0.0) if record.movement_type == 'funding' else 0.0
 
     @api.constrains('amount')
     def _check_amount(self):
@@ -362,6 +372,8 @@ class RepresentativePettyCash(models.Model):
                     raise ValidationError(_('A funding movement cannot have an original movement.'))
             else:
                 origin = record.origin_id
+                if record.movement_type == 'reversal' and not origin:
+                    raise ValidationError(_('A reversal must reference its original funding movement.'))
                 if (origin and (origin.company_id != record.company_id or origin.movement_type != 'funding'
                                or origin.representative_partner_id != record.representative_partner_id)):
                     raise ValidationError(_('A return must be linked to its original representative petty-cash movement.'))
@@ -609,6 +621,86 @@ class RepresentativePettyCash(models.Model):
             if existing:
                 return existing.id
             raise ValidationError(_('This external transfer reference was already used for the selected payment point.'))
+
+    @api.model
+    def submit_funding_reversal(self, funding_id, reason, reversal_date, client_token):
+        """Reverse one untouched funding entry without changing its history."""
+        self._require_accountant()
+        token = (client_token or '').strip()
+        reason = (reason or '').strip()
+        if not token or not reason or len(reason) > 500 or not reversal_date:
+            raise ValidationError(_('Enter a correction reason and reversal date.'))
+        try:
+            day = fields.Date.to_date(reversal_date)
+            funding_id = int(funding_id)
+        except (ValueError, TypeError):
+            raise ValidationError(_('Choose a valid movement and reversal date.')) from None
+        company = self.env.company
+        existing = self.sudo().search([('company_id', '=', company.id), ('created_by_id', '=', self.env.user.id), ('client_token', '=', token)], limit=1)
+        if existing:
+            if existing.movement_type == 'reversal' and existing.origin_id.id == funding_id:
+                return existing.id
+            raise ValidationError(_('This save request was already used for another movement.'))
+        original = self.sudo()._lock_advance(funding_id)
+        if not original or original.company_id != company or original.movement_type != 'funding' or not original.move_id:
+            raise ValidationError(_('Choose a posted funding movement in the active company.'))
+        # Match the linked-return lock order: funding row, then company and representative.
+        self._baseer_lock_representative_balance(company, original.representative_partner_id)
+        original.invalidate_recordset()
+        if day < original.movement_date:
+            raise ValidationError(_('The reversal date cannot precede the funding date.'))
+        if self.sudo().search_count([('movement_type', '=', 'reversal'), ('origin_id', '=', original.id), ('state', '=', 'posted')]):
+            raise ValidationError(_('This funding movement has already been reversed.'))
+        move = original.move_id
+        if move.state != 'posted' or move.company_id != company or len(move.line_ids) != 2:
+            raise ValidationError(_('The original entry is not eligible for reversal.'))
+        if any(record.currency_id and record.currency_id != company.currency_id for record in (
+                move, move.journal_id, original.payment_journal_id, original.payment_journal_id.default_account_id,
+                *move.line_ids, *move.line_ids.account_id)):
+            raise ValidationError(_('Foreign-currency funding entries cannot be reversed by this action.'))
+        if company._get_violated_lock_dates(day, False, move.journal_id):
+            raise ValidationError(_('The reversal date is in a locked accounting period.'))
+        if move.line_ids.filtered(lambda line: line.matched_debit_ids or line.matched_credit_ids or line.reconciled):
+            raise ValidationError(_('A matched or settled funding entry cannot be reversed here.'))
+        if Decimal(str(original.amount)) > self._baseer_representative_available_amount(company, original.representative_partner_id):
+            raise ValidationError(_('The available representative balance is insufficient to reverse this funding.'))
+        values = {
+            'company_id': company.id, 'movement_type': 'reversal', 'origin_id': original.id,
+            'representative_partner_id': original.representative_partner_id.id,
+            'payment_journal_id': original.payment_journal_id.id, 'movement_date': day,
+            'amount': original.amount, 'client_token': token, 'created_by_id': self.env.user.id,
+            'reversal_reason': reason,
+        }
+        try:
+            with self.env.cr.savepoint():
+                reversal = self.sudo().with_company(company).with_context(**{INTERNAL: True}).create(values)
+                lines = []
+                for line in move.line_ids:
+                    lines.append(Command.create({
+                        'name': _('Reversal of %(name)s: %(reason)s', name=original.name, reason=reason),
+                        'account_id': line.account_id.id, 'partner_id': line.partner_id.id,
+                        'debit': line.credit, 'credit': line.debit,
+                        'baseer_representative_petty_cash_id': original.id if line.baseer_representative_petty_cash_id else False,
+                    }))
+                reversal_move = self.env['account.move'].sudo().with_company(company).with_context(**{INTERNAL: True}).create({
+                    'move_type': 'entry', 'company_id': company.id, 'journal_id': move.journal_id.id,
+                    'date': day, 'ref': _('Reversal of %(name)s: %(reason)s', name=original.name, reason=reason),
+                    'reversed_entry_id': move.id, 'line_ids': lines,
+                })
+                reversal_move.action_post()
+                original_lines = move.line_ids.filtered('baseer_representative_petty_cash_id')
+                reversal_lines = reversal_move.line_ids.filtered('baseer_representative_petty_cash_id')
+                if len(original_lines) != 1 or len(reversal_lines) != 1 or original_lines.account_id != reversal_lines.account_id:
+                    raise ValidationError(_('The original entry is not eligible for reversal.'))
+                if original_lines.reconciled != reversal_lines.reconciled:
+                    raise ValidationError(_('The original entry is not eligible for reversal.'))
+                if not original_lines.reconciled:
+                    (original_lines | reversal_lines).reconcile()
+                reversal.with_context(**{INTERNAL: True}).write({'move_id': reversal_move.id})
+                original.invalidate_recordset(['return_ids', 'returned_amount', 'remaining_amount'])
+                return reversal.id
+        except IntegrityError:
+            raise ValidationError(_('This funding movement has already been reversed.')) from None
 
     def _create_and_post(self, values):
         company = self.env['res.company'].browse(values['company_id'])

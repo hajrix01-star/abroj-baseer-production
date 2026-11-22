@@ -229,14 +229,24 @@ class RepresentativePettyCashCase(TransactionCase):
             'payment_journal_id': self.bank_journal.id, 'movement_date': '2025-03-01',
             'amount': 1, 'client_token': str(uuid4()), 'created_by_id': self.env.user.id,
         } for _ in range(101)]
+        values[0]['amount'] = 777
         Model.sudo().with_context(baseer_representative_petty_cash_internal=True).create(values)
         data = Model.dashboard_data(self.representative.id, '2025-03-01')
         self.assertEqual(len(data['movements']), 100)
-        self.assertEqual(data['summary']['funded'], 101)
-        self.assertEqual(data['summary']['closing'], 101)
+        self.assertEqual(data['summary']['funded'], 877)
+        self.assertEqual(data['summary']['closing'], 877)
         self.assertEqual(len(data['daily_movements']), 100)
         self.assertTrue(data['daily_movements_truncated'])
         self.assertEqual(len({row['key'] for row in data['daily_movements']}), 100)
+        filtered = Model.dashboard_daily_movements(self.representative.id, '2025-03-01', '777', 'funding')
+        self.assertEqual([row['amount'] for row in filtered['daily_movements']], [777])
+        self.assertFalse(filtered['daily_movements_truncated'])
+        self.assertFalse(Model.dashboard_daily_movements(self.representative.id, '2025-03-01', '777', 'return')['daily_movements'])
+        second = Model.dashboard_daily_movements(self.representative.id, '2025-03-01', '', '', 100)
+        self.assertEqual([row['amount'] for row in second['daily_movements']], [777])
+        self.assertEqual(Model.dashboard_data(self.representative.id, '2025-03-01')['summary'], data['summary'])
+        with self.assertRaises(ValidationError):
+            Model.dashboard_daily_movements(self.representative.id, '2025-03-01', '', 'invalid')
 
     def test_independent_funding_rejects_foreign_currency_sources(self):
         Model = self.env['baseer.procurement.representative.advance']
@@ -335,6 +345,10 @@ class RepresentativePettyCashCase(TransactionCase):
         self.assertEqual([row['reference'] for row in cashier_jan if row['type'] == 'purchase'], [''])
         self.assertEqual([row['reference'] for row in cashier_feb if row['type'] == 'purchase'], [''])
         self.assertEqual([row['amount'] for row in cashier_feb if row['type'] == 'purchase'], [15])
+        self.assertEqual(len(Model.dashboard_daily_movements(self.representative.id, '2025-02-01', 'MONTHLY-TEST')['daily_movements']), 1)
+        self.assertFalse(cashier_model.dashboard_daily_movements(self.representative.id, '2025-02-01', 'MONTHLY-TEST')['daily_movements'])
+        self.assertEqual([row['amount'] for row in cashier_model.dashboard_daily_movements(
+            self.representative.id, '2025-02-01', '', 'purchase')['daily_movements']], [15])
 
     def test_carryover_history_stays_within_the_active_company(self):
         Model = self.env['baseer.procurement.representative.advance']
@@ -369,6 +383,9 @@ class RepresentativePettyCashCase(TransactionCase):
         other_daily = Model.sudo().with_company(other_company).dashboard_data(False, '2025-01-01')['daily_movements']
         self.assertEqual({row['representative_id'] for row in local_daily}, {self.representative.id})
         self.assertEqual({row['representative_id'] for row in other_daily}, {other_partner.id})
+        self.assertFalse(Model.dashboard_daily_movements(False, '2025-01-01', other_partner.name)['daily_movements'])
+        self.assertEqual({row['representative_id'] for row in Model.sudo().with_company(other_company)
+                         .dashboard_daily_movements(False, '2025-01-01', other_partner.name)['daily_movements']}, {other_partner.id})
 
     def test_funding_rejects_draft_request_and_wrong_destination(self):
         request = self._request()

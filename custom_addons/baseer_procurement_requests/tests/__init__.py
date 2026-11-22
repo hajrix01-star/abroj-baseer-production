@@ -7,3 +7,4 @@ from . import test_product_source
 from . import test_catalog_quick
 from . import test_receipt_custody
 from . import test_representative_balance_race
+from . import test_representative_reversal

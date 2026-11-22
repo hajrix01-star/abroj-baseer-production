@@ -186,10 +186,9 @@ class BasserWorkspaceCase(TransactionCase):
         opened = self.env['baseer.basser.workspace.section'].with_user(cashier).open_workspace_item(
             self.env.ref('baseer_basser_workspace.workspace_item_cashier_procurement_requests').id,
         )
-        self.assertEqual(
-            opened['action_id'],
-            self.env.ref('baseer_procurement_requests.action_procurement_request').id,
-        )
+        self.assertEqual(opened['action']['type'], 'ir.actions.client')
+        self.assertEqual(opened['action']['tag'], 'baseer_procurement_requests.catalog')
+        self.assertEqual(opened['action']['params'], {'workspace_tab': 'recent'})
         catalog_opened = self.env['baseer.basser.workspace.section'].with_user(cashier).open_workspace_item(
             self.env.ref('baseer_basser_workspace.workspace_item_cashier_new_procurement').id,
         )

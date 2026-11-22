@@ -7,6 +7,7 @@ and inspects the fixed Docker runtime before the deployment wrapper can mutate i
 import configparser
 from contextlib import ExitStack
 import copy
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -15,6 +16,8 @@ import shlex
 import stat
 import subprocess
 import sys
+import time
+import urllib.request
 
 PROJECT = 'baseer-qa-refresh-20261121b'
 DATABASE = 'baseer_qa_20261121b'
@@ -31,6 +34,42 @@ ADDONS = ('/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons,'
 RUN_ID = '44943715853'
 STATE = f'/srv/baseer-qa/refresh/20261121b-{RUN_ID}'
 ORIGINAL = f'/srv/baseer-qa/releases/qa-refresh-20261121b-{RUN_ID}'
+PROMOTED_COMMIT = '4a4f06cda34a5a6e2817e9e118f95c9945c4f2ab'
+PROMOTED_CUSTOM_TREE = '1d39bf7ba774a9459c0dfed549c4f4b140e59011'
+PROMOTED_THIRD_PARTY_TREE = '416a2abef9430037b6209cc9c1e4c6e1aa5d9a2a'
+RECEIPT = 'QA_PROMOTED_SOURCE.json'
+
+
+def _git_tree(path):
+    """Hash the exact Git tree, ignoring only generated Python caches."""
+    def walk(directory):
+        entries = []
+        for item in directory.iterdir():
+            if item.name == '__pycache__' or item.suffix in ('.pyc', '.pyo'):
+                continue
+            info = item.lstat()
+            require(info.st_uid == 0 and not info.st_mode & 0o022, 'unprotected release')
+            name = os.fsencode(item.name)
+            if stat.S_ISDIR(info.st_mode):
+                digest = walk(item)
+                if digest is None:
+                    continue
+                mode, order = b'40000', name + b'/'
+            elif stat.S_ISREG(info.st_mode):
+                content = item.read_bytes()
+                digest = hashlib.sha1(b'blob ' + str(len(content)).encode() + b'\0' + content).digest()
+                mode, order = (b'100755' if info.st_mode & 0o111 else b'100644'), name
+            else:
+                raise ValueError('unexpected release object')
+            entries.append((order, mode + b' ' + name + b'\0' + digest))
+        if not entries:
+            return None
+        data = b''.join(value for _, value in sorted(entries))
+        return hashlib.sha1(b'tree ' + str(len(data)).encode() + b'\0' + data).digest()
+    require(path.is_dir() and not path.is_symlink(), 'invalid release tree')
+    result = walk(path)
+    require(result is not None, 'empty release tree')
+    return result.hex()
 
 
 def require(condition, message):
@@ -226,7 +265,43 @@ def provision():
             raise
 
 
-def verify_installed():
+def _promoted_source(current, *, allow_unrecorded=False):
+    source = current.resolve(strict=True)
+    match = re.fullmatch(r'/srv/baseer-qa/releases/([0-9a-f]{12})-run-[0-9]+-[0-9]{8}T[0-9]{6}Z', str(source))
+    require(current.is_symlink() and match, 'unexpected promoted source pointer')
+    commit = protected_text(source / 'RELEASE_COMMIT', 0o644).strip()
+    require(re.fullmatch('[0-9a-f]{40}', commit) and commit.startswith(match.group(1)),
+            'unexpected promoted source marker')
+    custom = _git_tree(source / 'custom_addons')
+    third = _git_tree(source / 'third_party_addons')
+    receipt_path = source / RECEIPT
+    if os.path.lexists(receipt_path):
+        try:
+            receipt = json.loads(protected_text(receipt_path), object_pairs_hook=_object)
+        except (TypeError, ValueError):
+            raise ValueError('invalid promoted source receipt') from None
+        require(type(receipt) is dict and set(receipt) == {'version', 'database', 'commit', 'custom_tree',
+                                                          'third_party_tree', 'report_version'} and
+                type(receipt['version']) is int and receipt['version'] == 1 and
+                receipt['database'] == DATABASE and receipt['commit'] == commit and
+                receipt['custom_tree'] == custom and receipt['third_party_tree'] == third and
+                isinstance(receipt['report_version'], str) and
+                re.fullmatch(r'19\.0\.[0-9]+(?:\.[0-9]+){1,3}', receipt['report_version']),
+                'promoted source receipt mismatch')
+        return source, receipt
+    if commit == PROMOTED_COMMIT:
+        require(custom == PROMOTED_CUSTOM_TREE and third == PROMOTED_THIRD_PARTY_TREE,
+                'promoted source tree differs')
+        version = '19.0.1.1.6'
+    else:
+        require(allow_unrecorded, 'promoted source receipt missing')
+        version = None
+    return source, {'version': 1, 'database': DATABASE, 'commit': commit, 'custom_tree': custom,
+                    'third_party_tree': third, 'report_version': version}
+
+
+def verify_installed(*, promoted=False, phase='running', allow_unrecorded=False):
+    require(phase in ('static', 'db', 'running'), 'invalid verification phase')
     base = Path(BASE)
     require(base.resolve(strict=True) == base and base.is_dir(), 'redirected preview directory')
     for parent in (base, *base.parents):
@@ -234,8 +309,13 @@ def verify_installed():
         require(info.st_uid == 0 and not info.st_mode & 0o022, 'writable preview path')
     current = base / 'current'
     original = Path(ORIGINAL)
-    require(current.is_symlink() and current.resolve(strict=True) == original and original.is_dir(),
-            'unexpected preview source pointer')
+    source = current.resolve(strict=True)
+    receipt = None
+    if promoted:
+        source, receipt = _promoted_source(current, allow_unrecorded=allow_unrecorded)
+    else:
+        require(current.is_symlink() and source == original and original.is_dir(),
+                'unexpected preview source pointer')
     pg = _assignments(protected_text(STATE + '/pg.env'))
     require(set(pg) == {'POSTGRES_USER', 'POSTGRES_PASSWORD', 'POSTGRES_DB'} and
             pg['POSTGRES_USER'] == 'qa_refresh_admin' and pg['POSTGRES_DB'] == 'postgres' and
@@ -256,8 +336,14 @@ def verify_installed():
         networks = item['NetworkSettings']['Networks']
         host = item['HostConfig']
         mounts = {m['Destination']: m for m in item['Mounts']}
-        require(item['Name'] == '/' + name and item['Image'] == image and item['State']['Running']
-                and set(networks) == {NETWORK} and networks[NETWORK]['IPAddress'] == ip
+        running = item['State']['Running']
+        address = networks.get(NETWORK, {})
+        expected_running = phase == 'running' or (phase == 'db' and name.endswith('-db-1'))
+        configured_ip = (address.get('IPAMConfig') or {}).get('IPv4Address')
+        require(item['Name'] == '/' + name and item['Image'] == image
+                and (not expected_running or running)
+                and set(networks) == {NETWORK} and configured_ip == ip
+                and (not running or address['IPAddress'] == ip)
                 and (host['PortBindings'] or {}) == ports
                 and host['RestartPolicy']['Name'] == 'no' and host['Dns'] == [DB_IP]
                 and not host['Privileged'] and destination in mounts
@@ -270,17 +356,24 @@ def verify_installed():
             if override is not None:
                 require(override['Type'] == 'volume' and re.fullmatch('[0-9a-f]{64}', override['Name']),
                         'unexpected vendor addon mount')
-                require(not docker('exec', name, 'find', '/mnt/extra-addons', '-mindepth', '1', '-maxdepth', '1',
-                                   '-print', '-quit').strip(), 'vendor addon mount is not empty')
-            expected_mounts = {'/etc/odoo/odoo.conf': STATE + '/odoo.conf',
-                               '/mnt/baseer-addons': ORIGINAL + '/custom_addons',
-                               '/mnt/third-party-addons': ORIGINAL + '/third_party_addons'}
+                volume = json.loads(docker('volume', 'inspect', override['Name']))
+                mountpoint = Path('/var/lib/docker/volumes') / override['Name'] / '_data'
+                require(len(volume) == 1 and volume[0]['Name'] == override['Name'] and
+                        volume[0]['Driver'] == 'local' and volume[0]['Mountpoint'] == str(mountpoint) and
+                        mountpoint.resolve(strict=True) == mountpoint and mountpoint.is_dir() and
+                        not any(mountpoint.iterdir()), 'vendor addon volume is not empty')
+            expected_mounts = {'/etc/odoo/odoo.conf': (CONFIG if promoted else STATE) + '/odoo.conf',
+                               '/mnt/baseer-addons': str(source) + '/custom_addons',
+                               '/mnt/third-party-addons': str(source) + '/third_party_addons'}
             require(set(mounts) == set(expected_mounts) and all(
                 mounts[key]['Type'] == 'bind' and not mounts[key]['RW'] and
                 Path(mounts[key]['Source']).resolve(strict=True) == Path(source)
                 for key, source in expected_mounts.items()), 'running preview source mount differs')
         else:
             require(not mounts, 'unexpected database mount')
+    if phase == 'static':
+        return
+
     def read_query(query):
         return docker('exec', '--env', 'PGOPTIONS=-c default_transaction_read_only=on', PROJECT + '-db-1',
                       '/bin/sh', '-c', 'exec psql -XAt -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$1" -c "$2"',
@@ -291,6 +384,13 @@ def verify_installed():
              "WHERE key = 'database.is_neutralized' AND value = 'true') "
              "AND NOT EXISTS (SELECT FROM ir_cron WHERE active)")
     require(read_query(query) == 't', 'preview database identity or neutralization mismatch')
+    if promoted:
+        report_version = read_query("SELECT latest_version FROM ir_module_module WHERE name = "
+                                    "'baseer_profit_loss_report' AND state = 'installed'")
+        require(re.fullmatch(r'19\.0\.[0-9]+(?:\.[0-9]+){1,3}', report_version) and
+                (receipt['report_version'] is None or receipt['report_version'] == report_version),
+                'promoted report module is not installed')
+        receipt['report_version'] = report_version
     predicates = {
         'ir_mail_server': 'active', 'fetchmail_server': 'active', 'baseer_print_agent': 'active',
         'baseer_bwork_push_device': 'active', 'baseer_bank_sms_device': 'active',
@@ -303,15 +403,103 @@ def verify_installed():
         if table in installed:
             require(read_query(f'SELECT NOT EXISTS (SELECT FROM "{table}" WHERE {condition})') == 't',
                     'preview outgoing integration is enabled')
+    return receipt
+
+
+def verify_promoted():
+    """Verify the exact reviewed composite and both running QA containers."""
+    return verify_installed(promoted=True)
+
+
+def record_promoted():
+    """Called only by the protected, policy-checked QA deploy while locked."""
+    receipt = verify_installed(promoted=True, allow_unrecorded=True)
+    source, confirmed = _promoted_source(Path(BASE) / 'current', allow_unrecorded=True)
+    require(all(confirmed[key] == receipt[key] for key in
+                ('version', 'database', 'commit', 'custom_tree', 'third_party_tree')),
+            'source changed before receipt')
+    path = source / RECEIPT
+    if os.path.lexists(path):
+        require(json.loads(protected_text(path), object_pairs_hook=_object) == receipt,
+                'existing source receipt differs')
+        return
+    data = (json.dumps(receipt, sort_keys=True, separators=(',', ':')) + '\n').encode('ascii')
+    fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY | os.O_NOFOLLOW, 0o600)
+    try:
+        with os.fdopen(fd, 'wb', closefd=False) as stream:
+            stream.write(data)
+            stream.flush()
+            os.fsync(fd)
+    finally:
+        os.close(fd)
+    directory_fd = os.open(source, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    try:
+        os.fsync(directory_fd)
+    finally:
+        os.close(directory_fd)
+
+
+def boot_promoted():
+    """Start only previously verified preview containers; never change routes."""
+    import fcntl
+    with ExitStack() as stack:
+        for lock in ('baseer-qa-refresh', 'baseer-qa-deploy', 'baseer-qa-release-poller'):
+            fd = os.open('/var/lock/' + lock + '.lock', os.O_CREAT | os.O_NOFOLLOW | os.O_RDWR, 0o600)
+            stack.callback(os.close, fd)
+            info = os.fstat(fd)
+            require(stat.S_ISREG(info.st_mode) and info.st_uid == 0 and not info.st_mode & 0o022,
+                    'unsafe QA lock')
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        subprocess.run(['/usr/bin/systemctl', 'is-active', '--quiet', PROJECT + '-firewall.service'],
+                       check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=10)
+        verify_installed(promoted=True, phase='static')
+        db, app = PROJECT + '-db-1', PROJECT + '-odoo-1'
+        states = json.loads(docker('inspect', db, app))
+        require(len(states) == 2, 'preview containers missing')
+        db_was_running, app_was_running = (item['State']['Running'] for item in states)
+        if not db_was_running:
+            docker('start', db)
+        for attempt in range(30):
+            try:
+                verify_installed(promoted=True, phase='db')
+                break
+            except (ValueError, subprocess.SubprocessError):
+                if attempt == 29:
+                    raise
+                time.sleep(1)
+        try:
+            if not app_was_running:
+                docker('start', app)
+            verify_promoted()
+            opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+            for attempt in range(30):
+                try:
+                    with opener.open('http://127.0.0.1:18140/web/login', timeout=3) as response:
+                        require(response.status == 200, 'preview login unavailable')
+                    break
+                except (OSError, ValueError):
+                    if attempt == 29:
+                        raise
+                    time.sleep(1)
+        except BaseException:
+            if not app_was_running:
+                docker('stop', app)
+            raise
 
 
 if __name__ == '__main__':
     os.umask(0o077)
-    if os.geteuid() != 0 or sys.argv[1:] not in (['--verify-installed'], ['--provision']):
+    if os.geteuid() != 0 or sys.argv[1:] not in (['--verify-installed'], ['--verify-promoted'], ['--record-promoted'], ['--boot-promoted'], ['--provision']):
         sys.exit('preview verification requires the protected QA wrapper')
     try:
         if sys.argv[1] == '--provision':
             provision()
+        elif sys.argv[1] == '--verify-promoted':
+            verify_promoted()
+        elif sys.argv[1] == '--record-promoted':
+            record_promoted()
+        elif sys.argv[1] == '--boot-promoted':
+            boot_promoted()
         else:
             verify_installed()
     except (ValueError, OSError, KeyError, TypeError, subprocess.SubprocessError):

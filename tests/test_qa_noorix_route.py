@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 import unittest
 from contextlib import contextmanager
+from unittest.mock import patch
 
 
 spec = importlib.util.spec_from_file_location(
@@ -50,6 +51,14 @@ class PrivateRouteTest(unittest.TestCase):
         for invalid in ('{"TCP":{},"TCP":{}}', 'null', '{}', '[1]', '{'):
             with self.subTest(invalid=invalid), self.assertRaises(ValueError):
                 route.pick_backend(invalid)
+
+    def test_staged_backup_matches_the_deployment_wrapper_path(self):
+        root = '/srv/baseer-qa'
+        release = Path(root + '/releases/4a4f06cda34a-run-45045444123-20261122T164813Z')
+        self.assertEqual(route.staged_backup_path(release),
+                         Path(root + '/backups/pre-4a4f06cda34a-45045444123-20261122T164813Z'))
+        with self.assertRaisesRegex(ValueError, 'unrecognized staged'):
+            route.staged_backup_path(Path(str(release).replace('45045444123', '45034040610')))
 
 
 class CutoverTest(unittest.TestCase):
@@ -145,6 +154,34 @@ class CutoverTest(unittest.TestCase):
             yield {'deploy'}
         with self.assertRaises(ValueError): self.change(locks=partial)
         self.assertEqual(self.events, [])
+
+    def test_cold_restart_keeps_previous_route_and_records_both_restarted_containers(self):
+        original_run = self.runner
+        stamp = [{'id': name, 'started_at': 'before'} for name in route.PREVIEW_CONTAINERS]
+
+        def restart_commands(argv, **kwargs):
+            if argv[0] == route.TAILSCALE:
+                return original_run(argv)
+            self.events.append(tuple(argv))
+            if argv[1] == 'inspect':
+                return json.dumps([{'State': {'Running': False, 'ExitCode': 0}}] * 2)
+            if argv[1] == 'start':
+                for item in stamp:
+                    item['started_at'] = 'after'
+            return ''
+
+        def read_stamp():
+            return [item.copy() for item in stamp]
+
+        with patch.object(route, 'host_locks', self.locks), patch.object(route, 'host_command', restart_commands), \
+                patch.object(route, 'backend_ready', self.health), patch.object(route, 'boot_ready', return_value=True), \
+                patch.object(route, 'runtime_stamp', read_stamp), patch.object(route, 'write_restart_proof') as proof:
+            route.rehearse_restart()
+        self.assertEqual(self.port, 18134)
+        stopped = [x[-1] for x in self.events if isinstance(x, tuple) and x[:2] == ('/usr/bin/docker', 'stop')]
+        self.assertEqual(stopped, list(reversed(route.PREVIEW_CONTAINERS)))
+        proof.assert_called_once_with(stamp)
+        self.assertFalse(any(isinstance(e, tuple) and '--bg' in e for e in self.events))
 
 
 if __name__ == '__main__':

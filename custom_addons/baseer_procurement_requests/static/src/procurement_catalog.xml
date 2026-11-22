@@ -62,7 +62,7 @@
                         <select t-att-value="state.recentState" t-on-change="onRecentStateChange" aria-label="Filter by status">
                             <option value="all">All statuses</option>
                             <option t-if="!isListOnly" value="draft">Draft</option>
-                            <option t-if="isListOnly" value="sent">Approved</option>
+                            <option t-if="isListOnly" value="sent">Order approved</option>
                             <option t-else="" value="sent">Sent to purchaser</option>
                             <option value="list_closed">List closed</option>
                             <t t-if="!isListOnly">

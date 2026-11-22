@@ -9,67 +9,80 @@ msgstr ""
 "Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
 
 #. module: baseer_procurement_requests
+#. odoo-javascript
 #: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
 msgid "Send via WhatsApp"
 msgstr "إرسال واتساب"
 
 #. module: baseer_procurement_requests
+#. odoo-javascript
 #: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
-msgid "Approved"
+msgid "Order approved"
 msgstr "معتمد"
 
 #. module: baseer_procurement_requests
+#. odoo-javascript
 #: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
 msgid "Request number"
 msgstr "رقم الطلب"
 
 #. module: baseer_procurement_requests
+#. odoo-javascript
 #: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
 msgid "Actions"
 msgstr "الإجراءات"
 
 #. module: baseer_procurement_requests
+#. odoo-javascript
 #: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
 msgid "Resend via WhatsApp"
 msgstr "إعادة إرسال واتساب"
 
 #. module: baseer_procurement_requests
+#. odoo-javascript
 #: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
 #: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
 msgid "Delete request"
 msgstr "حذف الطلب"
 
 #. module: baseer_procurement_requests
+#. odoo-javascript
 #: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
 msgid "Delete %s from previous requests?"
 msgstr "هل تريد حذف الطلب %s من جدول الطلبات السابقة؟"
 
 #. module: baseer_procurement_requests
+#. odoo-javascript
 #: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
 msgid "Request deleted."
 msgstr "تم حذف الطلب من الجدول."
 
 #. module: baseer_procurement_requests
+#. odoo-javascript
 #: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
 msgid "Could not delete this request."
 msgstr "تعذّر حذف الطلب."
 
 #. module: baseer_procurement_requests
+#. odoo-javascript
 #: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
 msgid "Could not send the request."
 msgstr "تعذّر إرسال الطلب."
 
 #. module: baseer_procurement_requests
+#. odoo-javascript
 #: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
 msgid "Sent requests will appear here."
 msgstr "تظهر الطلبات المرسلة هنا."
 
 #. module: baseer_procurement_requests
+#. odoo-javascript
 #: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
 msgid "Status"
 msgstr "الحالة"
 
 #. module: baseer_procurement_requests
+#. odoo-javascript
 #: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
 msgid "Request approved."
 msgstr "تم اعتماد الطلب."
@@ -90,6 +103,7 @@ msgid "An approved order can only be shared again or removed from previous reque
 msgstr "يمكن إعادة إرسال الطلب المعتمد أو حذفه من جدول الطلبات السابقة فقط."
 
 #. module: baseer_procurement_requests
+#. odoo-javascript
 #: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
 msgid "Delete"
 msgstr "حذف"

@@ -757,7 +757,7 @@ export class ProcurementCatalog extends Component {
     recentStateLabel(request) {
         const labels = {
             draft: _t("Draft"),
-            sent: request.list_only ? _t("Approved") : _t("Sent to purchaser"),
+            sent: request.list_only ? _t("Order approved") : _t("Sent to purchaser"),
             list_closed: _t("List closed"),
             received: _t("Waiting for cashier confirmation"),
             purchased: _t("Completed"),

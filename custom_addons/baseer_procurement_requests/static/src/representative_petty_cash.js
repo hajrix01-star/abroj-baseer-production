@@ -83,8 +83,7 @@ export class PettyCashSettlementDialog extends Component {
     returnCash() { this.props.close(); this.props.owner.openEntry("return", this.props.representativeId); }
     purchases() {
         this.props.close();
-        this.props.owner.notification.add(_t("Select the representative as the invoice payment source."), { type: "info" });
-        this.props.owner.openPurchases();
+        this.props.owner.openPurchases(this.props.representativeId);
     }
 }
 
@@ -173,8 +172,28 @@ export class RepresentativePettyCash extends Component {
         this.dialog.add(PettyCashReversalDialog, { owner: this, fundingId });
     }
 
-    async openPurchases() {
-        await this.action.doAction("baseer_purchase_batch.action_purchase_batches");
+    async openBillReversal(settlementId) {
+        try {
+            const action = await this.orm.call(
+                "baseer.procurement.representative.advance", "action_open_direct_bill_custody_reversal",
+                [settlementId],
+            );
+            await this.action.doAction(action, { onClose: () => this.load() });
+        } catch (error) {
+            this.notification.add(serverErrorMessage(error, _t("Could not open supplier bill reversal.")), { type: "danger" });
+        }
+    }
+
+    async openPurchases(representativeId = false) {
+        try {
+            const action = await this.orm.call(
+                "baseer.procurement.representative.advance", "action_open_direct_bill_custody_payment",
+                [representativeId || this.state.representativeId || false],
+            );
+            await this.action.doAction(action, { onClose: () => this.load() });
+        } catch (error) {
+            this.notification.add(serverErrorMessage(error, _t("Could not open supplier bill settlement.")), { type: "danger" });
+        }
     }
 
     async loadMovements(offset = 0) {
@@ -290,7 +309,7 @@ export class RepresentativePettyCash extends Component {
     }
 
     dailyMovementLabel(type) {
-        return { funding: _t("Petty cash given"), purchase: _t("Purchase"), return: _t("Cash returned"), reversal: _t("Petty cash reversal") }[type] || "—";
+        return { funding: _t("Petty cash given"), purchase: _t("Purchase"), purchase_reversal: _t("Supplier bill payment reversal"), return: _t("Cash returned"), reversal: _t("Petty cash reversal") }[type] || "—";
     }
 
     selectPaymentPoint(paymentPointId) { this.state.paymentPointId = String(paymentPointId); }

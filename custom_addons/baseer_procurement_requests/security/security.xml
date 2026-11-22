@@ -67,6 +67,11 @@
         <field name="model_id" ref="model_baseer_procurement_representative_petty_cash_invoice_settlement"/>
         <field name="domain_force">[('company_id', 'in', company_ids)]</field>
     </record>
+    <record id="rule_direct_bill_custody_settlement_company" model="ir.rule">
+        <field name="name">Direct supplier bill custody settlements: allowed companies</field>
+        <field name="model_id" ref="model_baseer_procurement_direct_bill_custody_settlement"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
     <record id="rule_procurement_custody_event_company" model="ir.rule">
         <field name="name">Procurement Petty Cash events: allowed companies</field>
         <field name="model_id" ref="model_baseer_procurement_custody_event"/>

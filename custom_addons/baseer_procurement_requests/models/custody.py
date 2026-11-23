@@ -266,7 +266,7 @@ class ProcurementCustody(models.Model):
         """, settlement_params)
         settled = self.env.cr.fetchone()[0]
         payments = self._vendor_payment_deduction()
-        return float(event_balance - settled - payments)
+        return float(Decimal(str(event_balance)) - Decimal(str(settled)) - Decimal(str(payments)))
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -845,6 +845,10 @@ class ProcurementCustodyEvent(models.Model):
                 event.procurement_request_id._require_receipt_workflow()
             if event.state == 'posted':
                 continue
+            company = event.company_id
+            if (company.baseer_procurement_custody_account_id
+                    and company.baseer_procurement_custody_account_id == company.baseer_procurement_representative_petty_cash_account_id):
+                raise UserError(_('Use Representative Petty Cash to record new custody movements.'))
             if event.custody_id.state != 'open':
                 raise UserError(_('Custody must be open before posting an event.'))
             account, journal = event.company_id._baseer_procurement_custody_ready()
@@ -1044,6 +1048,10 @@ class BaseerPurchaseBatchLine(models.Model):
                 continue
             if line.procurement_settlement_id and line.procurement_settlement_id.state == 'active':
                 continue
+            company = line.company_id
+            if (company.baseer_procurement_custody_account_id
+                    and company.baseer_procurement_custody_account_id == company.baseer_procurement_representative_petty_cash_account_id):
+                raise UserError(_('Use Representative Petty Cash to settle new supplier bills.'))
             if not line.is_credit or line.payment_method_line_id:
                 raise ValidationError(_('A custody-linked supplier bill must be credit-only.'))
             currency = line.company_id.currency_id
@@ -1234,6 +1242,20 @@ class ProcurementCustodySettlement(models.Model):
             raise AccessError(_('Only a procurement accountant can reverse a Petty Cash settlement.'))
         for settlement in self:
             with self.env.cr.savepoint():
+                company = settlement.company_id
+                locked_representative = self.env['res.partner']
+                if (company.baseer_procurement_custody_account_id
+                        and company.baseer_procurement_custody_account_id == company.baseer_procurement_representative_petty_cash_account_id):
+                    original_lines = settlement.move_id.line_ids.filtered(
+                        lambda line: line.company_id == company
+                        and line.account_id == company.baseer_procurement_custody_account_id
+                        and line.baseer_procurement_custody_id == settlement.custody_id
+                        and line.partner_id
+                    )
+                    if len(original_lines) != 1:
+                        raise UserError(_('The native custody-settlement entry is incomplete and cannot be reversed automatically.'))
+                    locked_representative = original_lines.partner_id
+                    self.env['baseer.procurement.representative.advance']._baseer_lock_representative_balance(company, locked_representative)
                 settlement.custody_id._lock()
                 self.env.cr.execute('SELECT id FROM baseer_procurement_custody_settlement WHERE id = %s FOR UPDATE', [settlement.id])
                 settlement.invalidate_recordset()
@@ -1247,7 +1269,7 @@ class ProcurementCustodySettlement(models.Model):
                     raise UserError(_('Only a posted native custody-settlement entry can be reversed.'))
                 account, journal = settlement.company_id._baseer_procurement_custody_ready()
                 reversal_date = fields.Date.context_today(self)
-                representative = settlement.representative_partner_id or settlement.custody_id._representative_partner()
+                representative = locked_representative or settlement.representative_partner_id or settlement.custody_id._representative_partner()
                 self.env['baseer.procurement.custody.period.close']._ensure_month_open(
                     settlement.custody_id, representative, reversal_date
                 )

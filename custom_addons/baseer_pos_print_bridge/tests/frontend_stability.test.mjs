@@ -168,6 +168,31 @@ test('prepayment bill sends the open order to the session queue without syncing 
     assert.equal(await pos.printReceipt(options), 'native');
 });
 
+test('shared draft bill sends revision only for unchanged rendered order', async () => {
+    const bridge = runtime('preparation_bridge.js', { printReceipt() { return 'native'; } });
+    const pos = new bridge.PosStore();
+    const order = { uuid: 'shared', state: 'draft', getOrderlines: () => [{}] };
+    const calls = [];
+    let generation = 4, editDuringRender = true;
+    bridge.DraftBill = class {};
+    pos.config = { baseer_direct_print_enabled: true };
+    pos.session = { id: 23 };
+    pos.notification = { add() {} };
+    pos.baseerPrepareSharedDraftPrintExperiment = async () => ({ uuid: order.uuid, revision: 7, generation });
+    pos.baseerIsSharedDraftPrintCurrentExperiment = (_order, marker) => marker.generation === generation;
+    pos.printer = { renderer: { async toCanvas() { if (editDuringRender) generation++; return {}; } } };
+    bridge.encodeReceiptJpeg = () => 'raster';
+    pos.data = { async call(...args) { calls.push(args); return { state: 'pending' }; } };
+    assert.equal((await pos.baseerPrintDraftBill(order)).successful, false);
+    assert.equal(calls.length, 0);
+    editDuringRender = false;
+    assert.equal((await pos.baseerPrintDraftBill(order)).queued, true);
+    assert.equal(calls[0][2][4], 7);
+    pos.baseerPrepareSharedDraftPrintExperiment = async () => false;
+    assert.equal((await pos.baseerPrintDraftBill(order)).successful, false);
+    assert.equal(calls.length, 1);
+});
+
 test('prepayment bill inherits the live receipt template and suppresses fiscal QR and payment artifacts', () => {
     class OrderReceipt {
         static template = 'point_of_sale.OrderReceipt';

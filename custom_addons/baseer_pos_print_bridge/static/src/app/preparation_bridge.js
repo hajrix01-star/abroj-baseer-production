@@ -1106,13 +1106,21 @@ patch(PosStore.prototype, {
             return { successful: false };
         }
         try {
+            const discountMarker = this.baseerPrepareSharedDraftPrintExperiment
+                ? await this.baseerPrepareSharedDraftPrintExperiment(order) : null;
+            if (discountMarker === false) return { successful: false };
             const canvas = await renderReceiptCanvas(this.printer.renderer, DraftBill, { order });
             if (order.state !== "draft") {
                 return { successful: false };
             }
-            const result = await this.data.call("pos.session", "baseer_enqueue_draft_bill", [
-                [this.session.id], order.uuid, crypto.randomUUID(), encodeReceiptJpeg(canvas),
-            ]);
+            if (discountMarker && (!this.baseerIsSharedDraftPrintCurrentExperiment ||
+                    !this.baseerIsSharedDraftPrintCurrentExperiment(order, discountMarker))) {
+                this.notification.add(_t("The order changed while preparing its bill. Review it before printing."), { type: "warning" });
+                return { successful: false };
+            }
+            const args = [[this.session.id], order.uuid, crypto.randomUUID(), encodeReceiptJpeg(canvas)];
+            if (discountMarker) args.push(discountMarker.revision);
+            const result = await this.data.call("pos.session", "baseer_enqueue_draft_bill", args);
             if (result.state === "failed" || result.state === "cancelled") {
                 this.notification.add(
                     _t("Check the previous bill print job before printing again."), { type: "warning" }

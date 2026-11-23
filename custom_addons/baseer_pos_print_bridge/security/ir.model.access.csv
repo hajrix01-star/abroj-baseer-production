@@ -1,4 +1,5 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_baseer_pos_ticket_reservation_admin,baseer.pos.ticket.reservation.admin,model_baseer_pos_ticket_reservation,base.group_system,1,0,0,0
 access_baseer_print_agent_admin,baseer.print.agent.admin,model_baseer_print_agent,base.group_system,1,1,1,0
 access_baseer_print_agent_release_admin,baseer.print.agent.release.admin,model_baseer_print_agent_release,base.group_system,1,1,1,0
 access_baseer_print_printer_admin,baseer.print.printer.admin,model_baseer_print_printer,base.group_system,1,1,0,0

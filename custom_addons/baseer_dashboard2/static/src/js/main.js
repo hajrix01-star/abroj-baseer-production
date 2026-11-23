@@ -1,8 +1,73 @@
 /** @odoo-module **/
-import { Component, onWillStart, onWillUnmount, useState, useExternalListener } from "@odoo/owl";
+import { Component, onMounted, onWillStart, onWillUnmount, useState, useExternalListener } from "@odoo/owl";
 import { dashboardTooltip } from "./tooltip";
 import { registry } from "@web/core/registry";
-import { useService } from "@web/core/utils/hooks";
+import { useBus, useService } from "@web/core/utils/hooks";
+import { user, userBus } from "@web/core/user";
+import { AmountDetailsDialog } from "@baseer_reports_menu/report_drill";
+
+export function pnlTaxLabel(inclusive, lang) {
+  return (lang || "").startsWith("ar")
+    ? (inclusive ? "شامل الضريبة" : "غير شامل الضريبة")
+    : (inclusive ? "Tax inclusive" : "Tax exclusive");
+}
+
+export function pnlChannelEstimateLabel(lang) {
+  return (lang || "").startsWith("ar") ? "توزيع تقديري" : "Estimated allocation";
+}
+
+const clonePnlScope = (value) => JSON.parse(JSON.stringify(value));
+
+// The service returns verified, formatted contributions; this controller only
+// navigates those returned selectors and never computes financial amounts.
+export class DashboardPnlDetails extends Component {
+  static template = "baseer_dashboard2.PnlDetails";
+  static components = { AmountDetailsDialog };
+  static props = { descriptor: Object, lang: String, close: Function };
+  setup() {
+    this.orm = useService("orm");
+    this.action = useService("action");
+    this.state = useState({data: null, busy: false, error: "", history: [], selector: {kind: "row"}, page: 1});
+    this.epoch = 0;
+    this.alive = true;
+    useBus(userBus, "ACTIVE_COMPANIES_CHANGED", () => { this.epoch++; this.props.close(); });
+    onWillUnmount(() => { this.alive = false; this.epoch++; });
+    onMounted(() => this.load());
+  }
+  get view() { return {data: this.state.data, busy: this.state.busy, error: this.state.error, hasBack: !!this.state.history.length}; }
+  get errorText() { return this.props.lang === "ar" ? "تعذر عرض التفاصيل. تحقق من الفترة والصلاحيات ثم أعد المحاولة." : "Could not load details. Check the period and access, then retry."; }
+  async load() {
+    const epoch = ++this.epoch;
+    this.state.busy = true; this.state.error = ""; this.state.data = null;
+    try {
+      const data = await this.orm.call("baseer.dashboard2.service", "get_pnl_details", [this.props.descriptor, clonePnlScope(this.state.selector), this.state.page]);
+      if (this.alive && epoch === this.epoch) this.state.data = data;
+    } catch {
+      if (this.alive && epoch === this.epoch) this.state.error = this.errorText;
+    } finally { if (this.alive && epoch === this.epoch) this.state.busy = false; }
+  }
+  async activate(row) {
+    if (this.state.busy) return;
+    if (row.drill) {
+      this.state.history.push({selector: clonePnlScope(this.state.selector), page: this.state.page});
+      this.state.selector = clonePnlScope(row.drill); this.state.page = 1;
+      return this.load();
+    }
+    if (!row.source) return;
+    const epoch = ++this.epoch; this.state.busy = true; this.state.error = "";
+    try {
+      const action = await this.orm.call("baseer.dashboard2.service", "open_pnl_detail_source", [this.props.descriptor, clonePnlScope(row.source)]);
+      if (this.alive && epoch === this.epoch) { await this.action.doAction(action); this.props.close(); }
+    } catch { if (this.alive && epoch === this.epoch) this.state.error = this.errorText; }
+    finally { if (this.alive && epoch === this.epoch) this.state.busy = false; }
+  }
+  back() {
+    if (this.state.busy || !this.state.history.length) return;
+    const previous = this.state.history.pop(); this.state.selector = previous.selector; this.state.page = previous.page;
+    return this.load();
+  }
+  page(delta) { if (!this.state.busy) { this.state.page += delta; return this.load(); } }
+}
 
 export const formatNumber = (n) =>
   n === null || n === undefined || n === false || !Number.isFinite(Number(n))
@@ -14,6 +79,12 @@ export const formatTable = (n, minus = false) => {
   if (magnitude === "0") return "—";
   return Number(n) < 0 ? (minus ? `-${magnitude}` : `(${magnitude})`) : magnitude;
 };
+export const formatPnlAmount = (n) => {
+  if (n == null || n === false || !Number.isFinite(Number(n)) || Number(n) === 0) return "—";
+  const magnitude = new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Math.abs(Number(n)));
+  return Number(n) < 0 ? `(${magnitude})` : magnitude;
+};
+export const hasPnlValues = (values) => (values || []).some(v => v != null && v !== false && Number.isFinite(Number(v)) && Number(v) !== 0);
 const roundedPercentMagnitude = (n) => (Math.round((Math.abs(Number(n)) + Number.EPSILON * Math.abs(Number(n))) * 10) / 10).toFixed(1);
 export const formatTablePct = (n) => {
   if (n == null || n === false || !Number.isFinite(Number(n))) return "—";
@@ -421,6 +492,7 @@ export class Dashboard2 extends Component {
       this[name] = this[name].bind(this);
     this.orm = useService("orm");
     this.action = useService("action");
+    this.dialog = useService("dialog");
     this.state = useState({
       meta: null,
       data: null,
@@ -434,13 +506,14 @@ export class Dashboard2 extends Component {
       view: "pnl",
       pnl_view: null,
       pnl_range: null,
+      tax_inclusive: true,
       metric: "gross",
       closed: {},
       cashDrills: {},
       navOpen: false,
     });
     useExternalListener(window, "keydown", (event) => { if (event.key === "Escape") this.state.navOpen = false; });
-    onWillUnmount(() => { this.loadToken++; dashboardTooltip.destroy(); });
+    onWillUnmount(() => { this.loadToken++; this.closePnlDetails(); dashboardTooltip.destroy(); });
     this.loadToken = 0;
     onWillStart(() => this.init());
   }
@@ -482,14 +555,21 @@ export class Dashboard2 extends Component {
     if (key === "commissions") return "recorded_commissions";
     return ["sales_net", "food_cost", "gross_profit", "salaries", "rent", "utilities", "marketing", "depreciation", "operating_profit", "other_income", "zakat_tax", "net_profit"].includes(key) ? key : null;
   }
-  async drillPnl(event, key, child, column) {
+  closePnlDetails() {
+    if (this.pnlDetailClose) { this.pnlDetailClose(); this.pnlDetailClose = null; }
+  }
+  drillPnl(event, key, child, column) {
     event.stopPropagation();
     if (event.type === "keydown" && event.key !== "Enter") return;
-    const action = await this.orm.call("baseer.dashboard2.service", "get_drilldown", [{
+    this.closePnlDetails();
+    const descriptor = clonePnlScope({
       section: "pnl", key, child, column, company_key: this.state.company,
       period: this.state.period, pnl_view: this.state.pnl_view, pnl_range: this.state.pnl_range,
-    }]);
-    await this.env.services.action.doAction(action);
+      tax_inclusive: this.state.tax_inclusive,
+    });
+    this.pnlDetailClose = this.dialog.add(DashboardPnlDetails, {
+      descriptor, lang: user.lang?.startsWith("ar") ? "ar" : "en",
+    });
   }
   async drill(event, section, key, extra = {}) {
     event.stopPropagation();
@@ -536,7 +616,7 @@ export class Dashboard2 extends Component {
           [
             this.state.page === "pnl" ? this.state.view : this.state.page,
             {
-              ...(this.state.page === "pnl" && this.state.view === "pnl" ? {pnl_view: this.state.pnl_view, pnl_range: this.state.pnl_range} : {}),
+              ...(this.state.page === "pnl" && this.state.view === "pnl" ? {pnl_view: this.state.pnl_view, pnl_range: this.state.pnl_range, tax_inclusive: this.state.tax_inclusive} : {}),
               company_key: this.state.company,
               period: this.state.period,
               timeline_mode: this.state.timeline,
@@ -565,6 +645,7 @@ export class Dashboard2 extends Component {
     }
   }
   async choose(key, value) {
+    if (key !== "mode") this.closePnlDetails();
     this.state[key] = value;
     if (key === "pnl_view") { this.persist(key); if (value === "range") this.resetPnlRange(); }
     if (key === "page") this.state.navOpen = false;
@@ -582,11 +663,13 @@ export class Dashboard2 extends Component {
     }
   }
   async pnlRangeChange(key, value) {
+    this.closePnlDetails();
     this.state.pnl_range[key] = value;
     const r = this.state.pnl_range;
     if (r.date_from && r.date_to && r.date_from <= r.date_to) await this.load();
   }
   async periodChange(key, value) {
+    this.closePnlDetails();
     this.state.cashDrills = {};
     this.state.period[key] = value;
     this.persist("period");
@@ -632,6 +715,8 @@ export class Dashboard2 extends Component {
   selectMonth(index) { this.periodChange("month", this.state.period.month.slice(0, 4) + "-" + String(index + 1).padStart(2, "0")); }
   fmt = formatNumber;
   tableFmt = formatTable;
+  pnlFmt = formatPnlAmount;
+  hasPnlValues = hasPnlValues;
   periodRange = periodRange;
   dateName(d) {
     if (!d) return "—";
@@ -778,6 +863,13 @@ export class Dashboard2 extends Component {
   toggleRow(key) {
     this.state.closed[key] = !this.state.closed[key];
   }
+  get pnlTaxLabel() { return pnlTaxLabel(this.state.tax_inclusive, user.lang); }
+  get pnlChannelEstimateLabel() { return pnlChannelEstimateLabel(user.lang); }
+  get pnlTaxNote() {
+    return user.lang?.startsWith("ar")
+      ? "عرض إداري شامل الضريبة؛ صافي الربح ليس صافي الربح المحاسبي."
+      : "Tax-inclusive management view; net profit is not accounting net profit.";
+  }
   exportCsv() {
     const table = document.querySelector(".o_bd2 .export-table");
     if (!table) return;
@@ -788,7 +880,7 @@ export class Dashboard2 extends Component {
     );
     const a = document.createElement("a");
     a.href = URL.createObjectURL(
-      new Blob(["\ufeff" + (this.state.view === "pnl" ? "قبل الضريبة" : "شامل الضريبة") + "\n" + rows.join("\n")], {
+      new Blob(["\ufeff" + (this.state.view === "pnl" ? this.pnlTaxLabel : pnlTaxLabel(true, user.lang)) + "\n" + rows.join("\n")], {
         type: "text/csv;charset=utf-8",
       }),
     );

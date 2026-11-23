@@ -3,6 +3,7 @@ from .service import request_memo, food_ratio
 import calendar
 from collections import defaultdict
 from datetime import date, timedelta
+from decimal import Decimal
 
 from odoo import api, fields, models, _
 from odoo import _ as translate
@@ -261,6 +262,8 @@ class DashboardSections(models.AbstractModel):
         elif section == 'pnl' and key in ('revenue', 'food_cost', 'gross_profit', 'salaries', 'rent', 'utilities',
                                            'marketing', 'commissions', 'other_opex', 'depreciation',
                                            'operating_profit', 'other_income', 'zakat_tax', 'net_profit'):
+            if type(descriptor.get('tax_inclusive', False)) is not bool or descriptor.get('tax_inclusive', False):
+                raise UserError(_('Use the verified profit and loss details for tax-inclusive figures.'))
             view = descriptor.get('pnl_view')
             first, last = self._pnl_bounds(start, end, descriptor)
             full_first, full_last = first, last
@@ -512,7 +515,8 @@ class DashboardSections(models.AbstractModel):
         return result
 
     def _accounting_sections(self, ids, section, start, end, previous_start, previous_end, companies, params):
-        accounting = self._accounting if section == 'pnl' else self._accounting_gross
+        tax_inclusive = self._pnl_tax_inclusive(params) if section == 'pnl' else None
+        accounting = (lambda company_ids, first, last: self._accounting_pnl_verified(company_ids, first, last, tax_inclusive)) if section == 'pnl' else self._accounting_gross
         current = accounting(ids, start, end)
         previous = accounting(ids, previous_start, previous_end)
         bounds = self.env['account.move.line'].with_context(allowed_company_ids=ids)._read_group(
@@ -522,7 +526,7 @@ class DashboardSections(models.AbstractModel):
         def covered(first, last):
             return any(first.strftime('%Y-%m') <= month <= last.strftime('%Y-%m') for month in posted_months)
         trend = []
-        for offset in range(-5, 1):
+        for offset in ((0,) if section == 'pnl' else range(-5, 1)):
             first, last = month_bounds(end, offset)
             trend.append({'month': first.strftime('%Y-%m'), 'data': accounting(ids, first, min(last, end)),
                           'has_data': covered(first, min(last, end)), 'partial': bool(first <= min(end, fields.Date.context_today(self), last_data or end) < last)})
@@ -545,10 +549,11 @@ class DashboardSections(models.AbstractModel):
             if current['tax']['unallocated_input_vat_lines']:
                 result['warnings'] = ['unallocated_input_vat']
         prior_months = sorted((m for m in posted_months if m < start.strftime('%Y-%m')), reverse=True)[:3]
-        prior_salaries = [self._accounting(ids, *month_bounds(date.fromisoformat(m + '-01')))['categories'].get('salaries', 0) for m in prior_months]
+        history_accounting = accounting if section == 'pnl' else self._accounting
+        prior_salaries = [history_accounting(ids, *month_bounds(date.fromisoformat(m + '-01')))['categories'].get('salaries', 0) for m in prior_months] if len(prior_months) == 3 else []
         result['salaries_warning'] = covered(start, end) and low_salaries(current['categories'].get('salaries', 0), prior_salaries)
         before_previous_months = sorted((m for m in posted_months if m < previous_start.strftime('%Y-%m')), reverse=True)[:3]
-        before_previous_salaries = [self._accounting(ids, *month_bounds(date.fromisoformat(m + '-01')))['categories'].get('salaries', 0) for m in before_previous_months]
+        before_previous_salaries = [self._accounting(ids, *month_bounds(date.fromisoformat(m + '-01')))['categories'].get('salaries', 0) for m in before_previous_months] if section != 'pnl' else []
         result['previous_salaries_warning'] = low_salaries(previous['categories'].get('salaries', 0), before_previous_salaries)
         if section in ('overview', 'ratios'):
             result['companies_compare'] = self._compare(companies, start, end)
@@ -680,20 +685,34 @@ class DashboardSections(models.AbstractModel):
                 _, last = month_bounds(first)
                 clipped_first, clipped_last = max(first, first_period), min(last, last_period)
                 pnl_trend.append({'month': first.strftime('%Y-%m'), 'first': clipped_first, 'last': clipped_last,
-                    'data': self._accounting(ids, clipped_first, clipped_last),
+                    'data': accounting(ids, clipped_first, clipped_last),
                     'has_data': covered(clipped_first, clipped_last),
                     'partial': bool(clipped_first > first or clipped_last < last or first <= min(fields.Date.context_today(self), last_data or last) < last)})
                 first = month_bounds(first, 1)[0]
             if len(pnl_trend) > 1 and view != 'quarter':
-                first_prior = pnl_trend[0]['first'].replace(year=pnl_trend[0]['first'].year - 1, day=1)
-                last_prior_date = pnl_trend[-1]['last'].replace(year=pnl_trend[-1]['last'].year - 1, day=1)
-                _, last_prior = month_bounds(last_prior_date)
-                prior_rows = self._tooltip_accounting_months(ids, first_prior, last_prior)
-                prior_sales_pnl = self._tooltip_sales_months(ids, first_prior, last_prior)
+                prior_rows = {}
+                prior_sales_pnl = {}
                 for month in pnl_trend:
-                    prior_key = str(int(month['month'][:4]) - 1) + month['month'][4:]
+                    def previous_year(day):
+                        year = day.year - 1
+                        return day.replace(year=year, day=min(day.day, calendar.monthrange(year, day.month)[1]))
+                    prior_first, prior_last = previous_year(month['first']), previous_year(month['last'])
+                    prior_key = prior_first.strftime('%Y-%m')
+                    prior_rows[prior_key] = accounting(ids, prior_first, prior_last)
+                    summary, _days, _channels, _hours = self._sales_summary(ids, prior_first, prior_last)
+                    prior_sales_pnl[prior_key] = summary
                     month['previous_year'] = prior_rows.get(prior_key) if prior_key in posted_months else None
             rows = []
+            currency = self.env['res.company'].browse(ids[0]).currency_id
+            report_engine = self.env['baseer.profit.loss.report']
+            def decimal(value):
+                return Decimal(str(value or 0))
+            def monetary(value):
+                return Decimal(report_engine._format_money(decimal(value), currency).replace(',', ''))
+            def ratio(value, base):
+                return float(percent(value, base)) if base else None
+            def number(value):
+                return self._pnl_json_money(value)
             arabic_lang = 'ar_001' if self.env['res.lang']._get_data(code='ar_001').code else self.env.lang
             category_names = {c.code: c.name for c in self.env['baseer.dashboard2.category'].with_context(allowed_company_ids=ids, lang=arabic_lang).search([])}
             monthly_channels = []
@@ -703,21 +722,21 @@ class DashboardSections(models.AbstractModel):
                 monthly_channels.append((summary, channels))
             for key in ('revenue', 'food_cost', 'gross_profit', 'salaries', 'rent', 'utilities', 'marketing', 'commissions', 'other_opex', 'depreciation', 'operating_profit', 'other_income', 'zakat_tax', 'net_profit'):
                 factor = -1 if key in expense_keys else 1
-                values = [factor * m['data'].get(key, m['data']['categories'].get(key, 0)) if m['has_data'] else None for m in pnl_trend]
+                values = [factor * decimal(m['data'].get(key, m['data']['categories'].get(key, 0))) if m['has_data'] else None for m in pnl_trend]
                 if key == 'other_opex':
-                    values = [value - m['data']['categories'].get('non_operating', 0) if value is not None else None for value, m in zip(values, pnl_trend)]
+                    values = [value - decimal(m['data']['categories'].get('non_operating', 0)) if value is not None else None for value, m in zip(values, pnl_trend)]
                 children = {}
                 for i, month in enumerate(pnl_trend):
                     if key == 'revenue':
                         summary, channels = monthly_channels[i]
-                        gross = summary['channels']
-                        net = month['data']['sales_net']
+                        gross = {channel: decimal(amount) for channel, amount in summary['channels'].items()}
+                        net = decimal(month['data']['sales_net'])
                         if month['has_data'] and net:
                             names = {c['key']: c['name'] for c in channels}
                             names.update({'other': 'أخرى', 'unclassified': 'غير مصنف'})
-                            shares = {k: round(net * v / sum(gross.values()), 2) for k, v in gross.items()} if sum(gross.values()) else {'unclassified': net}
+                            shares = {k: monetary(net * v / sum(gross.values())) for k, v in gross.items()} if sum(gross.values()) else {'unclassified': net}
                             largest = max(shares, key=lambda k: abs(gross.get(k, 0)))
-                            shares[largest] = round(shares[largest] + net - sum(shares.values()), 2)
+                            shares[largest] = monetary(shares[largest] + net - sum(shares.values()))
                             for channel, amount in shares.items():
                                 row = children.setdefault(channel, {'key': 'channel:' + channel, 'code': '', 'name': names.get(channel, channel), 'months': [0 if m['has_data'] else None for m in pnl_trend]})
                                 row['months'][i] = amount
@@ -726,32 +745,36 @@ class DashboardSections(models.AbstractModel):
                         if account['category'] == key or (key == 'other_opex' and account['category'] == 'non_operating'):
                             ident = (account['company_id'], account['account_id'])
                             row = children.setdefault(ident, {'key': '%s:%s' % ident, 'code': account['code'], 'name': account['name'], 'months': [0 if m['has_data'] else None for m in pnl_trend]})
-                            row['months'][i] += factor * account['amount']
+                            row['months'][i] += factor * decimal(account['amount'])
                 for child in children.values():
                     if child['key'].startswith('channel:') and len(pnl_trend) > 1 and view != 'quarter':
                         prior_values = []
                         for month in pnl_trend:
                             prior_key = str(int(month['month'][:4]) - 1) + month['month'][4:]
                             accounting = month.get('previous_year')
-                            gross = prior_sales_pnl.get(prior_key, {}).get('channels', {})
-                            net = accounting['sales_net'] if accounting else None
+                            gross = {channel: decimal(amount) for channel, amount in prior_sales_pnl.get(prior_key, {}).get('channels', {}).items()}
+                            net = decimal(accounting['sales_net']) if accounting else None
                             if net is None or not net:
                                 prior_values.append(None if net is None else 0)
                                 continue
-                            shares = {k: round(net * v / sum(gross.values()), 2) for k, v in gross.items()} if sum(gross.values()) else {'unclassified': net}
+                            shares = {k: monetary(net * v / sum(gross.values())) for k, v in gross.items()} if sum(gross.values()) else {'unclassified': net}
                             largest = max(shares, key=lambda k: abs(gross.get(k, 0)))
-                            shares[largest] = round(shares[largest] + net - sum(shares.values()), 2)
+                            shares[largest] = monetary(shares[largest] + net - sum(shares.values()))
                             prior_values.append(shares.get(child['key'].split(':', 1)[1], 0))
                         child['previous_year_months'] = prior_values
                     elif not child['key'].startswith('channel:'):
-                        child['previous_year_months'] = [factor * m['previous_year']['account_values'].get(child['key'], 0) if m.get('previous_year') else None for m in pnl_trend]
-                    child['total'] = round(sum(v for v in child['months'] if v is not None), 2)
-                    child['pct'] = percent(child['total'], sum(m['data']['sales_net'] for m in pnl_trend))
+                        child['previous_year_months'] = [factor * decimal(m['previous_year']['account_values'].get(child['key'], 0)) if m.get('previous_year') else None for m in pnl_trend]
+                    child_total = monetary(sum((decimal(v) for v in child['months'] if v is not None), Decimal('0')))
+                    child['total'] = number(child_total)
+                    child['pct'] = ratio(child_total, sum((decimal(m['data']['sales_net']) for m in pnl_trend), Decimal('0')))
+                    child['months'] = [number(v) for v in child['months']]
+                    if 'previous_year_months' in child:
+                        child['previous_year_months'] = [number(v) for v in child['previous_year_months']]
                 total = sum(v for v in values if v is not None)
-                prior_values = [factor * m['previous_year'].get(key, m['previous_year']['categories'].get(key, 0)) if m.get('previous_year') else None for m in pnl_trend]
+                prior_values = [factor * decimal(m['previous_year'].get(key, m['previous_year']['categories'].get(key, 0))) if m.get('previous_year') else None for m in pnl_trend]
                 if key == 'other_opex':
-                    prior_values = [v - m['previous_year']['categories'].get('non_operating', 0) if v is not None else None for v, m in zip(prior_values, pnl_trend)]
-                rows.append({'key': key, 'name': False if key == 'other_opex' else category_names.get(key), 'previous_year_months': prior_values, 'months': values, 'total': round(total, 2), 'pct': percent(total, sum(m['data']['sales_net'] for m in pnl_trend)), 'children': list(children.values())})
+                    prior_values = [v - decimal(m['previous_year']['categories'].get('non_operating', 0)) if v is not None else None for v, m in zip(prior_values, pnl_trend)]
+                rows.append({'key': key, 'name': False if key == 'other_opex' else category_names.get(key), 'previous_year_months': [number(v) for v in prior_values], 'months': [number(v) for v in values], 'total': number(monetary(total)), 'pct': ratio(total, sum((decimal(m['data']['sales_net']) for m in pnl_trend), Decimal('0'))), 'children': list(children.values())})
             if view == 'quarter':
                 for row in rows:
                     for item in [row] + row['children']:
@@ -764,6 +787,7 @@ class DashboardSections(models.AbstractModel):
                 columns = [{'month': m['month'], 'partial': m['partial']} for m in pnl_trend]
             result['pnl_columns'] = columns
             result['rows'] = rows
+            result['basis'] = 'inclusive' if tax_inclusive else 'exclusive'
         return result
 
     def _revenue(self, ids, start, end, previous_start, previous_end, params):

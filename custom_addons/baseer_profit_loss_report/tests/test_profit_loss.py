@@ -335,6 +335,40 @@ class TestProfitLoss(TransactionCase):
         self.assertEqual(self._section(mixed_report, 'income_other')['amount'], '82.55')
         self.report.get_report({**self.filters, 'tax_inclusive': False})
 
+        # The narrowed expansion must produce the same result as the previous
+        # all-section calculation, including shared/zero taxes and comparison.
+        previous = split.copy({'invoice_date': '2041-04-10', 'date': '2041-04-10'})
+        previous.action_post()
+        comparison = {
+            'company_id': self.company.id, 'journal_ids': [],
+            'period': {'kind': 'month', 'anchor_date': '2041-05-15', 'direction': 0},
+            'comparison': {'kind': 'previous_periods', 'count': 1, 'order': 'descending'},
+        }
+        for inclusive in (False, True):
+            filters = {**comparison, 'tax_inclusive': inclusive}
+            report = self.report.with_context(_baseer_pl_inclusive=inclusive)
+            company, _journals, periods, _controls, _comparison = report._scope(filters)
+            self.assertEqual(len(periods), 2)
+            groups = {period['key']: report._section_rows(period['domain']) for period in periods}
+            for section in ('income', 'income_other', 'expense'):
+                expected = report._account_section(company, periods, groups, section, page=1)
+                self.assertEqual(report.get_accounts(filters, section), expected,
+                                 f'{section}, inclusive={inclusive}')
+
+            if inclusive:
+                # When page and section contain identical visible lines, the
+                # already-proved VAT/Noorix evidence is used once per period.
+                original = type(report)._inclusive_adjustments
+                calls = []
+                def capture(model, domain, **kwargs):
+                    calls.append(domain)
+                    return original(model, domain, **kwargs)
+                expected = report._account_section(company, periods, groups, 'income', page=1)
+                with patch.object(type(report), '_inclusive_adjustments', capture):
+                    actual = report.get_accounts(filters, 'income')
+                self.assertEqual(actual, expected)
+                self.assertEqual(len(calls), len(periods))
+
     def test_noorix_original_gross_channels_reconcile_to_posted_entry(self):
         if 'baseer.noorix.sales.evidence' not in self.env:
             self.skipTest('Noorix reader is optional in the profit and loss module')
@@ -1313,3 +1347,50 @@ class TestProfitLoss(TransactionCase):
         self.assertEqual(self.report.get_source_line(filters, source.id), {
             'line_id': source.id, 'move_id': depreciation_move.id,
         })
+
+    def test_account_expansion_reads_only_its_section_and_keeps_totals(self):
+        self._entry('income', '200')
+        self._entry('expense', '30')
+        self._entry('expense_depreciation', '5')
+        for inclusive in (False, True):
+            filters = {**self.filters, 'tax_inclusive': inclusive}
+            report = self.report.with_context(_baseer_pl_inclusive=inclusive)
+            company, _journals, periods, _control, _comparison = report._scope(filters)
+            full_groups = {p['key']: report._section_rows(p['domain']) for p in periods}
+            expected = report._account_section(company, periods, full_groups, 'expense', page=1)
+            domains = []
+            original = type(report)._section_rows
+
+            def capture(model, domain):
+                domains.append(domain)
+                return original(model, domain)
+
+            with patch.object(type(report), '_section_rows', capture):
+                actual = self.report.get_accounts(filters, 'expense')
+            self.assertEqual(actual, expected)
+            self.assertEqual(len(domains), 1)
+            types = set(self.env['account.move.line'].search(domains[0]).mapped('account_id.account_type'))
+            self.assertEqual(types, {'expense', 'expense_depreciation'})
+
+    def test_revenue_page_rechecks_tax_when_visible_lines_differ(self):
+        extra = self.env['account.account'].with_company(self.company).create({
+            'code': '959995', 'name': 'P&L second revenue', 'account_type': 'income',
+            'company_ids': [Command.set(self.company.ids)],
+        })
+        self._entry('income', '200')
+        self._entry('income', '30', account=extra)
+        filters = {**self.filters, 'tax_inclusive': True}
+        report = self.report.with_context(_baseer_pl_inclusive=True)
+        company, _journals, periods, _control, _comparison = report._scope(filters)
+        groups = {p['key']: report._section_rows(p['domain']) for p in periods}
+        original = type(report)._inclusive_adjustments
+        calls = []
+        def capture(model, domain, **kwargs):
+            calls.append(domain)
+            return original(model, domain, **kwargs)
+        with patch.object(type(report), 'PAGE_SIZE', 1):
+            expected = report._account_section(company, periods, groups, 'income', page=1)
+            with patch.object(type(report), '_inclusive_adjustments', capture):
+                actual = report.get_accounts(filters, 'income')
+        self.assertEqual(actual, expected)
+        self.assertEqual(len(calls), 2)

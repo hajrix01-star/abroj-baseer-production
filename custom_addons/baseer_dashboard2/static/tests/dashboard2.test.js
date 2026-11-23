@@ -4,6 +4,44 @@ import { App, Component, useState, xml } from '@odoo/owl';
 import { DashboardTooltip, dashboardTooltip } from '../src/js/tooltip';
 import { monthLabel, plainCsvText, periodRange, hourLabel, hasDisplayValues, multiplePoints, formatNumber, formatTable, formatPnlAmount, hasPnlValues, formatTablePct, formatPercent, formatPoints, ratioDifference, formatTargetPercent, chartX, miniX, timelineYear, customerCutoverLabel, pnlTaxLabel, pnlChannelEstimateLabel, Dashboard2, DashboardPnlDetails, InfoPopup, LineChart, niceStep, KpiCard, Sparkline, Badge, Gauge } from '../src/js/main';
 
+test('other expense is drillable and exported after operating profit', async () => {
+    const row = (key, name, amount) => ({key, name, months:[amount], total:amount, pct:null, children:[]});
+    class Pnl extends Component {
+        static template = 'baseer_dashboard2.Pnl';
+        state = {view:'pnl', pnl_view:'month', closed:{}, data:{pnl_columns:[{month:'2026-10'}], rows:[
+            row('operating_profit', 'الربح التشغيلي', 83),
+            row('other_expense', 'المصروفات الأخرى', -13), row('net_profit', 'صافي الربح', 72.36)]}};
+        trend = []; hasPnlValues = hasPnlValues; hasDisplayValues = hasDisplayValues;
+        pnlFmt = formatPnlAmount; tableFmt = formatTable; tablePct = formatTablePct;
+        name = v => v; monthName = v => v; pnlDrillable = Dashboard2.prototype.pnlDrillable;
+        toggleRow() {} exportCsv() {} choose() {} drillPnl() {}
+    }
+    const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
+    const app = new App(Pnl, {templates: await response.text(), test:true});
+    after(() => app.destroy());
+    await app.mount(getFixture());
+    const table = getFixture().querySelector('.export-table');
+    expect(table.textContent).toInclude('المصروفات الأخرى');
+    expect(Dashboard2.prototype.pnlDrillable('other_expense', null)).toBe(true);
+    getFixture().classList.add('o_bd2');
+    const createUrl = URL.createObjectURL, anchorClick = HTMLAnchorElement.prototype.click;
+    let exported;
+    try {
+        URL.createObjectURL = blob => { exported = blob; return 'blob:test'; };
+        HTMLAnchorElement.prototype.click = () => {};
+        Dashboard2.prototype.exportCsv.call({state:{view:'pnl'}, pnlTaxLabel:'شامل الضريبة'});
+        const csv = await exported.text();
+        expect(csv).toInclude('المصروفات الأخرى');
+        expect(csv).toInclude('(13.00)');
+        expect(csv.indexOf('الربح التشغيلي') < csv.indexOf('المصروفات الأخرى')).toBe(true);
+        expect(csv.indexOf('المصروفات الأخرى') < csv.indexOf('صافي الربح')).toBe(true);
+    } finally {
+        URL.createObjectURL = createUrl;
+        HTMLAnchorElement.prototype.click = anchorClick;
+        getFixture().classList.remove('o_bd2');
+    }
+});
+
 test('month labels support full, short, year, bidi isolation and plain CSV', () => {
     expect(monthLabel('2026-10')).toBe('October');
     expect(monthLabel('2026-11', { short: true, year: true })).toBe('Nov 2026');

@@ -63,6 +63,7 @@ class DashboardPnlBasis(models.AbstractModel):
                 if group['debit'] != group['credit'] and self._category(account, categories):
                     raise UserError(_('A dashboard category includes a non-profit-and-loss account. Review the account classification.'))
         totals = {category.code: Decimal('0') for category in categories}
+        totals['other_expense'] = Decimal('0')
         accounts = []
         arabic_lang = 'ar_001' if self.env['res.lang']._get_data(code='ar_001').code else self.env.lang
         for company in companies:
@@ -80,6 +81,8 @@ class DashboardPnlBasis(models.AbstractModel):
                     # must not move other income above operating profit.
                     key = ('revenue' if account.account_type == 'income' else
                            'other_income' if account.account_type == 'income_other' else
+                           'food_cost' if account.account_type == 'expense_direct_cost' else
+                           'other_expense' if account.account_type == 'expense_other' else
                            self._category(account, categories))
                     if not key or key not in totals:
                         raise UserError(_('A profit and loss account has no dashboard category.'))
@@ -95,7 +98,7 @@ class DashboardPnlBasis(models.AbstractModel):
         gross = sales - totals.get('food_cost', Decimal('0'))
         operating = gross - sum((totals.get(key, Decimal('0')) for key in (
             'salaries', 'rent', 'utilities', 'marketing', 'commissions', 'other_opex', 'depreciation', 'non_operating')), Decimal('0'))
-        net = operating + totals.get('other_income', Decimal('0')) - totals.get('zakat_tax', Decimal('0'))
+        net = operating + totals.get('other_income', Decimal('0')) - totals.get('other_expense', Decimal('0')) - totals.get('zakat_tax', Decimal('0'))
         fixed = sum((totals.get(key, Decimal('0')) for key in ('salaries', 'rent', 'utilities', 'depreciation')), Decimal('0'))
         variable = sum((totals.get(key, Decimal('0')) for key in ('food_cost', 'commissions', 'marketing', 'other_opex')), Decimal('0'))
         breakeven = fixed / (Decimal('1') - variable / sales) if sales and variable / sales < 1 else None
@@ -149,11 +152,11 @@ class DashboardPnlBasis(models.AbstractModel):
         key = descriptor.get('key')
         mappings = {name: {name: (1 if name in ('revenue', 'other_income') else -1)} for name in (
             'revenue', 'food_cost', 'salaries', 'rent', 'utilities', 'marketing', 'commissions',
-            'other_opex', 'depreciation', 'other_income', 'zakat_tax')}
+            'other_opex', 'depreciation', 'other_income', 'other_expense', 'zakat_tax')}
         mappings['other_opex']['non_operating'] = -1
         mappings['gross_profit'] = {'revenue': 1, 'food_cost': -1}
         mappings['operating_profit'] = {'revenue': 1, **{category: -1 for category in categories}}
-        mappings['net_profit'] = {**mappings['operating_profit'], 'other_income': 1, 'zakat_tax': -1}
+        mappings['net_profit'] = {**mappings['operating_profit'], 'other_income': 1, 'other_expense': -1, 'zakat_tax': -1}
         if type(key) is not str or key not in mappings:
             raise UserError(_('Unknown dashboard figure.'))
         child = descriptor.get('child')

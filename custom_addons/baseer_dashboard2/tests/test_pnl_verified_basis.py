@@ -19,13 +19,17 @@ class TestPnlVerifiedBasis(TransactionCase):
         sale = account('D2CPSALE', 'income')
         cash_gain = account('999001D2GAIN', 'income_other')
         expense = account('D2CPEXP', 'expense')
+        direct_cost = account('400003D2COST', 'expense_direct_cost')
+        other_expense = account('400055D2OTHER', 'expense_other')
         cash = account('D2CPCASH', 'asset_current')
         journal = self.env['account.journal'].create({'name': 'D2 classification', 'code': 'D2CP',
                                                       'type': 'general', 'company_id': company.id})
         move = self.env['account.move'].create({'move_type': 'entry', 'date': '2026-10-05',
             'journal_id': journal.id, 'line_ids': [
-                Command.create({'account_id': cash.id, 'debit': 92.36}),
+                Command.create({'account_id': cash.id, 'debit': 72.36}),
                 Command.create({'account_id': expense.id, 'debit': 10}),
+                Command.create({'account_id': direct_cost.id, 'debit': 7}),
+                Command.create({'account_id': other_expense.id, 'debit': 13}),
                 Command.create({'account_id': sale.id, 'credit': 100}),
                 Command.create({'account_id': cash_gain.id, 'credit': 2.36})]})
         move.action_post()
@@ -35,9 +39,12 @@ class TestPnlVerifiedBasis(TransactionCase):
             filters = {**params, 'tax_inclusive': inclusive}
             rows = {row['key']: row for row in service.get_section('pnl', filters)['rows']}
             self.assertEqual(f"{rows['revenue']['total']:.2f}", '100.00')
-            self.assertEqual(f"{rows['operating_profit']['total']:.2f}", '90.00')
+            self.assertEqual(f"{rows['food_cost']['total']:.2f}", '-7.00')
+            self.assertEqual(f"{rows['gross_profit']['total']:.2f}", '93.00')
+            self.assertEqual(f"{rows['operating_profit']['total']:.2f}", '83.00')
             self.assertEqual(f"{rows['other_income']['total']:.2f}", '2.36')
-            self.assertEqual(f"{rows['net_profit']['total']:.2f}", '92.36')
+            self.assertEqual(f"{rows['other_expense']['total']:.2f}", '-13.00')
+            self.assertEqual(f"{rows['net_profit']['total']:.2f}", '72.36')
             descriptor = {**filters, 'section': 'pnl', 'key': 'other_income', 'column': 0, 'child': None}
             summary = service.get_pnl_details(descriptor, {'kind': 'row'})
             self.assertEqual(summary['value'], '2.36')
@@ -45,6 +52,12 @@ class TestPnlVerifiedBasis(TransactionCase):
             detail = service.get_pnl_details(descriptor, selector)
             self.assertEqual(detail['value'], '2.36')
             self.assertEqual(service.open_pnl_detail_source(descriptor, detail['rows'][0]['source'])['res_id'], move.id)
+            for key, target, value in (('food_cost', direct_cost, '-7.00'), ('other_expense', other_expense, '-13.00'),
+                                       ('operating_profit', None, '83.00'), ('net_profit', None, '72.36')):
+                item = service.get_pnl_details({**descriptor, 'key': key}, {'kind': 'row'})
+                self.assertEqual(item['value'], value)
+                if target:
+                    self.assertTrue(any(r['drill']['account_id'] == target.id for r in item['rows']))
 
     def test_excluded_lines_check_linked_access_and_money_precision(self):
         company = self.env.company

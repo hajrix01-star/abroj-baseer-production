@@ -720,8 +720,8 @@ class DashboardSections(models.AbstractModel):
                 first, last = month['first'], month['last']
                 summary, _, channels, _ = self._sales_summary(ids, first, last)
                 monthly_channels.append((summary, channels))
-            for key in ('revenue', 'food_cost', 'gross_profit', 'salaries', 'rent', 'utilities', 'marketing', 'commissions', 'other_opex', 'depreciation', 'operating_profit', 'other_income', 'zakat_tax', 'net_profit'):
-                factor = -1 if key in expense_keys else 1
+            for key in ('revenue', 'food_cost', 'gross_profit', 'salaries', 'rent', 'utilities', 'marketing', 'commissions', 'other_opex', 'depreciation', 'operating_profit', 'other_income', 'other_expense', 'zakat_tax', 'net_profit'):
+                factor = -1 if key in expense_keys or key == 'other_expense' else 1
                 values = [factor * decimal(m['data'].get(key, m['data']['categories'].get(key, 0))) if m['has_data'] else None for m in pnl_trend]
                 if key == 'other_opex':
                     values = [value - decimal(m['data']['categories'].get('non_operating', 0)) if value is not None else None for value, m in zip(values, pnl_trend)]

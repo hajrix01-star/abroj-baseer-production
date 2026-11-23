@@ -6,6 +6,7 @@ from uuid import uuid4
 from unittest.mock import patch
 
 from odoo import Command, fields
+from odoo.exceptions import ValidationError
 from odoo.fields import Domain
 from odoo.tests.common import TransactionCase, tagged
 
@@ -256,16 +257,30 @@ class TestPLPosSessionDiagnostic(TransactionCase):
         self.assertEqual({(item['move_id'], item['channel_key'], item['value']) for item in evidence}, {
             (move.id, first_key, Decimal('100.00')), (correction.id, second_key, Decimal('40.00')),
         })
-        for source, channel, expected in (
-            (move, first_key, '100.00'), (correction, second_key, '40.00'),
+        for source, channel, net in (
+            (move, first_key, '100.00'),
+            (correction, second_key, '40.00'),
         ):
             filters = {'company_id': self.company.id, 'date_from': str(source.date),
-                       'date_to': str(source.date), 'journal_ids': [source.journal_id.id]}
+                       'date_to': str(source.date), 'journal_ids': [source.journal_id.id],
+                       'tax_inclusive': False}
             data = report.get_accounts(filters, 'income')
             row = next(row for row in data['accounts'] if row['id'] == self.income.id)
-            self.assertEqual(row['amount'], expected)
+            self.assertEqual(row['amount'], net)
             self.assertEqual([(item['key'], item['amounts']['current']['amount'])
-                              for item in row['channels']], [(channel, expected)])
+                              for item in row['channels']], [(channel, net)])
+            # The synthetic correction has a tax line but no tax on its base;
+            # the inclusive report must refuse that unproven allocation.
+            filters['tax_inclusive'] = True
+            if source == correction:
+                with self.assertRaises(ValidationError):
+                    report.get_accounts(filters, 'income')
+            else:
+                row = next(row for row in report.get_accounts(filters, 'income')['accounts']
+                           if row['id'] == self.income.id)
+                self.assertEqual(row['amount'], '115.00')
+                self.assertEqual([(item['key'], item['amounts']['current']['amount'])
+                                  for item in row['channels']], [(channel, '115.00')])
         duplicate = self.env['account.move'].create({
             'move_type': 'entry', 'journal_id': correction.journal_id.id,
             'date': correction.date, 'ref': ref,

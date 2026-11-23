@@ -91,6 +91,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             "$RUNNER_TEMP/odoo_19.0.20260926_all.deb" python3-websocket
+      - name: Warm up Chrome before the Odoo browser tests
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          timeout 60s google-chrome --headless=new --no-sandbox --disable-gpu \
+            --disable-dev-shm-usage --user-data-dir="$RUNNER_TEMP/operations-chrome-warmup" \
+            --dump-dom 'data:text/html,<title>Warmup</title>' > "$RUNNER_TEMP/operations-chrome-warmup.html"
+          grep -Fq '<title>Warmup</title>' "$RUNNER_TEMP/operations-chrome-warmup.html"
       - name: Test only the operations amount adapter at desktop and mobile width
         shell: bash
         run: |

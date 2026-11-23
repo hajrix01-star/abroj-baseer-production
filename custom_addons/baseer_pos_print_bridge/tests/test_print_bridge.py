@@ -621,6 +621,40 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
             self.assertTrue(added['job_ids'])
             self.assertEqual(State.search([('order_id', '=', order.id)]).quantity, 2)
 
+    def test_discount_lines_never_reach_kitchen_even_with_a_route(self):
+        if 'baseer_global_discount_line' not in self.env['pos.order.line']._fields:
+            self.skipTest('Global discount addon is not installed')
+        self._enable()
+        category = self.env['pos.category'].create({'name': 'Discount route QA'})
+        self.env['baseer.print.route'].create({
+            'pos_config_id': self.config.id, 'printer_id': self.kitchen_a.id,
+            'pos_category_ids': [Command.set(category.ids)],
+        })
+        order = self._order(1)
+        normal = order.lines
+        normal.product_id.product_tmpl_id.pos_categ_ids = [Command.set(category.ids)]
+        discount = self.env['pos.order.line'].create({
+            'order_id': order.id, 'product_id': normal.product_id.id, 'qty': 1,
+            'price_unit': -2, 'price_subtotal': -2, 'price_subtotal_incl': -2,
+        })
+        # Set the server-owned marker without depending on the optional addon's private token.
+        self.env.cr.execute('UPDATE pos_order_line SET baseer_global_discount_line = TRUE WHERE id = %s', [discount.id])
+        discount.invalidate_recordset(['baseer_global_discount_line'])
+        State = self.env['baseer.print.preparation.state']
+        self.assertEqual(State._kitchen_quantity(discount), 0)
+        self.assertEqual(State._kitchen_quantity(normal), 1)
+        action = State._normalize_action({
+            'action_uuid': str(uuid4()), 'action_type': 'send_before_payment', 'lines': [
+                {'line_uuid': line.uuid, 'expected_quantity': 0, 'new_quantity': 1}
+                for line in (normal | discount)
+            ],
+        })
+        result = State._apply_action(order, action)
+        states = State.search([('order_id', '=', order.id)])
+        self.assertTrue(result['job_ids'])
+        self.assertEqual(states.mapped('line_uuid'), [normal.uuid])
+        self.assertIn(discount, order.lines)
+
     def test_receipt_is_config_owned_not_a_route(self):
         self._enable()
         self.company.country_id = self.env.ref('base.us')
@@ -785,6 +819,46 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
         self.assertEqual(job.error_code, 'stale_draft_bill')
         self.assertFalse(job.receipt_image)
         self.assertFalse(Job._draft_bill_order(order_uuid))
+
+    def test_shared_draft_bill_requires_current_discount_revision(self):
+        if 'baseer_offline_draft_revision' not in self.env['pos.order']._fields:
+            self.skipTest('Shared discount module is not installed')
+        self.config.module_pos_restaurant = True
+        self._enable()
+        order = self._order()
+        order.session_id.state = 'opened'
+        session = order.session_id
+        image = self._native_receipt_sample()
+        # Seed a shared draft revision without depending on discount fixture
+        # setup; the real discount module owns and protects this field.
+        self.env.cr.execute('UPDATE pos_order SET baseer_offline_draft_revision = 2 WHERE id = %s', [order.id])
+        order.invalidate_recordset(['baseer_offline_draft_revision'])
+        Job = self.env['baseer.print.job'].sudo()
+        before = Job.search_count([('draft_order_uuid', '=', order.uuid)])
+        for expected in (None, 0, 1, 3, True, '2'):
+            with self.subTest(expected=expected), self.assertRaises(ValidationError), self.env.cr.savepoint():
+                session.baseer_enqueue_draft_bill(order.uuid, str(uuid4()), image, expected)
+        self.assertEqual(Job.search_count([('draft_order_uuid', '=', order.uuid)]), before)
+        request_uuid = str(uuid4())
+        first = session.baseer_enqueue_draft_bill(order.uuid, request_uuid, image, 2)
+        self.assertEqual(session.baseer_enqueue_draft_bill(order.uuid, request_uuid, image, 2)['job_id'], first['job_id'])
+        job = Job.browse(first['job_id'])
+        self.assertTrue(job._is_current_draft_bill())
+        self.env.cr.execute('UPDATE pos_order SET baseer_offline_draft_revision = 3 WHERE id = %s', [order.id])
+        order.invalidate_recordset(['baseer_offline_draft_revision'])
+        self.assertFalse(job._is_current_draft_bill())
+        with self.assertRaises(ValidationError), self.env.cr.savepoint():
+            session.baseer_enqueue_draft_bill(order.uuid, request_uuid, image, 2)
+        self.assertEqual(Job.search_count([('draft_order_uuid', '=', order.uuid)]), before + 1)
+
+    def test_unsaved_bill_rejects_nonzero_shared_revision(self):
+        self.config.module_pos_restaurant = True
+        self._enable()
+        self.config.open_ui()
+        session = self.config.current_session_id
+        session.state = 'opened'
+        with self.assertRaises(ValidationError), self.env.cr.savepoint():
+            session.baseer_enqueue_draft_bill(str(uuid4()), str(uuid4()), self._native_receipt_sample(), 1)
 
     def test_native_cashier_receipt_without_hardware_access_is_idempotent(self):
         cashier, order = self._cashier_native_receipt_order()

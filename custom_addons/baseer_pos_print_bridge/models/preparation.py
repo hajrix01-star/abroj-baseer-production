@@ -40,6 +40,8 @@ class BaseerPrintPreparationState(models.Model):
 
     @api.model
     def _kitchen_quantity(self, line):
+        if 'baseer_global_discount_line' in line._fields and line.baseer_global_discount_line:
+            return 0.0
         # Accepted financial replacements are silent. Only quantities above
         # that immutable allowance may become subsequent kitchen additions.
         silent = (line.baseer_substitution_silent_quantity
@@ -168,6 +170,9 @@ class BaseerPrintPreparationState(models.Model):
         lines_by_uuid = {line.uuid: line for line in order.lines}
         for requested in action['lines']:
             current = by_uuid.get(requested['line_uuid'])
+            line = lines_by_uuid.get(requested['line_uuid'])
+            if line and 'baseer_global_discount_line' in line._fields and line.baseer_global_discount_line:
+                continue
             if not current and requested['expected_quantity']:
                 line = lines_by_uuid.get(requested['line_uuid'])
                 if not line:
@@ -352,6 +357,8 @@ class BaseerPrintPreparationState(models.Model):
         for requested in action['lines']:
             old = by_uuid.get(requested['line_uuid'])
             line = lines_by_uuid.get(requested['line_uuid'])
+            if line and 'baseer_global_discount_line' in line._fields and line.baseer_global_discount_line:
+                continue
             previous = requested['expected_quantity']
             target = requested['new_quantity']
             actual = self._kitchen_quantity(line) if line else 0.0
@@ -451,6 +458,9 @@ class BaseerPrintPreparationState(models.Model):
         else:
             action_uuid = str(uuid4())
         for line in order.lines:
+            if 'baseer_global_discount_line' in line._fields and line.baseer_global_discount_line:
+                prior_by_line.pop(line.uuid, None)
+                continue
             details = self._line_details(line)
             kitchen_quantity = self._kitchen_quantity(line)
             old = prior_by_line.pop(line.uuid, False)

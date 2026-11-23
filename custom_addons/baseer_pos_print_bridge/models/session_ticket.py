@@ -2,10 +2,23 @@
 
 from odoo import _, api, fields, models
 from odoo.exceptions import AccessError
+from odoo.exceptions import ValidationError
+from uuid import UUID
 
 
 _ORDER_FIELDS = ('baseer_ticket_number', 'baseer_ticket_session_id', 'baseer_ticket_label')
 _SESSION_FIELDS = ('baseer_ticket_enabled', 'baseer_ticket_last_number')
+
+
+class PosTicketReservation(models.Model):
+    _name = 'baseer.pos.ticket.reservation'
+    _description = 'POS operational ticket reservation'
+
+    order_uuid = fields.Char(required=True, readonly=True, index=True)
+    session_id = fields.Many2one('pos.session', required=True, readonly=True, ondelete='restrict')
+    number = fields.Integer(required=True, readonly=True)
+    _uuid_unique = models.Constraint('unique(order_uuid)', 'A ticket is already reserved for this order.')
+    _number_unique = models.Constraint('unique(session_id, number)', 'This session ticket is already reserved.')
 
 
 class PosSession(models.Model):
@@ -85,15 +98,78 @@ class PosOrder(models.Model):
             raise AccessError(_('Order ticket numbers are assigned by the server.'))
         return super().write(vals)
 
+    @api.model
+    def baseer_reserve_session_ticket(self, session_id, order_uuid):
+        if type(session_id) is not int or not isinstance(order_uuid, str):
+            raise ValidationError(_('Invalid ticket reservation.'))
+        try:
+            if str(UUID(order_uuid)) != order_uuid:
+                raise ValueError()
+        except ValueError:
+            raise ValidationError(_('Invalid ticket reservation.'))
+        session = self.env['pos.session'].browse(session_id).exists()
+        if not session:
+            raise AccessError(_('The session is unavailable.'))
+        session._baseer_assert_current_report_access()
+        if not session.baseer_ticket_enabled:
+            raise ValidationError(_('Session tickets are not enabled.'))
+        # Serialize with assignment and session close, then check again.
+        self.env.cr.execute('SELECT id FROM pos_session WHERE id = %s FOR UPDATE', [session.id])
+        session.invalidate_recordset(['state'])
+        session._baseer_assert_current_report_access()
+        existing = self.search([('uuid', '=', order_uuid)], limit=1)
+        if existing:
+            existing.check_access('read')
+            if existing.company_id != session.company_id or existing.config_id != session.config_id:
+                raise AccessError(_('The order belongs to another Point of Sale.'))
+            if existing.baseer_ticket_number:
+                return {'uuid': order_uuid, 'session_id': existing.baseer_ticket_session_id.id,
+                        'number': existing.baseer_ticket_number, 'label': existing.baseer_ticket_label}
+            raise ValidationError(_('The existing order has no session ticket.'))
+        Reservation = self.env['baseer.pos.ticket.reservation'].sudo()
+        reservation = Reservation.search([('order_uuid', '=', order_uuid)], limit=1)
+        if reservation:
+            if reservation.session_id != session:
+                raise AccessError(_('The ticket belongs to another session.'))
+        else:
+            # Operational safeguard, not a measured capacity limit. Only the
+            # early reservation is refused: native order sync still numbers it.
+            Reservation.flush_model(['order_uuid', 'session_id'])
+            self.env['pos.order'].flush_model(['uuid'])
+            self.env.cr.execute('''
+                SELECT count(*) FROM baseer_pos_ticket_reservation r
+                WHERE r.session_id = %s AND NOT EXISTS
+                    (SELECT 1 FROM pos_order o WHERE o.uuid = r.order_uuid)
+            ''', [session.id])
+            if self.env.cr.fetchone()[0] >= 500:
+                raise ValidationError(_('Too many unused ticket reservations. The ticket will be assigned when the order is synchronized.'))
+            session.flush_recordset(['baseer_ticket_last_number'])
+            self.env.cr.execute('UPDATE pos_session SET baseer_ticket_last_number = baseer_ticket_last_number + 1 WHERE id = %s RETURNING baseer_ticket_last_number', [session.id])
+            number, = self.env.cr.fetchone()
+            session.invalidate_recordset(['baseer_ticket_last_number'])
+            reservation = Reservation.create({'order_uuid': order_uuid, 'session_id': session.id, 'number': number})
+        return {'uuid': order_uuid, 'session_id': session.id, 'number': reservation.number,
+                'label': f'{session.id}-{reservation.number}'}
+
     def _baseer_assign_session_ticket(self):
         # Called only after one or more real lines have been attached to these orders.
         pending = self.filtered(lambda order: order.baseer_ticket_session_id and not order.baseer_ticket_number)
         for order in pending.sorted(lambda rec: (rec.session_id.id, rec.id)):
-            session = order.session_id
+            reservation = self.env['baseer.pos.ticket.reservation'].sudo().search([('order_uuid', '=', order.uuid)], limit=1)
+            if reservation and (reservation.session_id.company_id != order.company_id or reservation.session_id.config_id != order.config_id):
+                raise AccessError(_('The ticket belongs to another Point of Sale.'))
+            session = reservation.session_id if reservation else order.session_id
             if not session.baseer_ticket_enabled or session.state == 'closed':
-                continue
+                if not reservation:
+                    continue
             if order.company_id != session.company_id or (not self.env.su and session.company_id not in self.env.companies):
                 raise AccessError(_('The ticket does not belong to an allowed session company.'))
+            # Both reserve and assignment acquire the session row first. No
+            # per-order advisory locks survive across a multi-order sync.
+            self.env.cr.execute('SELECT id FROM pos_session WHERE id = %s FOR UPDATE', [session.id])
+            session.invalidate_recordset(['state'])
+            if session.state == 'closed' and not reservation:
+                continue
             order.flush_recordset(['baseer_ticket_number', 'baseer_ticket_session_id'])
             self.env.cr.execute("""
                 SELECT id FROM pos_order WHERE id = %s AND COALESCE(baseer_ticket_number, 0) = 0
@@ -104,11 +180,14 @@ class PosOrder(models.Model):
             session.flush_recordset(['baseer_ticket_last_number'])
             # PostgreSQL serializes cashiers on this session only. Odoo retries a
             # serialization conflict with a fresh transaction; rollback restores the counter.
-            self.env.cr.execute("""
-                UPDATE pos_session SET baseer_ticket_last_number = baseer_ticket_last_number + 1
-                WHERE id = %s RETURNING baseer_ticket_last_number
-            """, [session.id])
-            number, = self.env.cr.fetchone()
+            if reservation:
+                number = reservation.number
+            else:
+                self.env.cr.execute("""
+                    UPDATE pos_session SET baseer_ticket_last_number = baseer_ticket_last_number + 1
+                    WHERE id = %s RETURNING baseer_ticket_last_number
+                """, [session.id])
+                number, = self.env.cr.fetchone()
             self.env.cr.execute("""
                 UPDATE pos_order SET baseer_ticket_number = %s, baseer_ticket_session_id = %s
                 WHERE id = %s

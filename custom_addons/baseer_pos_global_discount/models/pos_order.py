@@ -1,5 +1,6 @@
 """Owned discount commands. Native account.tax is the only tax calculator."""
 import hashlib
+import hmac
 import json
 import re
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
@@ -9,10 +10,15 @@ from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, ValidationError
 
 _TOKEN = object()
+_OFFLINE_TOKEN = object()
+_DRAFT_TOKEN = object()
 _PREFIX = 'baseer_global_discount_'
 _ORDER_METADATA = {'baseer_global_discount_kind', 'baseer_global_discount_value',
                    'baseer_global_discount_gross', 'baseer_global_discount_locked',
-                   'baseer_global_discount_reason', 'baseer_global_discount_snapshot'}
+                   'baseer_global_discount_reason', 'baseer_global_discount_snapshot',
+                   'baseer_offline_draft_kind', 'baseer_offline_draft_value',
+                   'baseer_offline_draft_revision', 'baseer_offline_draft_command_uuid',
+                   'baseer_offline_draft_digest'}
 _LINE_METADATA = {'baseer_global_discount_line', 'baseer_global_discount_source_id'}
 _FINANCIAL = {'product_id', 'qty', 'price_unit', 'discount', 'tax_ids', 'extra_tax_data',
               'uuid', 'order_id', 'refunded_orderline_id', 'combo_parent_id', 'combo_line_ids', 'combo_item_id'}
@@ -21,6 +27,11 @@ _HEADER = {'session_id', 'company_id', 'config_id', 'pricelist_id', 'fiscal_posi
 
 def _internal(env):
     return env.context.get('_baseer_global_discount_token') is _TOKEN
+
+
+def _draft_sync(env):
+    value = env.context.get('_baseer_draft_apply')
+    return isinstance(value, tuple) and len(value) == 2 and value[0] is _DRAFT_TOKEN
 
 
 def _number(value):
@@ -101,14 +112,331 @@ class PosOrder(models.Model):
     baseer_global_discount_reason = fields.Char(readonly=True, copy=False)
     baseer_global_discount_locked = fields.Boolean(readonly=True, copy=False)
     baseer_global_discount_snapshot = fields.Json(readonly=True, copy=False)
+    baseer_offline_draft_kind = fields.Selection([('percent', 'Percentage'), ('fixed', 'Fixed amount')], readonly=True, copy=False)
+    baseer_offline_draft_value = fields.Char(readonly=True, copy=False)
+    baseer_offline_draft_revision = fields.Integer(readonly=True, copy=False, default=0)
+    baseer_offline_draft_command_uuid = fields.Char(readonly=True, copy=False)
+    baseer_offline_draft_digest = fields.Char(readonly=True, copy=False)
 
     @api.model
     def _load_pos_data_fields(self, config):
         inherited = super()._load_pos_data_fields(config)
-        return list(dict.fromkeys(inherited + sorted(_ORDER_METADATA - {'baseer_global_discount_snapshot'}))) if inherited else inherited
+        private = {'baseer_global_discount_snapshot', 'baseer_offline_draft_command_uuid', 'baseer_offline_draft_digest'}
+        return list(dict.fromkeys(inherited + sorted(_ORDER_METADATA - private))) if inherited else inherited
 
     def _gd_internal(self):
         return self.with_context(_baseer_global_discount_token=_TOKEN)
+
+    @api.model
+    def _gd_offline_intent(self, raw, order):
+        """Validate untrusted local intent before passing it through native sync."""
+        keys = {'version', 'order_uuid', 'action_uuid', 'kind', 'value', 'expected_total', 'expected_tax',
+                'preview_line_uuids', 'account_proof'}
+        if not isinstance(raw, dict) or set(raw) != keys or type(raw['version']) is not int or raw['version'] != 1:
+            raise ValidationError(_('The offline discount needs review before synchronization.'))
+        for key in ('order_uuid', 'action_uuid'):
+            try:
+                if str(UUID(raw[key])) != raw[key]:
+                    raise ValueError()
+            except (ValueError, TypeError, AttributeError):
+                raise ValidationError(_('The offline discount identifier is invalid.')) from None
+        if raw['order_uuid'] != order.get('uuid') or raw['kind'] not in ('fixed', 'percent'):
+            raise ValidationError(_('The offline discount does not match this order.'))
+        if not isinstance(raw['account_proof'], str) or not re.fullmatch(r'[0-9a-f]{64}', raw['account_proof']):
+            raise ValidationError(_('The offline discount account proof is missing or invalid. Keep the paid order for manager review.'))
+        if _number(raw['value']) <= 0:
+            raise ValidationError(_('Enter a positive discount.'))
+        for key in ('expected_total', 'expected_tax'):
+            _number(raw[key])
+        previews = raw['preview_line_uuids']
+        if (not isinstance(previews, list) or not previews or len(previews) > 200
+                or not all(isinstance(value, str) for value in previews) or len(set(previews)) != len(previews)):
+            raise ValidationError(_('The offline discount preview is invalid.'))
+        for value in previews:
+            try:
+                if str(UUID(value)) != value:
+                    raise ValueError()
+            except (ValueError, TypeError, AttributeError):
+                raise ValidationError(_('The offline discount preview is invalid.')) from None
+        return dict(raw)
+
+    @api.model
+    def _gd_offline_preview(self, order, intent, config):
+        """Discard only explicitly named preview lines and retain tax proof."""
+        preview_ids, found, kept, proof = set(intent['preview_line_uuids']), set(), [], []
+        product_id = config.baseer_global_discount_product_id.id
+        for command in order.get('lines', []):
+            values = command[2] if len(command) > 2 and isinstance(command[2], dict) else {}
+            line_uuid = values.get('uuid')
+            if line_uuid not in preview_ids:
+                if values.get('product_id') == product_id:
+                    raise AccessError(_('Use the invoice discount command instead of adding its product manually.'))
+                kept.append(command)
+                continue
+            if command[0] != 0 or values.get('product_id') != product_id or line_uuid in found:
+                raise ValidationError(_('The offline discount preview is invalid.'))
+            found.add(line_uuid)
+            tax_ids = set()
+            commands = values.get('tax_ids')
+            if not isinstance(commands, (list, tuple)):
+                raise ValidationError(_('The offline discount tax evidence is missing.'))
+            # Native POS serializer sends IDs directly for non-dynamic
+            # many-to-many models; other native callers may send ORM commands.
+            if all(type(tax_id) is int for tax_id in commands):
+                commands = [(6, 0, commands)]
+            for tax_command in commands:
+                if not isinstance(tax_command, (list, tuple)) or not tax_command:
+                    raise ValidationError(_('The offline discount tax evidence is invalid.'))
+                if tax_command[0] == 6 and len(tax_command) == 3 and isinstance(tax_command[2], (list, tuple)):
+                    tax_ids = set(tax_command[2])
+                elif tax_command[0] == 4 and len(tax_command) >= 2:
+                    tax_ids.add(tax_command[1])
+                elif tax_command[0] == 5:
+                    tax_ids.clear()
+                else:
+                    raise ValidationError(_('The offline discount tax evidence is invalid.'))
+            if not all(type(tax_id) is int and tax_id > 0 for tax_id in tax_ids):
+                raise ValidationError(_('The offline discount tax evidence is invalid.'))
+            amounts = []
+            for name in ('price_subtotal', 'price_subtotal_incl'):
+                try:
+                    value = Decimal(str(values[name]))
+                except (KeyError, InvalidOperation, TypeError, ValueError):
+                    raise ValidationError(_('The offline discount amount evidence is missing.')) from None
+                if not value.is_finite() or value > 0 or value < -Decimal('1000000000'):
+                    raise ValidationError(_('The offline discount amount evidence is invalid.'))
+                amounts.append(str(value))
+            proof.append({'uuid': line_uuid, 'tax_ids': sorted(tax_ids), 'base': amounts[0], 'gross': amounts[1]})
+        if found != preview_ids:
+            raise ValidationError(_('The offline discount preview is incomplete.'))
+        return kept, sorted(proof, key=lambda item: item['uuid'])
+
+    @api.model
+    def _gd_offline_fingerprint(self, intent, proof, order_digest):
+        return hashlib.sha256(json.dumps({
+            'intent': intent, 'proof': proof, 'order_digest': order_digest,
+        }, sort_keys=True).encode()).hexdigest()
+
+    @api.model
+    def _gd_offline_order_digest(self, order):
+        # Capture the client payload before native sync adjusts session, lines,
+        # totals or the client-selected order date. On lost acknowledgements an
+        # exact retry is safe; an altered sale must not be silently accepted.
+        # Hash all sent fields (including sale, payment and relation commands),
+        # rather than a fragile allowlist that can miss a new POS extension.
+        return hashlib.sha256(json.dumps(order, sort_keys=True, separators=(',', ':'), default=str).encode()).hexdigest()
+
+    @api.model
+    def baseer_cancel_offline_draft(self, order_uuid, revision, command_uuid):
+        try:
+            if str(UUID(order_uuid)) != order_uuid or str(UUID(command_uuid)) != command_uuid:
+                raise ValueError()
+        except (ValueError, TypeError, AttributeError):
+            raise ValidationError(_('The shared order cancellation identifier is invalid.')) from None
+        if type(revision) is not int or revision < 1:
+            raise ValidationError(_('The shared order cancellation revision is invalid.'))
+        self.env.cr.execute('SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))', [order_uuid])
+        order = self.search([('uuid', '=', order_uuid)], limit=1)
+        if not order:
+            raise ValidationError(_('The shared order is no longer available.'))
+        order._gd_lock()
+        order.invalidate_recordset()
+        digest = self._gd_offline_order_digest({'uuid': order_uuid, 'revision': revision,
+                                                'command_uuid': command_uuid, 'operation': 'cancel'})
+        if order.baseer_offline_draft_command_uuid == command_uuid:
+            if order.baseer_offline_draft_digest != digest or order.state != 'cancel':
+                raise ValidationError(_('The shared order retry differs from the saved command.'))
+            return {'uuid': order.uuid, 'state': order.state, 'revision': order.baseer_offline_draft_revision}
+        if order.state != 'draft' or order.baseer_offline_draft_revision != revision:
+            raise ValidationError(_('This shared order changed on another device. Keep your local changes for review.'))
+        if (order.payment_ids or not order.currency_id.is_zero(order.amount_paid)
+                or self.env['baseer.print.preparation.state'].sudo().search_count([('order_id', '=', order.id)])
+                or self.env['baseer.print.job'].sudo().search_count([
+                    ('source_order_id', '=', order.id), ('ticket_type', '=', 'preparation')])):
+            raise ValidationError(_('This order has a payment or kitchen activity. Use the protected cancellation workflow or ask a manager.'))
+        order._gd_internal().write({'baseer_offline_draft_revision': revision + 1,
+                                    'baseer_offline_draft_command_uuid': command_uuid,
+                                    'baseer_offline_draft_digest': digest})
+        order._gd_internal().action_pos_order_cancel()
+        return {'uuid': order.uuid, 'state': order.state, 'revision': order.baseer_offline_draft_revision}
+
+    @api.model
+    def sync_from_ui(self, orders):
+        # Native sync normally returns an existing paid order without checking
+        # the payload. Only an exact acknowledged offline command may be retried.
+        order_digests = {}
+        draft_commands = {}
+        # Take these locks before looking up whether a shared draft exists: an
+        # older client without a revision can race its very first creation.
+        # Sorting also avoids inverse UUID lock ordering in batch syncs.
+        uuids = [order.get('uuid') for order in orders]
+        if any(not isinstance(value, str) or not value for value in uuids):
+            raise ValidationError(_('A point of sale order identifier is required.'))
+        for order_uuid in sorted(set(uuids)):
+            self.env.cr.execute('SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))', [order_uuid])
+        for order in orders:
+            command = order.get('baseer_offline_draft_command')
+            if order.get('state') == 'draft' and order.get('baseer_offline_discount_intent') and not command:
+                raise ValidationError(_('This discount draft needs a shared order revision. Refresh the point of sale.'))
+            existing_draft = self._get_open_order(order)
+            if command or (existing_draft and existing_draft.baseer_offline_draft_revision):
+                if not isinstance(command, dict) or set(command) != {'revision', 'command_uuid', 'operation'}:
+                    raise ValidationError(_('This shared order needs its current discount revision. Refresh before changing it.'))
+                if type(command['revision']) is not int or command['revision'] < 0 or command['operation'] not in ('set', 'remove', 'keep'):
+                    raise ValidationError(_('The shared order discount command is invalid.'))
+                try:
+                    if str(UUID(command['command_uuid'])) != command['command_uuid']:
+                        raise ValueError()
+                except (ValueError, TypeError, AttributeError):
+                    raise ValidationError(_('The shared order command identifier is invalid.')) from None
+                order_uuid = order.get('uuid')
+                if order_uuid in draft_commands:
+                    raise ValidationError(_('The same shared order cannot be synchronized twice in one request.'))
+                # The same lock is used by ticket reservation, before the order
+                # row lock, so concurrent first saves cannot both create it.
+                existing_draft = self._get_open_order(order)
+                digest = self._gd_offline_order_digest(order)
+                retry = False
+                if existing_draft:
+                    existing_draft._gd_lock()
+                    existing_draft.invalidate_recordset()
+                    if existing_draft.baseer_offline_draft_command_uuid == command['command_uuid']:
+                        if existing_draft.baseer_offline_draft_digest != digest:
+                            raise ValidationError(_('The shared order retry differs from the saved command.'))
+                        retry = True
+                    elif existing_draft.baseer_offline_draft_revision != command['revision']:
+                        raise ValidationError(_('This shared order changed on another device. Keep your local changes for review.'))
+                    elif existing_draft.state != 'draft':
+                        raise ValidationError(_('This shared order was already paid. Keep your local changes for review.'))
+                elif command['revision'] != 0:
+                    raise ValidationError(_('This shared order revision is no longer available.'))
+                has_intent = bool(order.get('baseer_offline_discount_intent'))
+                if has_intent and not isinstance(order['baseer_offline_discount_intent'], dict):
+                    raise ValidationError(_('The shared order discount command is invalid.'))
+                if (command['operation'] == 'remove' and has_intent or
+                    command['operation'] == 'set' and not has_intent or
+                    command['operation'] == 'keep' and bool(existing_draft and existing_draft.baseer_offline_draft_kind) != has_intent):
+                    raise ValidationError(_('The shared order discount command is incomplete.'))
+                if (command['operation'] == 'keep' and has_intent and existing_draft and
+                        (order['baseer_offline_discount_intent'].get('kind') != existing_draft.baseer_offline_draft_kind or
+                         order['baseer_offline_discount_intent'].get('value') != existing_draft.baseer_offline_draft_value)):
+                    raise ValidationError(_('Changing a shared order discount requires a new discount command.'))
+                draft_commands[order_uuid] = (command, digest, retry)
+            if not order.get('baseer_offline_discount_intent'):
+                continue
+            order_digest = self._gd_offline_order_digest(order)
+            order_uuid = order.get('uuid')
+            if order_uuid in order_digests:
+                raise ValidationError(_('The same offline order cannot be synchronized twice in one request.'))
+            order_digests[order_uuid] = order_digest
+            existing = self._get_open_order(order)
+            if not existing or existing.state == 'draft':
+                continue
+            existing.check_access('read')
+            if existing.company_id not in self.env.companies:
+                raise AccessError(_('The offline discount belongs to another company.'))
+            intent = self._gd_offline_intent(order['baseer_offline_discount_intent'], order)
+            _kept, proof = self._gd_offline_preview(order, intent, existing.config_id)
+            event = self.env['baseer.pos.global.discount.event'].sudo().search([
+                ('order_id', '=', existing.id), ('action_uuid', '=', intent['action_uuid']),
+            ], limit=1)
+            if not event or event.fingerprint != self._gd_offline_fingerprint(intent, proof, order_digest):
+                raise ValidationError(_('The offline discount retry differs from the paid order. Keep it for manager review.'))
+        scoped = self.with_context(_baseer_offline_digests=(_OFFLINE_TOKEN, order_digests),
+                                   _baseer_draft_commands=(_DRAFT_TOKEN, draft_commands))
+        return super(PosOrder, scoped).sync_from_ui(orders)
+
+    @api.model
+    def _process_order(self, order, existing_order):
+        command = order.pop('baseer_offline_draft_command', False)
+        draft_scope = self.env.context.get('_baseer_draft_commands')
+        draft_data = draft_scope[1].get(order.get('uuid')) if isinstance(draft_scope, tuple) and len(draft_scope) == 2 and draft_scope[0] is _DRAFT_TOKEN else None
+        if command and not draft_data:
+            raise AccessError(_('Shared order commands must use point of sale synchronization.'))
+        if draft_data and draft_data[2]:
+            return existing_order.id
+        if draft_data and existing_order:
+            owned = existing_order.lines.filtered('baseer_global_discount_line')
+            owned_ids = set(owned.ids)
+            if any(len(item) > 1 and item[0] in (1, 2, 3, 4) and item[1] in owned_ids for item in order.get('lines', [])):
+                raise AccessError(_('Shared discount lines are managed by the server.'))
+            internal = existing_order._gd_internal()
+            internal.lines.filtered('baseer_global_discount_line').unlink()
+            internal.write({'baseer_global_discount_locked': False, 'baseer_global_discount_snapshot': False,
+                            'baseer_global_discount_kind': False, 'baseer_global_discount_value': False,
+                            'baseer_global_discount_reason': False, 'baseer_global_discount_gross': 0})
+        if draft_data:
+            self = self.with_context(_baseer_draft_apply=(_DRAFT_TOKEN, draft_data))
+            if existing_order:
+                existing_order = existing_order.with_env(self.env)
+        raw = order.pop('baseer_offline_discount_intent', False)
+        if not raw:
+            return super()._process_order(order, existing_order)
+        intent = self._gd_offline_intent(raw, order)
+        session = self.env['pos.session'].browse(order.get('session_id')).exists()
+        if len(session) != 1 or session.config_id.company_id not in self.env.companies:
+            raise AccessError(_('The offline discount session is not available in this company.'))
+        if existing_order and existing_order.baseer_global_discount_locked:
+            raise ValidationError(_('Remove the existing invoice discount while connected before using offline discount.'))
+        kept, proof = self._gd_offline_preview(order, intent, session.config_id)
+        order['lines'] = kept
+        digests = self.env.context.get('_baseer_offline_digests')
+        if not isinstance(digests, tuple) or len(digests) != 2 or digests[0] is not _OFFLINE_TOKEN:
+            raise AccessError(_('The offline discount must be synchronized through the point of sale.'))
+        order_digest = digests[1].get(intent['order_uuid'])
+        if not order_digest:
+            raise ValidationError(_('The offline order fingerprint is missing.'))
+        scoped = self.with_context(_baseer_offline_discount=(_OFFLINE_TOKEN, intent, proof, order_digest))
+        # Native _process_order reuses the existing recordset directly. Its
+        # environment otherwise keeps the caller context and silently drops
+        # our private reconciliation intent for previously synced drafts.
+        existing_scoped = existing_order.with_env(scoped.env) if existing_order else existing_order
+        return super(PosOrder, scoped)._process_order(order, existing_scoped)
+
+    def _gd_reconcile_offline_discount(self, intent, proof, order_digest):
+        """Rebuild at the transaction boundary before native posting/invoicing."""
+        self.ensure_one()
+        self._gd_lock()
+        if (not self.config_id.baseer_global_discount_enabled or self.baseer_global_discount_locked
+                or self.account_move or self.session_move_id or self.session_id.state != 'opened'
+                or self.state not in ('draft', 'paid') or self.is_refund
+                or self.currency_id != self.company_id.currency_id or self.currency_id.rounding != 0.01
+                or self.config_id.cash_rounding):
+            raise ValidationError(_('The offline discount cannot be synchronized in this order state.'))
+        if (getattr(self.config_id, 'baseer_zatca_phase2_enabled', False) and not self.to_invoice):
+            raise ValidationError(_('A ZATCA invoice is required before synchronizing this discounted sale.'))
+        account_proof = self.config_id._gd_offline_account_proof(self.fiscal_position_id)
+        if not account_proof or not hmac.compare_digest(account_proof, intent['account_proof']):
+            raise ValidationError(_('The invoice discount account changed while offline. Keep the paid order for manager review.'))
+        event = self.env['baseer.pos.global.discount.event'].sudo().search([('action_uuid', '=', intent['action_uuid'])], limit=1)
+        if event:
+            raise ValidationError(_('This offline discount command was already processed. Refresh the order.'))
+        expected_total, expected_tax = _number(intent['expected_total']), _number(intent['expected_tax'])
+        self._gd_apply_values(intent['kind'], _number(intent['value']), '')
+        local_tax_groups, server_tax_groups = {}, {}
+        for row in proof:
+            key = tuple(row['tax_ids'])
+            previous = local_tax_groups.get(key, (Decimal('0'), Decimal('0')))
+            local_tax_groups[key] = (previous[0] + Decimal(row['base']), previous[1] + Decimal(row['gross']))
+        for line in self.lines.filtered('baseer_global_discount_line'):
+            key = tuple(sorted(line.tax_ids.ids))
+            previous = server_tax_groups.get(key, (Decimal('0'), Decimal('0')))
+            server_tax_groups[key] = (previous[0] + Decimal(str(line.price_subtotal)),
+                                      previous[1] + Decimal(str(line.price_subtotal_incl)))
+        if set(local_tax_groups) != set(server_tax_groups) or any(
+                any(self.currency_id.compare_amounts(float(actual), float(expected))
+                    for actual, expected in zip(local_tax_groups[key], server_tax_groups[key]))
+                for key in local_tax_groups):
+            raise ValidationError(_('The offline discount tax categories differ from the server calculation. Keep the paid order for manager review.'))
+        if (self.currency_id.compare_amounts(self.amount_total, float(expected_total))
+                or self.currency_id.compare_amounts(self.amount_tax, float(expected_tax))
+                or self.currency_id.compare_amounts(sum(self.payment_ids.mapped('amount')), float(expected_total))):
+            raise ValidationError(_('The paid amount or tax differs from the server calculation. Keep the paid order for manager review.'))
+        fingerprint = self._gd_offline_fingerprint(intent, proof, order_digest)
+        self.env['baseer.pos.global.discount.event'].with_context(_baseer_global_discount_token=_TOKEN).create({
+            'order_id': self.id, 'order_uuid': self.uuid, 'company_id': self.company_id.id,
+            'action_uuid': intent['action_uuid'], 'fingerprint': fingerprint, 'payload': {'intent': intent, 'proof': proof},
+        })
 
     def _gd_lock(self):
         self.ensure_one()
@@ -340,6 +668,12 @@ class PosOrder(models.Model):
         retry, fingerprint = self._gd_begin(action_uuid, expected_revision, payload)
         if retry:
             return self._baseer_command_result(action_uuid=action_uuid)
+        self._gd_apply_values(kind, parsed, reason)
+        return self._gd_finish(action_uuid, fingerprint, payload)
+
+    def _gd_apply_values(self, kind, parsed, reason):
+        """Apply validated values; caller owns authorization, locks and transaction."""
+        self.ensure_one()
         if self.is_refund or self.lines.refunded_orderline_id:
             raise ValidationError(_('A new discount cannot be applied to a refund.'))
         if (kind != 'remove' and 'baseer_zatca_phase2_enabled' in self.config_id._fields
@@ -353,7 +687,7 @@ class PosOrder(models.Model):
             internal.write({'baseer_global_discount_kind': False, 'baseer_global_discount_value': False,
                             'baseer_global_discount_gross': 0, 'baseer_global_discount_reason': False})
             internal._gd_recompute()
-            return self._gd_finish(action_uuid, fingerprint, payload)
+            return
         sources = internal._gd_source_lines()
         product = self.config_id.baseer_global_discount_product_id
         if (not product or product.company_id != self.company_id or product.type != 'service'
@@ -386,7 +720,6 @@ class PosOrder(models.Model):
         if self.currency_id.compare_amounts(actual, expected):
             raise ValidationError(_('The tax engine could not preserve the requested discount amount.'))
         internal.write({'baseer_global_discount_locked': True, 'baseer_global_discount_snapshot': internal._gd_snapshot()})
-        return self._gd_finish(action_uuid, fingerprint, payload)
 
     def _gd_allocate_history(self, original, quantity, source_quantity, previous, order_base_cache):
         """Allocate already rounded historical base/tax cents; never calculate a tax rate."""
@@ -516,6 +849,39 @@ class PosOrder(models.Model):
         return values
 
     def _process_saved_order(self, draft):
+        offline = self.env.context.get('_baseer_offline_discount')
+        draft_scope = self.env.context.get('_baseer_draft_apply')
+        command_data = draft_scope[1] if isinstance(draft_scope, tuple) and len(draft_scope) == 2 and draft_scope[0] is _DRAFT_TOKEN else None
+        if isinstance(offline, tuple) and len(offline) == 4 and offline[0] is _OFFLINE_TOKEN:
+            if draft:
+                if command_data:
+                    intent = offline[1]
+                    account_proof = self.config_id._gd_offline_account_proof(self.fiscal_position_id)
+                    if not account_proof or not hmac.compare_digest(account_proof, intent['account_proof']):
+                        raise ValidationError(_('The invoice discount account changed. Refresh the order before applying the discount.'))
+                    self._gd_apply_values(intent['kind'], _number(intent['value']), '')
+                    if (self.currency_id.compare_amounts(self.amount_total, float(_number(intent['expected_total']))) or
+                            self.currency_id.compare_amounts(self.amount_tax, float(_number(intent['expected_tax'])))):
+                        raise ValidationError(_('The discount total differs from the server calculation. Keep the local order for review.'))
+                    self._gd_internal().write({'baseer_global_discount_locked': False,
+                                               'baseer_global_discount_snapshot': False})
+                else:
+                    # Legacy draft path must never retain client preview totals.
+                    self._gd_recompute()
+            else:
+                self._gd_reconcile_offline_discount(offline[1], offline[2], offline[3])
+        elif draft and command_data:
+            self._gd_recompute()
+        if command_data:
+            command, digest, _retry = command_data
+            raw_intent = offline[1] if isinstance(offline, tuple) and len(offline) == 4 and offline[0] is _OFFLINE_TOKEN else False
+            self._gd_internal().write({
+                'baseer_offline_draft_kind': raw_intent['kind'] if raw_intent else False,
+                'baseer_offline_draft_value': raw_intent['value'] if raw_intent else False,
+                'baseer_offline_draft_revision': command['revision'] + 1,
+                'baseer_offline_draft_command_uuid': command['command_uuid'],
+                'baseer_offline_draft_digest': digest,
+            })
         if not draft and (self.baseer_global_discount_locked or self.lines.refunded_orderline_id.order_id.filtered('baseer_global_discount_locked')):
             self._gd_lock()
             self._gd_refund_ready()
@@ -543,6 +909,9 @@ class PosOrder(models.Model):
             if _HEADER.intersection(values) or values.get('lines') or values.get('state'):
                 self._gd_lock_mutations()
             for order in self:
+                if (order.state == 'draft' and order.baseer_offline_draft_revision and not _draft_sync(self.env)
+                        and (_HEADER | {'lines', 'payment_ids', 'state', 'amount_total', 'amount_tax', 'amount_paid'}).intersection(values)):
+                    raise ValidationError(_('Change this shared discount order through the point of sale revision command.'))
                 for key in _ORDER_METADATA & values.keys():
                     if not _same(order, key, values[key]):
                         raise AccessError(_('Invoice discount data is managed by the discount command only.'))
@@ -565,6 +934,8 @@ class PosOrder(models.Model):
 
     def unlink(self):
         self._gd_lock_mutations()
+        if self.filtered(lambda order: order.state == 'draft' and order.baseer_offline_draft_revision):
+            raise AccessError(_('A shared discount order cannot be deleted without resolving its revision.'))
         if any(order.baseer_global_discount_locked for order in self):
             raise AccessError(_('Cancel the discounted order instead of deleting its audit history.'))
         return super().unlink()
@@ -586,6 +957,8 @@ class PosOrderLine(models.Model):
         if not _internal(self.env):
             orders = self.env['pos.order'].browse([values['order_id'] for values in values_list if values.get('order_id')]).exists()
             orders._gd_lock_mutations()
+            if not _draft_sync(self.env) and orders.filtered(lambda order: order.state == 'draft' and order.baseer_offline_draft_revision):
+                raise ValidationError(_('Change this shared discount order through the point of sale revision command.'))
             for values in values_list:
                 if any(values.get(key) for key in _LINE_METADATA):
                     raise AccessError(_('Invoice discount lines are created by the discount command only.'))
@@ -601,6 +974,8 @@ class PosOrderLine(models.Model):
         affected_orders = self.order_id | self.env['pos.order'].browse(values.get('order_id')).exists()
         if not _internal(self.env):
             affected_orders._gd_lock_mutations()
+            if not _draft_sync(self.env) and affected_orders.filtered(lambda order: order.state == 'draft' and order.baseer_offline_draft_revision) and (_FINANCIAL | {'price_subtotal', 'price_subtotal_incl'}).intersection(values):
+                raise ValidationError(_('Change this shared discount order through the point of sale revision command.'))
             target_order = self.env['pos.order'].browse(values.get('order_id')).exists()
             if target_order.baseer_global_discount_locked and any(line.order_id != target_order for line in self):
                 raise ValidationError(_('Remove the invoice discount before adding products.'))
@@ -620,6 +995,35 @@ class PosOrderLine(models.Model):
 
     def unlink(self):
         self.order_id._gd_lock_mutations()
+        if not _internal(self.env) and (self.filtered('baseer_global_discount_line') or
+                (not _draft_sync(self.env) and self.order_id.filtered(lambda order: order.state == 'draft' and order.baseer_offline_draft_revision))):
+            raise ValidationError(_('Change this shared discount order through the point of sale revision command.'))
         if not _internal(self.env) and self.order_id.filtered('baseer_global_discount_locked'):
             raise ValidationError(_('Remove the invoice discount before deleting products.'))
+        return super().unlink()
+
+
+class PosPayment(models.Model):
+    _inherit = 'pos.payment'
+
+    def _gd_check_shared_draft_payment(self, orders):
+        if not _internal(self.env) and not _draft_sync(self.env):
+            if orders.filtered(lambda order: order.state == 'draft' and order.baseer_offline_draft_revision):
+                raise ValidationError(_('Change this shared discount order through the point of sale revision command.'))
+
+    @api.model_create_multi
+    def create(self, values_list):
+        self._gd_check_shared_draft_payment(self.env['pos.order'].browse([
+            values['pos_order_id'] for values in values_list if values.get('pos_order_id')
+        ]).exists())
+        return super().create(values_list)
+
+    def write(self, values):
+        if {'amount', 'payment_method_id', 'pos_order_id', 'is_change', 'payment_date', 'uuid'}.intersection(values):
+            orders = self.pos_order_id | self.env['pos.order'].browse(values.get('pos_order_id')).exists()
+            self._gd_check_shared_draft_payment(orders)
+        return super().write(values)
+
+    def unlink(self):
+        self._gd_check_shared_draft_payment(self.pos_order_id)
         return super().unlink()

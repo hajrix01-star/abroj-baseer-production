@@ -2,7 +2,7 @@ from copy import deepcopy
 from uuid import uuid4
 
 from odoo import Command
-from odoo.exceptions import AccessError
+from odoo.exceptions import AccessError, ValidationError
 from odoo.tests.common import TransactionCase, tagged
 
 
@@ -50,6 +50,86 @@ class TestSessionTicket(TransactionCase):
         self.assertEqual(first['pos_reference'], '268-27-000062')
         self.assertEqual(Pos.sync_from_ui([self._draft()])['pos.order'][0]['baseer_ticket_number'], 2)
         self.assertTrue(self.session._load_pos_data_read(self.session, self.config)[0]['baseer_ticket_enabled'])
+
+    def test_reservation_retry_then_sync_and_late_retry(self):
+        Pos = self.env['pos.order']
+        draft = self._draft()
+        first = Pos.baseer_reserve_session_ticket(self.session.id, draft['uuid'])
+        self.assertEqual(first, Pos.baseer_reserve_session_ticket(self.session.id, draft['uuid']))
+        self.assertEqual(first['number'], 1)
+        # The client can add more items while the reservation is in flight.
+        draft['lines'].append(Command.create(self._line()))
+        synced = Pos.sync_from_ui([deepcopy(draft)])['pos.order'][0]
+        self.assertEqual(synced['baseer_ticket_label'], first['label'])
+        self.assertEqual(len(Pos.search([('uuid', '=', draft['uuid'])]).lines), 2)
+        self.assertEqual(first, Pos.baseer_reserve_session_ticket(self.session.id, draft['uuid']))
+        self.assertEqual(self.session.baseer_ticket_last_number, 1)
+
+    def test_sync_first_and_late_reservation_does_not_change_order(self):
+        Pos = self.env['pos.order']
+        draft = self._draft()
+        result = Pos.sync_from_ui([deepcopy(draft)])['pos.order'][0]
+        saved = Pos.search([('uuid', '=', draft['uuid'])])
+        before = saved.lines.ids
+        ticket = Pos.baseer_reserve_session_ticket(self.session.id, draft['uuid'])
+        self.assertEqual(ticket['label'], result['baseer_ticket_label'])
+        self.assertEqual(saved.lines.ids, before)
+        self.assertEqual(self.session.baseer_ticket_last_number, 1)
+
+    def test_ticket_reservation_denies_invalid_input_and_other_session_owner(self):
+        Pos = self.env['pos.order']
+        with self.assertRaises(Exception), self.env.cr.savepoint():
+            Pos.baseer_reserve_session_ticket(self.session.id, 'invalid-uuid')
+        other = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'Other cashier', 'login': 'other-ticket-cashier',
+            'group_ids': [Command.set([self.env.ref('point_of_sale.group_pos_user').id])],
+        })
+        with self.assertRaises(AccessError), self.env.cr.savepoint():
+            Pos.with_user(other).baseer_reserve_session_ticket(self.session.id, str(uuid4()))
+
+    def test_unused_reservation_limit_keeps_retry_and_native_sync_available(self):
+        Pos = self.env['pos.order']
+        draft = self._draft()
+        uuids = [draft['uuid']] + [str(uuid4()) for _ in range(499)]
+        self.env['baseer.pos.ticket.reservation'].sudo().create([
+            {'order_uuid': item, 'session_id': self.session.id, 'number': index + 1}
+            for index, item in enumerate(uuids)
+        ])
+        self.env.cr.execute('UPDATE pos_session SET baseer_ticket_last_number = 500 WHERE id = %s', [self.session.id])
+        self.session.invalidate_recordset(['baseer_ticket_last_number'])
+        self.assertEqual(Pos.baseer_reserve_session_ticket(self.session.id, draft['uuid'])['number'], 1)
+        next_uuid = str(uuid4())
+        with self.assertRaises(ValidationError), self.env.cr.savepoint():
+            Pos.baseer_reserve_session_ticket(self.session.id, next_uuid)
+        fallback = self._draft()
+        self.assertEqual(Pos.sync_from_ui([deepcopy(fallback)])['pos.order'][0]['baseer_ticket_number'], 501)
+        saved = Pos.sync_from_ui([deepcopy(draft)])['pos.order'][0]
+        self.assertEqual(saved['baseer_ticket_number'], 1)
+        self.assertEqual(Pos.baseer_reserve_session_ticket(self.session.id, next_uuid)['number'], 502)
+
+    def test_reservation_admin_read_obeys_allowed_companies(self):
+        other_company = self.env['res.company'].create({'name': 'Ticket isolation company'})
+        other_config = self.env['pos.config'].with_company(other_company).create({
+            # This fixture only tests record visibility; no sale or payment is
+            # opened, so avoid generating default journals/payment methods.
+            'name': 'Other company ticket POS', 'company_id': other_company.id,
+            'payment_method_ids': [Command.clear()],
+        })
+        other_session = self.env['pos.session'].with_company(other_company).create({
+            'config_id': other_config.id, 'user_id': self.env.uid,
+        })
+        Reservation = self.env['baseer.pos.ticket.reservation'].sudo()
+        own = Reservation.create({'order_uuid': str(uuid4()), 'session_id': self.session.id, 'number': 1})
+        foreign = Reservation.create({'order_uuid': str(uuid4()), 'session_id': other_session.id, 'number': 1})
+        admin = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'Restricted ticket admin', 'login': 'restricted-ticket-admin',
+            'group_ids': [Command.set([self.env.ref('base.group_system').id])],
+            'company_id': self.env.company.id, 'company_ids': [Command.set(self.env.company.ids)],
+        })
+        visible = Reservation.with_user(admin).with_context(allowed_company_ids=self.env.company.ids).search([
+            ('id', 'in', (own.id, foreign.id)),
+        ])
+        self.assertEqual(visible.ids, own.ids)
 
     def test_empty_attachment_rollback_and_protected_fields(self):
         Pos = self.env['pos.order']

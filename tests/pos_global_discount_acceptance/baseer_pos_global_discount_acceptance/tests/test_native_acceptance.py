@@ -6,10 +6,11 @@ import json
 from decimal import Decimal
 from pathlib import Path
 from unittest.mock import patch
+from uuid import uuid4
 
 from lxml import etree
 
-from odoo import Command
+from odoo import Command, fields
 from odoo.tests.common import tagged
 from odoo.addons.l10n_sa_edi.tests.common import TestSaEdiCommon
 from odoo.addons.baseer_pos_global_discount.tests import test_global_discount as gd_tests
@@ -156,6 +157,116 @@ class TestNativeDiscountAcceptance(TestSaEdiCommon):
         move = self._pay_actual(refund)
         self._xml(refund, move)
         return refund
+
+    def test_offline_fixed_sync_posts_invoice_and_full_credit(self):
+        """Real sync: rebuild offline allowance before native invoice and refund."""
+        order_uuid, item_uuid, preview_uuid = (str(uuid4()) for _ in range(3))
+        payload = {
+            'uuid': order_uuid, 'session_id': self.config.current_session_id.id,
+            'company_id': self.env.company.id, 'user_id': self.env.uid,
+            'partner_id': self.partner_sa_simplified.id, 'state': 'paid', 'to_invoice': True,
+            'date_order': fields.Datetime.now(),
+            'amount_total': 95, 'amount_tax': 12.39, 'amount_paid': 95, 'amount_return': 0,
+            'baseer_offline_discount_intent': {
+                'version': 1, 'order_uuid': order_uuid, 'action_uuid': str(uuid4()),
+                'kind': 'fixed', 'value': '20', 'expected_total': '95.00', 'expected_tax': '12.39',
+                'preview_line_uuids': [preview_uuid],
+                'account_proof': self.config._gd_offline_account_proof(self.env['account.fiscal.position']),
+            },
+            'lines': [Command.create({
+                'uuid': item_uuid, 'product_id': self.product.id, 'qty': 1, 'price_unit': 100,
+                'price_subtotal': 100, 'price_subtotal_incl': 115, 'tax_ids': self.tax.ids,
+            }), Command.create({
+                'uuid': preview_uuid, 'product_id': self.config.baseer_global_discount_product_id.id,
+                'qty': 1, 'price_unit': -17.39, 'price_subtotal': -17.39,
+                'price_subtotal_incl': -20, 'tax_ids': self.tax.ids,
+            })],
+            'payment_ids': [Command.create({
+                'uuid': str(uuid4()), 'payment_method_id': self.payment_method.id,
+                'amount': 95, 'payment_date': fields.Datetime.now(),
+            })],
+        }
+        self.env['pos.order'].with_context(generate_pdf=False).sync_from_ui([payload])
+        order = self.env['pos.order'].search([('uuid', '=', order_uuid)])
+        self.assertEqual(len(order), 1)
+        self.assertTrue(order.baseer_global_discount_locked)
+        self.assertEqual(order.baseer_global_discount_kind, 'fixed')
+        self.assertEqual(order.account_move.state, 'posted')
+        self.assertAlmostEqual(order.account_move.amount_total, 95, places=2)
+        self.assertAlmostEqual(order.account_move.amount_tax, 12.39, places=2)
+        self.assertAlmostEqual(sum(order.account_move.line_ids.mapped('balance')), 0, places=2)
+        self._xml(order, order.account_move)
+        refund = self._refund_actual(order, 1)
+        self.assertAlmostEqual(refund.amount_total, -95, places=2)
+        self.assertAlmostEqual(refund.amount_tax, -12.39, places=2)
+
+    def _sync_offline_sale(self, kind, value, total, tax_total, items, previews):
+        """Send one synthetic paid basket through the real native sync entry."""
+        order_uuid = str(uuid4())
+        preview_uuids = [str(uuid4()) for _ in previews]
+        lines = [Command.create({
+            'uuid': str(uuid4()), 'product_id': self.product.id, 'qty': quantity,
+            'price_unit': unit, 'price_subtotal': base, 'price_subtotal_incl': gross,
+            'tax_ids': taxes.ids,
+        }) for quantity, unit, base, gross, taxes in items]
+        lines += [Command.create({
+            'uuid': preview_uuid, 'product_id': self.config.baseer_global_discount_product_id.id,
+            'qty': 1, 'price_unit': base, 'price_subtotal': base,
+            'price_subtotal_incl': gross, 'tax_ids': taxes.ids,
+        }) for preview_uuid, (base, gross, taxes) in zip(preview_uuids, previews)]
+        payload = {
+            'uuid': order_uuid, 'session_id': self.config.current_session_id.id,
+            'company_id': self.env.company.id, 'user_id': self.env.uid,
+            'partner_id': self.partner_sa_simplified.id, 'state': 'paid', 'to_invoice': True,
+            'date_order': fields.Datetime.now(),
+            'amount_total': float(total), 'amount_tax': float(tax_total),
+            'amount_paid': float(total), 'amount_return': 0,
+            'baseer_offline_discount_intent': {
+                'version': 1, 'order_uuid': order_uuid, 'action_uuid': str(uuid4()),
+                'kind': kind, 'value': value, 'expected_total': total, 'expected_tax': tax_total,
+                'preview_line_uuids': preview_uuids,
+                'account_proof': self.config._gd_offline_account_proof(self.env['account.fiscal.position']),
+            },
+            'lines': lines,
+            'payment_ids': [Command.create({
+                'uuid': str(uuid4()), 'payment_method_id': self.payment_method.id,
+                'amount': float(total), 'payment_date': fields.Datetime.now(),
+            })],
+        }
+        self.env['pos.order'].with_context(generate_pdf=False).sync_from_ui([payload])
+        order = self.env['pos.order'].search([('uuid', '=', order_uuid)])
+        self.assertEqual(len(order), 1)
+        self.assertTrue(order.baseer_global_discount_locked)
+        self.assertEqual(order.account_move.state, 'posted')
+        self.assertAlmostEqual(sum(order.account_move.line_ids.mapped('balance')), 0, places=2)
+        self._xml(order, order.account_move)
+        return order
+
+    def test_offline_fixed_sync_three_partial_credits_last_cent(self):
+        sale = self._sync_offline_sale(
+            'fixed', '0.97', '2.48', '0.32',
+            [(3, 1, 3, 3.45, self.tax)], [(-0.84, -0.97, self.tax)],
+        )
+        refunds = self.env['pos.order']
+        for _ in range(3):
+            refunds |= self._refund_actual(sale, 1)
+        self.assertAlmostEqual(sum(refunds.mapped('amount_total')), -sale.amount_total, places=2)
+        self.assertAlmostEqual(sum(refunds.mapped('amount_tax')), -sale.amount_tax, places=2)
+        self.assertAlmostEqual(sum(refunds.mapped('baseer_global_discount_gross')), 0.97, places=2)
+
+    def test_offline_percentage_sync_mixed_tax_invoice(self):
+        zero = self.tax.copy({'name': 'Offline synthetic zero', 'amount': 0,
+                              'l10n_sa_exemption_reason_code': 'VATEX-SA-32'})
+        sale = self._sync_offline_sale(
+            'percent', '10', '193.50', '13.50',
+            [(1, 100, 100, 115, self.tax), (1, 100, 100, 100, zero)],
+            [(-10, -11.5, self.tax), (-10, -10, zero)],
+        )
+        self.assertAlmostEqual(sale.account_move.amount_total, 193.50, places=2)
+        self.assertAlmostEqual(sale.account_move.amount_tax, 13.50, places=2)
+        allowances = sale.lines.filtered('baseer_global_discount_line')
+        self.assertEqual(set(allowances.mapped('tax_ids').ids), {self.tax.id, zero.id})
+        self.assertEqual(len(allowances.mapped('baseer_global_discount_source_id')), 2)
 
     def test_native_percent_invoice_and_full_credit(self):
         sale = self._sale('percent', '10')

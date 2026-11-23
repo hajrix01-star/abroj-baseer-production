@@ -78,8 +78,11 @@ export function buildBaseerPreparationAction(order, actionType = "send", explici
     if (!lines) {
         // The browser reports quantity intent only. Odoo remains the sole
         // authority that decides whether a line has a kitchen route.
-        const currentLines = order.getOrderlines().filter((line) => !line.refunded_orderline_id);
-        const currentUuids = new Set(currentLines.map((line) => line.uuid));
+        const allLines = order.getOrderlines();
+        const currentUuids = new Set(allLines.map((line) => line.uuid));
+        const previewUuids = new Set(order.uiState?.baseerOfflineDiscount?.preview_line_uuids || []);
+        const currentLines = allLines.filter((line) => !line.refunded_orderline_id
+            && !line.baseer_global_discount_line && !previewUuids.has(line.uuid));
         lines = currentLines
             .filter((line) => lineChangedSincePreparation(order, line, preparationLine(order, line)))
             .map((line) => ({

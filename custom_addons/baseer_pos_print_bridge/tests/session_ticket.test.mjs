@@ -6,6 +6,7 @@ import vm from 'node:vm';
 function fixture() {
     class PosOrder {
         getName() { return this.table_id ? 'T 7' : this.tracking_number; }
+        update(values) { Object.assign(this, values); }
     }
     class ReceiptHeader { get order() { return this.props.order; } }
     class OrderTabs {}
@@ -36,13 +37,13 @@ function fixture() {
         },
     });
     const order = Object.assign(new PosOrder(), {
-        id: 'order', tracking_number: '8001', state: 'draft', uiState: {}, lines: [],
+        id: 'order', uuid: '2d124ab8-10ba-4213-9577-b332d53a9efd', tracking_number: '8001', state: 'draft', uiState: {}, lines: [],
         session_id: { id: 27, baseer_ticket_enabled: true },
         generateQrcode() { return 'signed existing QR'; },
     });
     const header = Object.assign(new ReceiptHeader(), { props: { order } });
     const store = Object.assign(new PosStore(), {
-        syncs: 0, data: { network: { offline: false } }, config: { printerCategories: new Set([1]) }, notification: { add() {} },
+        syncs: 0, data: { network: { offline: false }, orm: { call: async () => ({ uuid: order.uuid, session_id: 27, number: 1, label: '27-1' }) } }, config: { printerCategories: new Set([1]) }, notification: { add() {} },
     });
     const screen = Object.assign(new TicketScreen(), { state: { search: { fieldName: 'REFERENCE', searchTerm: '27-1' } } });
     return { order, header, store, screen, tabs: new OrderTabs() };
@@ -61,7 +62,7 @@ test('same ticket on early/paid receipts and kitchen, short tab and native tax Q
     assert.equal(header.order.tracking_number, '');
     await store.addLineToOrder({ qty: 1 }, order);
     await store.addLineToOrder({ qty: 2 }, order);
-    assert.equal(store.syncs, 1);
+    assert.equal(store.syncs, 0);
     assert.equal(order.getName(), '1');
     assert.equal(store.getOrderData(order).tracking_number, '27-1');
     assert.equal(store.getOrderData(order).pos_reference, 'original');
@@ -77,6 +78,54 @@ test('same ticket on early/paid receipts and kitchen, short tab and native tax Q
     order.table_id = null;
     order.isRefund = true;
     assert.equal(order.getName(), '1 (Refund)');
+});
+
+test('a delayed ticket response never blocks additions or overwrites the order graph', async () => {
+    const { order, store } = fixture();
+    let release;
+    let started;
+    const syncing = new Promise((resolve) => { started = resolve; });
+    const syncGate = new Promise((resolve) => { release = resolve; });
+    store.data.orm.call = async () => {
+        started();
+        await syncGate;
+        return { uuid: order.uuid, session_id: 27, number: 1, label: '27-1' };
+    };
+    const first = store.addLineToOrder({ product: 'first' }, order);
+    await syncing;
+    const second = store.addLineToOrder({ product: 'second' }, order);
+    await Promise.resolve();
+    await second;
+    assert.equal(order.lines.length, 2);
+    release();
+    await Promise.all([first, second]);
+    assert.deepEqual(order.lines.map((line) => line.product), ['first', 'second']);
+});
+
+test('disconnect during a hanging ticket request does not block later items', async () => {
+    const { order, store } = fixture();
+    let started;
+    let release;
+    const syncing = new Promise((resolve) => { started = resolve; });
+    const gate = new Promise((resolve) => { release = resolve; });
+    store.data.orm.call = async () => { started(); await gate; return { uuid: order.uuid, session_id: 27, number: 1, label: '27-1' }; };
+    const first = store.addLineToOrder({ product: 'first' }, order);
+    await syncing;
+    store.data.network.offline = true;
+    const second = store.addLineToOrder({ product: 'second' }, order);
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.deepEqual(order.lines.map((line) => line.product), ['first', 'second']);
+    release();
+    await Promise.all([first, second]);
+    assert.deepEqual(order.lines.map((line) => line.product), ['first', 'second']);
+});
+
+test('a failed reservation does not block the next addition', async () => {
+    const { order, store } = fixture();
+    store.data.orm.call = async () => { throw new Error('connection lost'); };
+    await store.addLineToOrder({ product: 'first' }, order);
+    await store.addLineToOrder({ product: 'second' }, order);
+    assert.deepEqual(order.lines.map((line) => line.product), ['first', 'second']);
 });
 
 test('offline unsaved order keeps pending state; reconnect before printing allocates once', async () => {

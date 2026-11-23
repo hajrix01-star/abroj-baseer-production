@@ -17,6 +17,9 @@ function awaitsTicket(order) {
     ));
 }
 
+// This RPC reserves only a number. Its response never contains an order graph.
+const pendingTickets = new WeakMap();
+
 patch(PosOrder.prototype, {
     getName() {
         if (!this.table_id && this.baseer_ticket_number) {
@@ -62,14 +65,20 @@ patch(ReceiptHeader.prototype, {
 
 patch(PosStore.prototype, {
     async addLineToOrder(vals, order) {
-        const firstLine = !order.lines.length;
         const result = await super.addLineToOrder(...arguments);
-        if (firstLine && result && awaitsTicket(order) && !order.uiState.splittedOrderUuid) {
+        if (result && awaitsTicket(order) && !order.uiState.splittedOrderUuid) {
             this.addPendingOrder([order.id]);
-            // Odoo's restaurant preSync books a floating direct sale; let its
-            // normal Save/Send/Print perform that transition.
-            if (!this.data.network.offline && !order.isDirectSale) {
-                await this.syncAllOrders({ orders: [order] });
+            if (!this.data.network.offline && !order.isDirectSale && !pendingTickets.has(order)) {
+                const uuid = order.uuid;
+                const session = order.session_id;
+                const request = this.data.orm.call('pos.order', 'baseer_reserve_session_ticket', [session.id, uuid])
+                    .then((ticket) => {
+                        if (order.uuid !== uuid || order.state !== 'draft' || order.baseer_ticket_number ||
+                            ticket?.uuid !== uuid || ticket.session_id !== session.id ||
+                            !Number.isSafeInteger(ticket.number) || ticket.number <= 0 || ticket.label !== `${session.id}-${ticket.number}`) return;
+                        order.update({ baseer_ticket_number: ticket.number, baseer_ticket_session_id: session, baseer_ticket_label: ticket.label });
+                    }).catch(() => {}).finally(() => pendingTickets.delete(order));
+                pendingTickets.set(order, request);
             }
         }
         return result;

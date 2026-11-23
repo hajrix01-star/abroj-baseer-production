@@ -43,11 +43,31 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Install browser test dependencies
+        run: |
+          npm install --prefix custom_addons/baseer_pos_global_discount/tests --no-save --no-package-lock playwright@1.52.0
+          custom_addons/baseer_pos_global_discount/tests/node_modules/.bin/playwright install --with-deps chromium
+      - name: Extract native POS sources from the tested Odoo image
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          image=odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd
+          container_id=$(docker create "$image")
+          trap 'docker rm -f "$container_id" >/dev/null' EXIT
+          mkdir -p tmp/odoo_related_models
+          pos=/usr/lib/python3/dist-packages/odoo/addons/point_of_sale/static/src
+          docker cp "$container_id:$pos/app/models/related_models/." tmp/odoo_related_models/
+          docker cp "$container_id:$pos/proxy_trap.js" tmp/odoo_proxy_trap.js
+          docker cp "$container_id:$pos/lazy_getter.js" tmp/odoo_lazy_getter.js
+          docker cp "$container_id:$pos/app/models/related_models/index.js" tmp/pos-discount-native-related-models.js
+          docker cp "$container_id:$pos/app/services/pos_store.js" tmp/pos-discount-native-pos-store.js
+          docker cp "$container_id:$pos/app/services/data_service.js" tmp/pos-discount-native-data-service.js
       - name: Test session report flow and browser cache lifecycle
         run: |
           node --test custom_addons/baseer_pos_print_bridge/tests/frontend_stability.test.mjs custom_addons/baseer_pos_print_bridge/tests/kitchen_recovery.test.mjs custom_addons/baseer_pos_print_bridge/tests/cancelled_order_cleanup.test.mjs custom_addons/baseer_pos_print_bridge/tests/native_split.test.mjs custom_addons/baseer_pos_print_bridge/tests/retail_bill_controls.test.mjs custom_addons/baseer_pos_print_bridge/tests/receipt_resolution.test.mjs
           node --test custom_addons/baseer_pos_product_substitution/tests/*.test.mjs
           node --test custom_addons/baseer_pos_global_discount/tests/*.test.mjs
+          node --test custom_addons/baseer_pos_global_discount/tests/native_sync_race.test.cjs custom_addons/baseer_pos_global_discount/tests/*.browser.test.cjs
           node --test tests/receipt_image.test.mjs
           node --test custom_addons/baseer_pos_print_bridge/static/tests/session_report.test.mjs custom_addons/baseer_pos_print_bridge/tests/session_ticket.test.mjs
           node --test custom_addons/baseer_pos_cache_resilience/static/tests/cache_resilience.test.mjs

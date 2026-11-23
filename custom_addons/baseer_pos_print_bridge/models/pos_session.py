@@ -45,7 +45,7 @@ class PosSession(models.Model):
                 if visible_count == counts.get(session.id, 0) else _('Unavailable')
             )
 
-    def baseer_enqueue_draft_bill(self, order_uuid, request_uuid, jpeg_base64):
+    def baseer_enqueue_draft_bill(self, order_uuid, request_uuid, jpeg_base64, expected_discount_revision=None):
         self.ensure_one()
         if not self.env.user.has_group('point_of_sale.group_pos_user'):
             raise AccessError(_('A Point of Sale user is required to print an order bill.'))
@@ -64,14 +64,25 @@ class PosSession(models.Model):
             order_uuid, request_uuid = str(UUID(order_uuid)), str(UUID(request_uuid))
         except ValueError:
             raise ValidationError(_('Invalid order bill print request.')) from None
+        if expected_discount_revision is not None and (type(expected_discount_revision) is not int or expected_discount_revision < 0):
+            raise ValidationError(_('The order bill revision is invalid.'))
 
         Job = self.env['baseer.print.job']
+        # Same UUID lock as order synchronization, including its first insert.
+        # Keep it through enqueue so a newly saved shared order cannot race a
+        # print request which observed no row yet.
+        self.env.cr.execute('SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))', [order_uuid])
         # A browser-only draft has a UUID but may not have a database row yet.
         order = Job._draft_bill_order(order_uuid)
         if order:
+            self.env.cr.execute('SELECT id FROM pos_order WHERE id = %s FOR UPDATE', [order.id])
+            order.invalidate_recordset()
             if order.session_id != self or order.state != 'draft':
                 raise ValidationError(_('This order is no longer open in the current session.'))
             order.with_user(self.env.user).check_access('read')
+        revision = getattr(order, 'baseer_offline_draft_revision', 0) if order else 0
+        if (revision and expected_discount_revision != revision) or (not revision and expected_discount_revision not in (None, 0)):
+            raise ValidationError(_('The order changed on another device. Refresh it before printing the bill.'))
         printer = config.sudo().baseer_receipt_printer_id
         if (not printer or not printer.active or printer.paper_width != '80'
                 or not printer._allows_company(self.company_id)):

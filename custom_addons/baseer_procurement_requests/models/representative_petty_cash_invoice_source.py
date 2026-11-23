@@ -118,32 +118,81 @@ class RepresentativePettyCashAggregate(models.Model):
             ('state', '=', 'posted'),
         ])
         native_spend, _ = self._native_custody_spend(company, representative.id)
-        legacy_funded, legacy_returned = self._legacy_custody_totals(company, representative.id)
+        legacy_funded, legacy_returned, legacy_spent = self._legacy_custody_totals(company, representative.id)
         return (Decimal(str(funded)) - Decimal(str(returned)) - Decimal(str(reversed_funding))
                 - Decimal(str(historical)) - Decimal(str(settled)) - native_spend
-                + legacy_funded - legacy_returned).quantize(MONEY_QUANTUM)
+                + legacy_funded - legacy_returned - legacy_spent).quantize(MONEY_QUANTUM)
+
+    def _legacy_open_funding_lines(self, company, representative, account):
+        """Select posted, marked legacy funding lines for aggregate settlement."""
+        if account != company.baseer_procurement_custody_account_id:
+            return self.env['account.move.line']
+        events = self.env['baseer.procurement.custody.event'].sudo().search([
+            ('company_id', '=', company.id), ('event_type', '=', 'funding'),
+            ('state', '=', 'posted'), ('move_id.state', '=', 'posted'),
+        ])
+        candidates = self.env['account.move.line'].sudo().search([
+            ('company_id', '=', company.id), ('account_id', '=', account.id),
+            ('partner_id', '=', representative.id), ('move_id', 'in', events.move_id.ids),
+            ('parent_state', '=', 'posted'), ('reconciled', '=', False), ('debit', '>', 0),
+            ('baseer_procurement_custody_id', '!=', False),
+        ])
+        event_pairs = {(event.move_id.id, event.custody_id.id) for event in events}
+        return candidates.filtered(lambda line: (line.move_id.id, line.baseer_procurement_custody_id.id) in event_pairs)
 
     def _legacy_custody_activity_sql(self):
         """Read historical transfers from their posted representative ledger lines."""
         self.env['baseer.procurement.custody.event'].flush_model(
-            ['company_id', 'event_type', 'event_date', 'state', 'move_id', 'reference'])
-        self.env['res.company'].flush_model(['baseer_procurement_custody_account_id'])
-        self.env['account.move'].flush_model(['company_id', 'state'])
+            ['company_id', 'custody_id', 'event_type', 'event_date', 'state', 'move_id', 'reference'])
+        self.env['res.company'].flush_model([
+            'baseer_procurement_custody_account_id', 'baseer_procurement_representative_petty_cash_account_id',
+        ])
+        self.env['account.move'].flush_model(['company_id', 'state', 'date', 'name', 'ref'])
         self.env['account.move.line'].flush_model(['company_id', 'move_id', 'account_id', 'partner_id', 'balance'])
+        self.env['baseer.procurement.custody.settlement'].flush_model(
+            ['company_id', 'custody_id', 'move_id', 'reversal_move_id', 'state'])
+        self.env['baseer.procurement.representative.advance.settlement'].flush_model(['company_id', 'move_id'])
+        self.env['baseer.procurement.representative.petty.cash.invoice.settlement'].flush_model(['company_id', 'move_id'])
+        self.env['account.move.line'].flush_model(['baseer_procurement_custody_id'])
         self.flush_model(['company_id', 'move_id'])
         return '''
-            SELECT e.id, l.partner_id, e.event_date AS day, e.event_type AS movement_type,
-                   ABS(SUM(l.balance::numeric)) AS amount, COALESCE(e.reference, m.name) AS reference
+            SELECT 'legacy_event' AS source, e.id, l.partner_id, e.event_date AS day, e.event_type AS movement_type,
+                   ABS(SUM(l.balance::numeric)) AS amount, m.name AS reference
               FROM baseer_procurement_custody_event e
               JOIN res_company c ON c.id = e.company_id
               JOIN account_move m ON m.id = e.move_id AND m.company_id = e.company_id AND m.state = 'posted'
               JOIN account_move_line l ON l.move_id = m.id AND l.company_id = e.company_id
                    AND l.account_id = c.baseer_procurement_custody_account_id
+                   AND l.baseer_procurement_custody_id = e.custody_id
              WHERE e.company_id = %(company)s AND e.state = 'posted' AND l.partner_id IS NOT NULL
+               AND c.baseer_procurement_custody_account_id = c.baseer_procurement_representative_petty_cash_account_id
                AND (%(partner)s IS NULL OR l.partner_id = %(partner)s)
                AND NOT EXISTS (SELECT 1 FROM baseer_procurement_representative_advance a
                                 WHERE a.company_id = e.company_id AND a.move_id = e.move_id)
              GROUP BY e.id, l.partner_id, e.event_date, e.event_type, e.reference, m.name
+            HAVING SUM(l.balance::numeric) <> 0
+            UNION ALL
+            SELECT source, s.id, l.partner_id, m.date AS day, 'purchase' AS movement_type,
+                   -SUM(l.balance::numeric) AS amount, COALESCE(m.ref, m.name) AS reference
+              FROM baseer_procurement_custody_settlement s
+              CROSS JOIN LATERAL (VALUES ('legacy_settlement', s.move_id),
+                                         ('legacy_reversal', s.reversal_move_id)) v(source, move_id)
+              JOIN res_company c ON c.id = s.company_id
+              JOIN account_move m ON m.id = v.move_id AND m.company_id = s.company_id AND m.state = 'posted'
+              JOIN account_move_line l ON l.move_id = m.id AND l.company_id = s.company_id
+                   AND l.account_id = c.baseer_procurement_custody_account_id
+                   AND l.baseer_procurement_custody_id = s.custody_id
+             WHERE s.company_id = %(company)s AND l.partner_id IS NOT NULL
+               AND c.baseer_procurement_custody_account_id = c.baseer_procurement_representative_petty_cash_account_id
+               AND (%(partner)s IS NULL OR l.partner_id = %(partner)s)
+               AND (v.source != 'legacy_reversal' OR s.state = 'reversed')
+               AND NOT EXISTS (SELECT 1 FROM baseer_procurement_representative_advance a
+                                WHERE a.company_id = s.company_id AND a.move_id = m.id)
+               AND NOT EXISTS (SELECT 1 FROM baseer_procurement_representative_advance_settlement a
+                                WHERE a.company_id = s.company_id AND a.move_id = m.id)
+               AND NOT EXISTS (SELECT 1 FROM baseer_procurement_representative_petty_cash_invoice_settlement a
+                                WHERE a.company_id = s.company_id AND a.move_id = m.id)
+             GROUP BY source, s.id, l.partner_id, m.date, m.ref, m.name
             HAVING SUM(l.balance::numeric) <> 0
         '''
 
@@ -151,13 +200,14 @@ class RepresentativePettyCashAggregate(models.Model):
         activity = self._legacy_custody_activity_sql()
         self.env.cr.execute(f'''
             SELECT COALESCE(SUM(amount) FILTER (WHERE movement_type = 'funding'), 0),
-                   COALESCE(SUM(amount) FILTER (WHERE movement_type = 'return'), 0)
+                   COALESCE(SUM(amount) FILTER (WHERE movement_type = 'return'), 0),
+                   COALESCE(SUM(amount) FILTER (WHERE movement_type = 'purchase'), 0)
               FROM ({activity}) legacy_activity
              WHERE (%(start)s::date IS NULL OR day >= %(start)s)
                AND (%(end)s::date IS NULL OR day < %(end)s)
         ''', {'company': company.id, 'partner': representative_id or None, 'start': start, 'end': end})
-        funded, returned = self.env.cr.fetchone()
-        return Decimal(str(funded)), Decimal(str(returned))
+        funded, returned, spent = self.env.cr.fetchone()
+        return Decimal(str(funded)), Decimal(str(returned)), Decimal(str(spent))
 
     def _native_custody_spend(self, company, representative_id, start=None, end=None):
         """Return net native purchases split at the month, or the overall total."""
@@ -441,7 +491,7 @@ class RepresentativePettyCashAggregate(models.Model):
                   FROM ({native_activity}) native_activity
                  WHERE day >= %(start)s AND day < %(end)s
                 UNION ALL
-                SELECT 'legacy_custody', id, day, movement_type, partner_id, amount, reference, NULL::integer, NULL::varchar
+                SELECT source, id, day, movement_type, partner_id, amount, reference, NULL::integer, NULL::varchar
                   FROM ({legacy_activity}) legacy_activity
                  WHERE day >= %(start)s AND day < %(end)s
             ) activity
@@ -478,6 +528,10 @@ class RepresentativePettyCashAggregate(models.Model):
             ('company_id', '=', company.id), ('baseer_custody_representative_id', '!=', False),
         ])
         historical = Partner.browse([partner.id for partner, in posted]) | journals.baseer_custody_representative_id
+        legacy_activity = self._legacy_custody_activity_sql()
+        self.env.cr.execute(f'SELECT DISTINCT partner_id FROM ({legacy_activity}) legacy_activity',
+                            {'company': company.id, 'partner': None})
+        historical |= Partner.browse([row[0] for row in self.env.cr.fetchall()])
         active = Partner.browse([row['id'] for row in active_representatives])
         return [{'id': partner.id, 'display_name': partner.display_name} for partner in (active | historical).sorted(
             key=lambda partner: (partner.name or '', partner.id),
@@ -516,12 +570,14 @@ class RepresentativePettyCashAggregate(models.Model):
 
         previous_funded, previous_returned, previous_settled, previous_reversed = period([('<', start)])
         funded, returned, settled, reversed_funding = period([('>=', start), ('<', end)])
-        old_funded, old_returned = self._legacy_custody_totals(company, partner_id, end=start)
-        month_funded, month_returned = self._legacy_custody_totals(company, partner_id, start=start, end=end)
+        old_funded, old_returned, old_spent = self._legacy_custody_totals(company, partner_id, end=start)
+        month_funded, month_returned, month_spent = self._legacy_custody_totals(company, partner_id, start=start, end=end)
         previous_funded += old_funded
         previous_returned += old_returned
         funded += month_funded
         returned += month_returned
+        previous_settled += old_spent
+        settled += month_spent
         previous_native_spend, native_spend = self._native_custody_spend(company, partner_id, start, end)
         settled = (settled + native_spend).quantize(MONEY_QUANTUM)
         previous_settled = (previous_settled + previous_native_spend).quantize(MONEY_QUANTUM)
@@ -853,10 +909,13 @@ class BaseerPurchaseBatch(models.Model):
                     lambda item: item.account_id == account and item.partner_id == representative and item.credit > 0
                 )
                 open_funding = self.env['account.move.line'].search([
-                    ('account_id', '=', account.id), ('partner_id', '=', representative.id),
+                    ('company_id', '=', batch.company_id.id), ('account_id', '=', account.id), ('partner_id', '=', representative.id),
                     ('parent_state', '=', 'posted'), ('reconciled', '=', False), ('debit', '>', 0),
                     ('baseer_representative_petty_cash_id', '!=', False),
                 ])
+                open_funding |= self.env['baseer.procurement.representative.advance']._legacy_open_funding_lines(
+                    batch.company_id, representative, account,
+                )
                 (open_funding | counterparty).reconcile()
                 if any(line.move_id.payment_state != 'paid' for line, _payable in payables):
                     raise UserError(_('A supplier bill did not reconcile after Representative Petty Cash settlement.'))

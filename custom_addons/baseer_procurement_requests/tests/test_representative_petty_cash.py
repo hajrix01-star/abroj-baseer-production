@@ -277,6 +277,7 @@ class RepresentativePettyCashCase(TransactionCase):
         self.company.write({
             'baseer_procurement_custody_account_id': self.petty_cash_account.id,
             'baseer_procurement_custody_journal_id': self.general_journal.id,
+            'baseer_procurement_representative_petty_cash_account_id': False,
         })
         employee = self.env['hr.employee'].create({
             'name': 'Legacy custody employee', 'company_id': self.company.id,
@@ -296,6 +297,7 @@ class RepresentativePettyCashCase(TransactionCase):
             'amount': 20, 'cash_journal_id': self.bank_journal.id,
         })
         returned.action_post()
+        self.company.baseer_procurement_representative_petty_cash_account_id = self.petty_cash_account
         self.assertFalse(first.representative_partner_id)
         Model = self.env['baseer.procurement.representative.advance']
         Model.submit_funding(False, self.bank_journal.id, self.representative.id, 50, str(uuid4()), '2025-02-10')
@@ -306,6 +308,15 @@ class RepresentativePettyCashCase(TransactionCase):
         self.assertEqual(Model._baseer_representative_available_amount(self.company, self.representative), 130)
         self.assertEqual([(row['type'], row['amount']) for row in feb['daily_movements']], [('funding', 50), ('return', 20)])
         self.assertIn(100, [row['amount'] for row in feb['carryovers']])
+        with self.assertRaises(UserError):
+            Event.create({
+                'custody_id': custody.id, 'event_type': 'funding', 'event_date': '2025-02-12',
+                'amount': 1, 'cash_journal_id': self.bank_journal.id,
+            }).action_post()
+        Model.submit_aggregate_return(self.representative.id, self.bank_journal.id, 60, str(uuid4()), '2025-02-15')
+        self.assertEqual(Model._baseer_representative_available_amount(self.company, self.representative), 70)
+        legacy_line = first.move_id.line_ids.filtered(lambda line: line.account_id == self.petty_cash_account)
+        self.assertLess(legacy_line.amount_residual, 80)
 
     def test_funding_posts_once_and_is_immutable(self):
         request = self._sent_request()

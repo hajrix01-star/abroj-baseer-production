@@ -330,8 +330,14 @@ class CustodyRemediationCase(TransactionCase):
             'amount': 40,
         })
         self.assertFalse(settlement.representative_partner_id)
+        self.company.baseer_procurement_representative_petty_cash_account_id = self.custody_account
+        ledger = self.env['baseer.procurement.representative.advance']
+        before = ledger._legacy_custody_totals(self.company, representative.id)
+        self.assertEqual(tuple(map(float, before)), (100.0, 0.0, 40.0))
         settlement.write({'reversal_reason': 'Historical fallback regression'})
         settlement.action_reverse()
+        after = ledger._legacy_custody_totals(self.company, representative.id)
+        self.assertEqual(tuple(map(float, after)), (100.0, 0.0, 0.0))
 
         reversal_custody_line = settlement.reversal_move_id.line_ids.filtered(
             lambda line: (

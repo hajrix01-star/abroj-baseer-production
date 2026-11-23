@@ -7,6 +7,7 @@ from lxml import html as lxml_html
 from odoo import Command
 from odoo.exceptions import AccessError, ValidationError
 from odoo.tests.common import TransactionCase, tagged
+from odoo.tools.translate import code_translations
 
 from ..models.profit_loss import BaseerProfitLossReport, SECTION_KEYS
 
@@ -14,6 +15,20 @@ from ..models.profit_loss import BaseerProfitLossReport, SECTION_KEYS
 @tagged('post_install', '-at_install')
 class TestProfitLoss(TransactionCase):
     """Posted AML is the sole financial source for this period report."""
+
+    def test_screen_section_labels_follow_arabic_and_english(self):
+        expected = ['الإيرادات', 'تكلفة المبيعات', 'إجمالي الربح', 'المصروفات',
+                    'صافي الربح التشغيلي', 'إيرادات أخرى', 'مصروفات أخرى',
+                    'صافي الإيرادات الأخرى', 'صافي الربح']
+        self.env['res.lang']._activate_lang('ar_001').ensure_one()
+        rows = self.report.with_context(lang='ar_001').get_report(self.filters)['rows']
+        self.assertEqual([row['label'] for row in rows], expected)
+        for lang in ('ar', 'ar_001'):
+            labels = code_translations.get_python_translations('baseer_profit_loss_report', lang)
+            self.assertEqual(labels.get('Income'), 'الإيرادات')
+        rows = self.report.with_context(lang='en_US').get_report(self.filters)['rows']
+        self.assertEqual(rows[0]['label'], 'Income')
+        self.assertEqual(rows[-1]['label'], 'Net Income')
 
     def setUp(self):
         super().setUp()

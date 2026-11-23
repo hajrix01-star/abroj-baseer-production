@@ -708,7 +708,7 @@ class DashboardSections(models.AbstractModel):
             def decimal(value):
                 return Decimal(str(value or 0))
             def monetary(value):
-                return Decimal(report_engine._format_money(value, currency).replace(',', ''))
+                return Decimal(report_engine._format_money(decimal(value), currency).replace(',', ''))
             def ratio(value, base):
                 return float(percent(value, base)) if base else None
             def number(value):

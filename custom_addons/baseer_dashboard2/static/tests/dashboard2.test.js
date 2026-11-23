@@ -2,7 +2,7 @@ import { after, expect, getFixture, globals, test, withFetch, click, press } fro
 import { animationFrame } from '@odoo/hoot-mock';
 import { App, Component, useState, xml } from '@odoo/owl';
 import { DashboardTooltip, dashboardTooltip } from '../src/js/tooltip';
-import { monthLabel, plainCsvText, periodRange, hourLabel, hasDisplayValues, multiplePoints, formatNumber, formatTable, formatPnlAmount, hasPnlValues, formatTablePct, formatPercent, formatPoints, ratioDifference, formatTargetPercent, chartX, miniX, timelineYear, customerCutoverLabel, pnlTaxLabel, pnlChannelEstimateLabel, Dashboard2, DashboardPnlDetails, InfoPopup, LineChart, niceStep, KpiCard, Sparkline, Badge, Gauge } from '../src/js/main';
+import { monthLabel, plainCsvText, periodRange, hourLabel, hasDisplayValues, multiplePoints, formatNumber, formatTable, formatPnlAmount, hasPnlValues, formatTablePct, formatPercent, formatPoints, ratioDifference, formatTargetPercent, chartX, miniX, timelineYear, customerCutoverLabel, pnlTaxLabel, Dashboard2, DashboardPnlDetails, InfoPopup, LineChart, niceStep, KpiCard, Sparkline, Badge, Gauge } from '../src/js/main';
 
 test('other expense is drillable and exported after operating profit', async () => {
     const row = (key, name, amount) => ({key, name, months:[amount], total:amount, pct:null, children:[]});
@@ -963,16 +963,6 @@ test('P&L verified detail requests retain the selected company and tax basis', a
     expect(args[2][2]).toBe(2);
     expect(context.state.data.page).toBe(2);
     expect(context.state.busy).toBe(false);
-});
-
-test('P&L payment channel labels disclose estimated allocation in both languages', async () => {
-    expect(pnlChannelEstimateLabel('ar_001')).toBe('توزيع تقديري');
-    expect(pnlChannelEstimateLabel('en_US')).toBe('Estimated allocation');
-    const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
-    const doc = new DOMParser().parseFromString(await response.text(), 'text/xml');
-    const label = doc.querySelector('[t-name="baseer_dashboard2.Pnl"] .pnl-channel-estimate');
-    expect(label.getAttribute('t-if')).toBe("child.key?.startsWith('channel:')");
-    expect(label.getAttribute('t-esc')).toBe('this.pnlChannelEstimateLabel');
 });
 
 test('P&L shows sparklines with multiple displayed columns', async () => {

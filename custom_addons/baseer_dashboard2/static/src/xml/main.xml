@@ -1,4 +1,8 @@
 <templates xml:space="preserve">
+    <t t-name="baseer_dashboard2.PnlDetails">
+        <AmountDetailsDialog view="view" lang="props.lang" close="props.close"
+            retry.bind="load" activate.bind="activate" page.bind="page" back.bind="back"/>
+    </t>
     <t t-name="baseer_dashboard2.Money">
         <span class="bd2-money">
             <span t-esc="format(props.value)"/>
@@ -396,8 +400,13 @@
                 <button t-att-class="state.view==='pnl'?'on':''" t-on-click="()=&gt;this.choose('view','pnl')">الربح والخسارة</button>
                 <button t-att-class="state.view==='inout'?'on':''" t-on-click="()=&gt;this.choose('view','inout')">الداخل والخارج</button>
             </div>
-            <span class="chip" t-esc="state.view==='pnl'?'قبل الضريبة':'شامل الضريبة'"/>
+            <button t-if="state.view==='pnl'" type="button" class="pnl-tax-switch" role="switch" t-att-aria-checked="state.tax_inclusive ? 'true' : 'false'" t-att-aria-label="this.pnlTaxLabel" t-on-click="()=&gt;this.choose('tax_inclusive', !state.tax_inclusive)">
+                <span t-esc="this.pnlTaxLabel"/>
+                <span class="pnl-tax-track" aria-hidden="true"><span class="pnl-tax-thumb"/></span>
+            </button>
+            <span t-else="" class="chip">شامل الضريبة</span>
         </div>
+        <div t-if="state.view==='pnl' and state.tax_inclusive" class="muted pnl-tax-note" t-esc="this.pnlTaxNote"/>
         <div t-if="state.view==='inout'" class="stats card">
             <div>
                 <small>الداخل</small>
@@ -437,7 +446,7 @@
             </div>
             <div t-if="state.view==='pnl'" class="pnl-period-controls">
                 <div class="seg pnl-period-seg" aria-label="فترة قائمة الدخل">
-                    <button t-foreach="[['month','شهر'],['quarter','ربع'],['year','١٢ شهر'],['range','من – إلى']]" t-as="option" t-key="option[0]" t-att-class="state.pnl_view===option[0]?'on':''" t-on-click="()=&gt;this.choose('pnl_view',option[0])" t-esc="option[1]"/>
+                    <button t-foreach="[['month','شهر'],['quarter','ربع'],['year','12 شهر'],['range','من – إلى']]" t-as="option" t-key="option[0]" t-att-class="state.pnl_view===option[0]?'on':''" t-on-click="()=&gt;this.choose('pnl_view',option[0])" t-esc="option[1]"/>
                 </div>
                 <div t-if="state.pnl_view==='range' and state.pnl_range" class="pnl-range">
                     <label class="seg">من <input type="date" t-att-value="state.pnl_range.date_from" t-on-change="(e)=&gt;this.pnlRangeChange('date_from',e.target.value)"/></label>
@@ -456,7 +465,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <t t-foreach="state.data.rows.filter(r=&gt;hasDisplayValues([...r.months, r.total]))" t-as="row" t-key="row.key">
+                    <t t-foreach="state.data.rows.filter(r=&gt;hasPnlValues([...r.months, r.total]))" t-as="row" t-key="row.key">
                         <tr t-att-class="row.key==='net_profit'?'net': ['gross_profit','operating_profit'].includes(row.key)?'highlight':'group'" t-on-click="()=&gt;this.toggleRow(row.key)">
                             <th>
                                 <span t-if="row.children.length">▾</span>
@@ -465,20 +474,21 @@
                             <td t-if="pnlColumns.length &gt; 1">
                                 <Sparkline months="pnlColumns.map(x=&gt;x.month)" previousYear="row.previous_year_months" values="row.months" partial="pnlColumns.map(x=&gt;x.partial)" gold="row.key==='net_profit'" navy="row.key!=='net_profit'"/>
                             </td>
-                            <td t-foreach="row.months" t-as="v" t-key="v_index" t-att-class="pnlColumns[v_index]?.partial ? 'muted' : ''"><span t-if="v !== null and pnlDrillable(row.key)" class="bd2-drill" role="button" tabindex="0" t-on-click="(e)=&gt;this.drillPnl(e,row.key,null,v_index)" t-on-keydown="(e)=&gt;this.drillPnl(e,row.key,null,v_index)" t-esc="tableFmt(v)"/><t t-else="" t-esc="tableFmt(v)"/></td>
-                            <td><span t-if="pnlDrillable(row.key)" class="bd2-drill" role="button" tabindex="0" t-on-click="(e)=&gt;this.drillPnl(e,row.key,null,null)" t-on-keydown="(e)=&gt;this.drillPnl(e,row.key,null,null)" t-esc="tableFmt(row.total)"/><t t-else="" t-esc="tableFmt(row.total)"/></td>
+                            <td t-foreach="row.months" t-as="v" t-key="v_index" t-att-class="pnlColumns[v_index]?.partial ? 'muted' : ''"><span t-if="v !== null and pnlDrillable(row.key)" class="bd2-drill" role="button" tabindex="0" t-on-click="(e)=&gt;this.drillPnl(e,row.key,null,v_index)" t-on-keydown="(e)=&gt;this.drillPnl(e,row.key,null,v_index)" t-esc="pnlFmt(v)"/><t t-else="" t-esc="pnlFmt(v)"/></td>
+                            <td><span t-if="pnlDrillable(row.key)" class="bd2-drill" role="button" tabindex="0" t-on-click="(e)=&gt;this.drillPnl(e,row.key,null,null)" t-on-keydown="(e)=&gt;this.drillPnl(e,row.key,null,null)" t-esc="pnlFmt(row.total)"/><t t-else="" t-esc="pnlFmt(row.total)"/></td>
                             <td><bdi dir="ltr" t-att-class="row.pct != null and pnlDrillable(row.key) ? 'bd2-drill' : ''" t-att-role="row.pct != null and pnlDrillable(row.key) ? 'button' : false" t-att-tabindex="row.pct != null and pnlDrillable(row.key) ? 0 : false" t-on-click="(e)=&gt;row.pct != null and pnlDrillable(row.key) and this.drillPnl(e,row.key,null,null)" t-on-keydown="(e)=&gt;row.pct != null and pnlDrillable(row.key) and this.drillPnl(e,row.key,null,null)" t-esc="tablePct(row.pct)"/></td>
                         </tr>
-                        <t t-if="!state.closed[row.key]"><tr t-foreach="row.children.filter(c=&gt;hasDisplayValues([...c.months, c.total]))" t-as="child" t-key="child_index" class="account">
+                        <t t-if="!state.closed[row.key]"><tr t-foreach="row.children.filter(c=&gt;hasPnlValues([...c.months, c.total]))" t-as="child" t-key="child_index" class="account">
                             <td>
                                 <span class="muted account-code" dir="ltr" t-esc="child.code"/>
                                 <t t-esc="child.code ? ' '+child.name : child.name"/>
+                                <small t-if="child.key?.startsWith('channel:')" class="muted pnl-channel-estimate" t-esc="this.pnlChannelEstimateLabel"/>
                             </td>
                             <td t-if="pnlColumns.length &gt; 1">
                                 <Sparkline months="pnlColumns.map(x=&gt;x.month)" previousYear="child.previous_year_months" values="child.months" partial="pnlColumns.map(x=&gt;x.partial)"/>
                             </td>
-                            <td t-foreach="child.months" t-as="v" t-key="v_index" t-att-class="pnlColumns[v_index]?.partial ? 'muted' : ''"><span t-if="v !== null and pnlDrillable(row.key,child.key)" class="bd2-drill" role="button" tabindex="0" t-on-click="(e)=&gt;this.drillPnl(e,row.key,child.key,v_index)" t-on-keydown="(e)=&gt;this.drillPnl(e,row.key,child.key,v_index)" t-esc="tableFmt(v)"/><t t-else="" t-esc="tableFmt(v)"/></td>
-                            <td><span t-if="pnlDrillable(row.key,child.key)" class="bd2-drill" role="button" tabindex="0" t-on-click="(e)=&gt;this.drillPnl(e,row.key,child.key,null)" t-on-keydown="(e)=&gt;this.drillPnl(e,row.key,child.key,null)" t-esc="tableFmt(child.total)"/><t t-else="" t-esc="tableFmt(child.total)"/></td>
+                            <td t-foreach="child.months" t-as="v" t-key="v_index" t-att-class="pnlColumns[v_index]?.partial ? 'muted' : ''"><span t-if="v !== null and pnlDrillable(row.key,child.key)" class="bd2-drill" role="button" tabindex="0" t-on-click="(e)=&gt;this.drillPnl(e,row.key,child.key,v_index)" t-on-keydown="(e)=&gt;this.drillPnl(e,row.key,child.key,v_index)" t-esc="pnlFmt(v)"/><t t-else="" t-esc="pnlFmt(v)"/></td>
+                            <td><span t-if="pnlDrillable(row.key,child.key)" class="bd2-drill" role="button" tabindex="0" t-on-click="(e)=&gt;this.drillPnl(e,row.key,child.key,null)" t-on-keydown="(e)=&gt;this.drillPnl(e,row.key,child.key,null)" t-esc="pnlFmt(child.total)"/><t t-else="" t-esc="pnlFmt(child.total)"/></td>
                             <td><bdi dir="ltr" t-att-class="child.pct != null and pnlDrillable(row.key,child.key) ? 'bd2-drill' : ''" t-att-role="child.pct != null and pnlDrillable(row.key,child.key) ? 'button' : false" t-att-tabindex="child.pct != null and pnlDrillable(row.key,child.key) ? 0 : false" t-on-click="(e)=&gt;child.pct != null and pnlDrillable(row.key,child.key) and this.drillPnl(e,row.key,child.key,null)" t-on-keydown="(e)=&gt;child.pct != null and pnlDrillable(row.key,child.key) and this.drillPnl(e,row.key,child.key,null)" t-esc="tablePct(child.pct)"/></td>
                         </tr></t>
                     </t>

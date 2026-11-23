@@ -1,5 +1,6 @@
 from . import configuration
 from . import service
+from . import pnl_basis
 from . import tax_basis
 from . import sources_sales
 from . import sources_cash

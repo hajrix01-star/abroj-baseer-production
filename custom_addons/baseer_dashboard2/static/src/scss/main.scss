@@ -949,6 +949,11 @@ td {
 }
 
 .o_bd2 .pnl-period-controls, .o_bd2 .pnl-range { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0; }
+.o_bd2 .pnl-tax-switch { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; border: 0; background: transparent; color: var(--bd2-text); cursor: pointer; font: inherit; }
+.o_bd2 .pnl-tax-switch:focus-visible { outline: 2px solid var(--bd2-c1); outline-offset: 2px; }
+.o_bd2 .pnl-tax-track { display: inline-flex; align-items: center; width: 36px; height: 20px; padding: 2px; border-radius: 999px; background: #777; }
+.o_bd2 .pnl-tax-thumb { width: 16px; height: 16px; border-radius: 50%; background: #fff; }
+.o_bd2 .pnl-tax-switch[aria-checked='true'] .pnl-tax-track { justify-content: flex-end; background: var(--bd2-c1); }
 .o_bd2 .pnl-period-seg { display: flex; flex-wrap: wrap; }
 .o_bd2 .pnl-period-seg button, .o_bd2 .pnl-range input { min-height: 44px; }
 .o_bd2 .pnl-range label { display: flex; align-items: center; gap: 5px; }

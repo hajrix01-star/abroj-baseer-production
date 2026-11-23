@@ -2,7 +2,7 @@ import { after, expect, getFixture, globals, test, withFetch, click, press } fro
 import { animationFrame } from '@odoo/hoot-mock';
 import { App, Component, useState, xml } from '@odoo/owl';
 import { DashboardTooltip, dashboardTooltip } from '../src/js/tooltip';
-import { monthLabel, plainCsvText, periodRange, hourLabel, hasDisplayValues, multiplePoints, formatNumber, formatTable, formatTablePct, formatPercent, formatPoints, ratioDifference, formatTargetPercent, chartX, miniX, timelineYear, customerCutoverLabel, Dashboard2, InfoPopup, LineChart, niceStep, KpiCard, Sparkline, Badge, Gauge } from '../src/js/main';
+import { monthLabel, plainCsvText, periodRange, hourLabel, hasDisplayValues, multiplePoints, formatNumber, formatTable, formatPnlAmount, hasPnlValues, formatTablePct, formatPercent, formatPoints, ratioDifference, formatTargetPercent, chartX, miniX, timelineYear, customerCutoverLabel, pnlTaxLabel, pnlChannelEstimateLabel, Dashboard2, DashboardPnlDetails, InfoPopup, LineChart, niceStep, KpiCard, Sparkline, Badge, Gauge } from '../src/js/main';
 
 test('month labels support full, short, year, bidi isolation and plain CSV', () => {
     expect(monthLabel('2026-10')).toBe('October');
@@ -24,8 +24,10 @@ test('P&L renders without in/out months', async () => {
     class Pnl extends Component {
         static template = 'baseer_dashboard2.Pnl';
         pnlDrillable = Dashboard2.prototype.pnlDrillable;
-        state = { view: 'pnl', data: { rows: [] }, closed: {} };
+        state = useState({ view: 'pnl', tax_inclusive: true, data: { rows: [] }, closed: {} });
         trend = [];
+        get pnlTaxLabel() { return pnlTaxLabel(this.state.tax_inclusive, 'ar_001'); }
+        choose(key, value) { this.state[key] = value; }
         exportCsv() {}
     }
     const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
@@ -34,7 +36,15 @@ test('P&L renders without in/out months', async () => {
     after(() => app.destroy());
     await app.mount(getFixture());
     expect(getFixture().querySelector('.export-table')).not.toBe(null);
-    expect(getFixture().querySelector('.chip').textContent).toBe('قبل الضريبة');
+    const toggle = getFixture().querySelector('[role="switch"]');
+    expect(toggle.textContent.trim()).toBe('شامل الضريبة');
+    expect(toggle.getAttribute('aria-checked')).toBe('true');
+    await click(toggle);
+    await animationFrame();
+    expect(toggle.textContent.trim()).toBe('غير شامل الضريبة');
+    expect(toggle.getAttribute('aria-checked')).toBe('false');
+    expect(pnlTaxLabel(true, 'en_US')).toBe('Tax inclusive');
+    expect(pnlTaxLabel(false, 'en_US')).toBe('Tax exclusive');
 });
 
 test('ratios render a numeric gauge target', async () => {
@@ -115,7 +125,7 @@ test('in/out renders before cash drill availability and ignores stale responses'
         }
         load = Dashboard2.prototype.load;
         loadCashDrills = Dashboard2.prototype.loadCashDrills;
-        objectKeys = Object.keys; fmt = formatNumber; tableFmt = formatTable; tablePct = formatTablePct; hasDisplayValues = hasDisplayValues; multiplePoints = multiplePoints; monthName = (v) => v; name = (v) => v;
+        objectKeys = Object.keys; fmt = formatNumber; tableFmt = formatTable; pnlFmt = formatPnlAmount; tablePct = formatTablePct; hasDisplayValues = hasDisplayValues; hasPnlValues = hasPnlValues; multiplePoints = multiplePoints; monthName = (v) => v; name = (v) => v;
         exportCsv() {} drill() {}
     }
     const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
@@ -155,7 +165,7 @@ test('in/out unavailable unreceived values use dashes with tooltips', async () =
         pnlDrillable = Dashboard2.prototype.pnlDrillable;
         static components = { Sparkline };
         state = { view: 'inout', data: { months: [month('2026-10', unavailable), month('2026-11', available)], total: { incoming: 200, outgoing: 0, channels: {}, items: {}, sources: {}, apps_unreceived: available, sales_vat: 0, unpaid_bills: { value: 0 }, net: 200 } } };
-        objectKeys = Object.keys; fmt = formatNumber; tableFmt = formatTable; tablePct = formatTablePct; hasDisplayValues = hasDisplayValues; multiplePoints = multiplePoints; monthName = (v) => v; name = (v) => v;
+        objectKeys = Object.keys; fmt = formatNumber; tableFmt = formatTable; pnlFmt = formatPnlAmount; tablePct = formatTablePct; hasDisplayValues = hasDisplayValues; hasPnlValues = hasPnlValues; multiplePoints = multiplePoints; monthName = (v) => v; name = (v) => v;
         exportCsv() {}
     }
     const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
@@ -374,8 +384,8 @@ test('P&L hides all-zero groups and account rows across displayed months', async
         pnlDrillable = Dashboard2.prototype.pnlDrillable;
         static components = { Sparkline };
         state = { view: 'pnl', closed: {}, data: { rows: [row('empty', [0, null]), row('active', [0, 20], [row('empty child', [0, 0]), row('active child', [3, 0])])] } };
-        trend = []; hasDisplayValues = hasDisplayValues; name = v => v; monthName = v => v;
-        tableFmt = formatTable; tablePct = formatTablePct; toggleRow() {} exportCsv() {}
+        trend = []; hasDisplayValues = hasDisplayValues; hasPnlValues = hasPnlValues; name = v => v; monthName = v => v;
+        tableFmt = formatTable; pnlFmt = formatPnlAmount; tablePct = formatTablePct; toggleRow() {} exportCsv() {}
     }
     const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
     const app = new App(Pnl, { templates: await response.text(), test: true });
@@ -557,7 +567,7 @@ test('partial overview marks ratios and neutralizes company comparisons', async 
             companies_compare: ['1', '2'].map(key => ({ key, name: key, sales_net: 100, food_pct: 1.6, salaries_pct: 0.4, net_margin_pct: -5, targets: { food_pct: { status: 'ok' }, salaries_pct: { status: 'bad' } } }))
         } };
         current = { tax: {} };
-        trend = [{ partial }]; monthName = (v, short, year, isPartial) => monthLabel(v, { short, year, partial: isPartial }); fmt = formatNumber; pct = formatPercent; tableFmt = formatTable; tablePct = formatTablePct; customerCutoverLabel = customerCutoverLabel;
+        trend = [{ partial }]; monthName = (v, short, year, isPartial) => monthLabel(v, { short, year, partial: isPartial }); fmt = formatNumber; pct = formatPercent; tableFmt = formatTable; pnlFmt = formatPnlAmount; tablePct = formatTablePct; customerCutoverLabel = customerCutoverLabel;
         iconPath() { return ''; } name(v) { return v; } bridgeStyle() { return ''; } bridgeDrillKey = Dashboard2.prototype.bridgeDrillKey; miniDrillable = Dashboard2.prototype.miniDrillable; miniDrill = Dashboard2.prototype.miniDrill;
     }
     const app = new App(PartialOverview, { templates, test: true });
@@ -666,8 +676,8 @@ test('P&L displays the merged other expense and its accounts in one row', async 
         static components = { Sparkline };
         state = { view: 'pnl', closed: {}, data: { rows: [{ key: 'other_opex', name: false, months: [-1250.18], total: -1250.18, pct: -1, children: [{ code: '400032', name: 'حساب', months: [-1250.18], total: -1250.18, pct: -1 }] }] } };
         trend = [{ month: '2026-10' }];
-        name = () => 'مصاريف أخرى'; monthName = (v) => v; hasDisplayValues = hasDisplayValues;
-        tableFmt = formatTable; tablePct = formatTablePct;
+        name = () => 'مصاريف أخرى'; monthName = (v) => v; hasDisplayValues = hasDisplayValues; hasPnlValues = hasPnlValues;
+        tableFmt = formatTable; pnlFmt = formatPnlAmount; tablePct = formatTablePct;
         toggleRow() {} exportCsv() {}
     }
     const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
@@ -676,7 +686,7 @@ test('P&L displays the merged other expense and its accounts in one row', async 
     await app.mount(getFixture());
     const table = getFixture().querySelector('.export-table');
     expect(table.textContent.match(/مصاريف أخرى/g).length).toBe(1);
-    expect(table.textContent).toInclude('(1,250)');
+    expect(table.textContent).toInclude('(1,250.18)');
     expect(table.querySelector('.account').textContent).toInclude('400032');
 });
 
@@ -787,7 +797,7 @@ test('mobile navigation opens and closes on page selection and Escape', async ()
         async init() { this.state.meta = { companies: [{ key: "all", label: "المجموع" }] }; }
         async load() {}
     }
-    const app = new App(Dashboard, { templates: await response.text(), env: { services: { orm: {}, action: {} } }, test: true });
+    const app = new App(Dashboard, { templates: await response.text(), env: { services: { orm: {}, action: {}, dialog: {} } }, test: true });
     after(() => app.destroy());
     await app.mount(getFixture());
     const root = getFixture().querySelector('.o_bd2');
@@ -832,7 +842,7 @@ test('P&L period selector controls columns and hides a single-column sparkline',
         pnlDrillable = Dashboard2.prototype.pnlDrillable;
         static components = { Sparkline };
         state = { view: 'pnl', pnl_view: 'month', closed: {}, data: { pnl_columns: [{month: '2026-10'}], rows: [{key:'revenue', name:'مبيعات', months:[100], total:100, pct:100, children:[]}] } };
-        trend = []; hasDisplayValues = hasDisplayValues; name = v => v; monthName = v => v; tableFmt = formatTable; tablePct = formatTablePct;
+        trend = []; hasDisplayValues = hasDisplayValues; hasPnlValues = hasPnlValues; name = v => v; monthName = v => v; tableFmt = formatTable; pnlFmt = formatPnlAmount; tablePct = formatTablePct;
         toggleRow() {} exportCsv() {} choose() {}
     }
     const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
@@ -846,11 +856,85 @@ test('P&L period selector controls columns and hides a single-column sparkline',
 
 test('P&L section request includes view and custom dates', async () => {
     let args;
-    const context = { state: { company: '2', page: 'pnl', view: 'pnl', pnl_view: 'range', pnl_range: {date_from:'2026-08-15', date_to:'2026-10-20'}, period: {mode:'month', month:'2026-10'}, timeline:'monthly' }, orm: { async call(...values) { args = values; return {}; } } };
+    const context = { state: { company: '2', page: 'pnl', view: 'pnl', tax_inclusive: false, pnl_view: 'range', pnl_range: {date_from:'2026-08-15', date_to:'2026-10-20'}, period: {mode:'month', month:'2026-10'}, timeline:'monthly' }, orm: { async call(...values) { args = values; return {}; } } };
     await Dashboard2.prototype.load.call(context);
     expect(args[2][1].pnl_view).toBe('range');
     expect(args[2][1].pnl_range.date_from).toBe('2026-08-15');
     expect(args[2][1].pnl_range.date_to).toBe('2026-10-20');
+    expect(args[2][1].tax_inclusive).toBe(false);
+});
+
+test('P&L displays and exports halalas and hides genuinely zero rows', async () => {
+    expect(formatPnlAmount(100.49)).toBe('100.49');
+    expect(formatPnlAmount(0.49)).toBe('0.49');
+    expect(formatPnlAmount(-0.49)).toBe('(0.49)');
+    expect(formatPnlAmount(0)).toBe('—');
+    expect(hasPnlValues([null, 0])).toBe(false);
+    expect(hasPnlValues([0, 0.49])).toBe(true);
+    class Pnl extends Component {
+        static template = 'baseer_dashboard2.Pnl';
+        static components = { Sparkline };
+        state = { view:'pnl', pnl_view:'month', closed:{}, data:{pnl_columns:[{month:'2026-10'}], rows:[
+            {key:'a', name:'large', months:[100.49], total:100.49, pct:null, children:[]},
+            {key:'b', name:'small', months:[0.49], total:0.49, pct:null, children:[]},
+            {key:'c', name:'zero', months:[0], total:0, pct:null, children:[]},
+        ]} };
+        trend = []; hasPnlValues = hasPnlValues; pnlFmt = formatPnlAmount; tablePct = formatTablePct;
+        name = v => v; monthName = v => v; pnlDrillable() { return false; }
+        toggleRow() {} exportCsv() {} choose() {}
+    }
+    const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
+    const app = new App(Pnl, { templates: await response.text(), test:true });
+    after(() => app.destroy());
+    await app.mount(getFixture());
+    const table = getFixture().querySelector('.export-table');
+    expect(table.textContent).toInclude('100.49');
+    expect(table.textContent).toInclude('0.49');
+    expect(table.textContent.includes('zero')).toBe(false);
+    getFixture().classList.add('o_bd2');
+    const createUrl = URL.createObjectURL, anchorClick = HTMLAnchorElement.prototype.click;
+    let exported;
+    try {
+        URL.createObjectURL = blob => { exported = blob; return 'blob:test'; };
+        HTMLAnchorElement.prototype.click = () => {};
+        Dashboard2.prototype.exportCsv.call({state:{view:'pnl'}, pnlTaxLabel:'شامل الضريبة'});
+        const csv = await exported.text();
+        expect(csv).toInclude('100.49');
+        expect(csv).toInclude('0.49');
+        expect(csv.includes('zero')).toBe(false);
+    } finally {
+        URL.createObjectURL = createUrl;
+        HTMLAnchorElement.prototype.click = anchorClick;
+        getFixture().classList.remove('o_bd2');
+    }
+});
+
+test('P&L verified detail requests retain the selected company and tax basis', async () => {
+    let args;
+    const descriptor = {section:'pnl', key:'salaries', company_key:'2', tax_inclusive:true};
+    const context = {
+        props: {descriptor}, alive: true, epoch: 0,
+        state: {data:null, busy:false, error:'', selector:{kind:'account', company_id:2, account_id:9}, page:2},
+        orm: {async call(...value) {args = value; return {rows:[], page:2};}},
+    };
+    await DashboardPnlDetails.prototype.load.call(context);
+    expect(args[0]).toBe('baseer.dashboard2.service');
+    expect(args[1]).toBe('get_pnl_details');
+    expect(args[2][0]).toEqual(descriptor);
+    expect(args[2][1]).toEqual({kind:'account', company_id:2, account_id:9});
+    expect(args[2][2]).toBe(2);
+    expect(context.state.data.page).toBe(2);
+    expect(context.state.busy).toBe(false);
+});
+
+test('P&L payment channel labels disclose estimated allocation in both languages', async () => {
+    expect(pnlChannelEstimateLabel('ar_001')).toBe('توزيع تقديري');
+    expect(pnlChannelEstimateLabel('en_US')).toBe('Estimated allocation');
+    const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
+    const doc = new DOMParser().parseFromString(await response.text(), 'text/xml');
+    const label = doc.querySelector('[t-name="baseer_dashboard2.Pnl"] .pnl-channel-estimate');
+    expect(label.getAttribute('t-if')).toBe("child.key?.startsWith('channel:')");
+    expect(label.getAttribute('t-esc')).toBe('this.pnlChannelEstimateLabel');
 });
 
 test('P&L shows sparklines with multiple displayed columns', async () => {
@@ -859,7 +943,7 @@ test('P&L shows sparklines with multiple displayed columns', async () => {
         pnlDrillable = Dashboard2.prototype.pnlDrillable;
         static components = { Sparkline };
         state = { view:'pnl', pnl_view:'year', closed:{}, data:{pnl_columns:[{month:'2026-09'}, {month:'2026-10'}], rows:[{key:'revenue', name:'مبيعات', months:[20,100], total:120, pct:100, children:[]}]} };
-        trend = []; hasDisplayValues = hasDisplayValues; name = v => v; monthName = v => v; tableFmt = formatTable; tablePct = formatTablePct;
+        trend = []; hasDisplayValues = hasDisplayValues; hasPnlValues = hasPnlValues; name = v => v; monthName = v => v; tableFmt = formatTable; pnlFmt = formatPnlAmount; tablePct = formatTablePct;
         toggleRow() {} exportCsv() {} choose() {}
     }
     const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
@@ -871,15 +955,16 @@ test('P&L shows sparklines with multiple displayed columns', async () => {
 });
 
 
-test('P&L drill calls the service and action without toggling or changing CSV text', async () => {
-    let args, opened, toggles = 0;
+test('P&L drill opens verified details with the selected basis without changing CSV text', async () => {
+    let dialogComponent, dialogProps, toggles = 0;
     class Pnl extends Component {
         static template = 'baseer_dashboard2.Pnl';
         static components = { Sparkline };
-        state = { view:'pnl', pnl_view:'month', company:'2', period:{mode:'month', month:'2026-10'}, closed:{}, data:{pnl_columns:[{month:'2026-10'}], rows:[{key:'salaries', name:'رواتب', months:[-120], total:-120, pct:1, children:[]}]} };
-        trend = []; hasDisplayValues = hasDisplayValues; name = v => v; monthName = v => v; tableFmt = formatTable; tablePct = formatTablePct;
+        state = { view:'pnl', tax_inclusive: true, pnl_view:'month', company:'2', period:{mode:'month', month:'2026-10'}, closed:{}, data:{pnl_columns:[{month:'2026-10'}], rows:[{key:'salaries', name:'رواتب', months:[-120], total:-120, pct:1, children:[]}]} };
+        trend = []; hasDisplayValues = hasDisplayValues; hasPnlValues = hasPnlValues; name = v => v; monthName = v => v; tableFmt = formatTable; pnlFmt = formatPnlAmount; tablePct = formatTablePct;
         pnlDrillable = Dashboard2.prototype.pnlDrillable; drillPnl = Dashboard2.prototype.drillPnl;
-        orm = { async call(...values) { args = values; return {name:'drill'}; } };
+        closePnlDetails = Dashboard2.prototype.closePnlDetails;
+        dialog = { add(component, props) { dialogComponent = component; dialogProps = props; return () => {}; } };
         toggleRow() { toggles++; } exportCsv() {} choose() {}
     }
     const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
@@ -887,13 +972,13 @@ test('P&L drill calls the service and action without toggling or changing CSV te
     after(() => app.destroy());
     await app.mount(getFixture());
     const cell = getFixture().querySelector('.export-table tbody td');
-    expect(plainCsvText(cell.textContent.trim())).toBe('(120)');
+    expect(plainCsvText(cell.textContent.trim())).toBe('(120.00)');
     await click(cell.querySelector('.bd2-drill'));
     expect(toggles).toBe(0);
-    expect(args[1]).toBe('get_drilldown');
-    expect(args[2][0].key).toBe('salaries');
-    expect(opened.name).toBe('drill');
-    expect(plainCsvText(cell.textContent.trim())).toBe('(120)');
+    expect(dialogComponent).toBe(DashboardPnlDetails);
+    expect(dialogProps.descriptor.key).toBe('salaries');
+    expect(dialogProps.descriptor.tax_inclusive).toBe(true);
+    expect(plainCsvText(cell.textContent.trim())).toBe('(120.00)');
     getFixture().classList.add('o_bd2');
     const createUrl = URL.createObjectURL;
     const anchorClick = HTMLAnchorElement.prototype.click;
@@ -901,8 +986,10 @@ test('P&L drill calls the service and action without toggling or changing CSV te
     try {
         URL.createObjectURL = (blob) => { exported = blob; return 'blob:test'; };
         HTMLAnchorElement.prototype.click = () => {};
-        Dashboard2.prototype.exportCsv.call({state: {view: 'pnl'}});
-        expect(await exported.text()).toInclude('"(120)"');
+        Dashboard2.prototype.exportCsv.call({state: {view: 'pnl'}, pnlTaxLabel: 'شامل الضريبة'});
+        const csv = await exported.text();
+        expect(csv).toInclude('شامل الضريبة');
+        expect(csv).toInclude('"(120.00)"');
     } finally {
         URL.createObjectURL = createUrl;
         HTMLAnchorElement.prototype.click = anchorClick;
@@ -1009,7 +1096,8 @@ test('inclusive basis, waterfall tax note and P&L basis are identified', async (
     const revenue = doc.querySelector('[t-name="baseer_dashboard2.Revenue"]');
     expect(revenue.querySelector('KpiCard').getAttribute('value')).toBe('current.gross');
     const pnl = doc.querySelector('[t-name="baseer_dashboard2.Pnl"]');
-    expect(pnl.outerHTML).toInclude('قبل الضريبة');
+    expect(pnl.querySelector('.pnl-tax-switch').getAttribute('role')).toBe('switch');
+    expect(pnl.querySelector('.pnl-tax-switch').getAttribute('t-att-aria-checked')).toInclude('state.tax_inclusive');
 });
 
 test('inclusive revenue drills through accounting and adjustments are not drillable', async () => {

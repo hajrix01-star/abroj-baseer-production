@@ -743,7 +743,7 @@ class RepresentativePettyCash(models.Model):
         petty_cash_line = move.line_ids.filtered(lambda line: line.account_id == account and line.partner_id == record.representative_partner_id)
         if petty_cash_line.credit:
             funding_domain = [
-                ('account_id', '=', account.id), ('partner_id', '=', record.representative_partner_id.id),
+                ('company_id', '=', company.id), ('account_id', '=', account.id), ('partner_id', '=', record.representative_partner_id.id),
                 ('parent_state', '=', 'posted'), ('reconciled', '=', False), ('debit', '>', 0),
             ]
             # Historical returns remain tied to a particular funding movement.
@@ -756,6 +756,8 @@ class RepresentativePettyCash(models.Model):
             open_lines = self.env['account.move.line'].search([
                 *funding_domain, ('id', '!=', petty_cash_line.id),
             ])
+            if not record.origin_id:
+                open_lines |= self._legacy_open_funding_lines(company, record.representative_partner_id, account)
             (open_lines | petty_cash_line).reconcile()
         record.sudo().with_context(**{INTERNAL: True}).write({'move_id': move.id})
         if record.movement_type == 'return':

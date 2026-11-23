@@ -1,0 +1,58 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: ar\n"
+
+#. module: baseer_profit_loss_report
+#. odoo-python
+#: code:addons/baseer_profit_loss_report/models/profit_loss.py:0
+msgid "Income"
+msgstr "الإيرادات"
+
+#. module: baseer_profit_loss_report
+#. odoo-python
+#: code:addons/baseer_profit_loss_report/models/profit_loss.py:0
+msgid "Cost of Sales"
+msgstr "تكلفة المبيعات"
+
+#. module: baseer_profit_loss_report
+#. odoo-python
+#: code:addons/baseer_profit_loss_report/models/profit_loss.py:0
+msgid "Gross Profit"
+msgstr "إجمالي الربح"
+
+#. module: baseer_profit_loss_report
+#. odoo-python
+#: code:addons/baseer_profit_loss_report/models/profit_loss.py:0
+msgid "Expense"
+msgstr "المصروفات"
+
+#. module: baseer_profit_loss_report
+#. odoo-python
+#: code:addons/baseer_profit_loss_report/models/profit_loss.py:0
+msgid "Net Operating Income"
+msgstr "صافي الربح التشغيلي"
+
+#. module: baseer_profit_loss_report
+#. odoo-python
+#: code:addons/baseer_profit_loss_report/models/profit_loss.py:0
+msgid "Other Income"
+msgstr "إيرادات أخرى"
+
+#. module: baseer_profit_loss_report
+#. odoo-python
+#: code:addons/baseer_profit_loss_report/models/profit_loss.py:0
+msgid "Other Expense"
+msgstr "مصروفات أخرى"
+
+#. module: baseer_profit_loss_report
+#. odoo-python
+#: code:addons/baseer_profit_loss_report/models/profit_loss.py:0
+msgid "Net Other Income"
+msgstr "صافي الإيرادات الأخرى"
+
+#. module: baseer_profit_loss_report
+#. odoo-python
+#: code:addons/baseer_profit_loss_report/models/profit_loss.py:0
+msgid "Net Income"
+msgstr "صافي الربح"

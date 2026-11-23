@@ -1,10 +1,20 @@
 /** @odoo-module **/
 
 import { expect, test } from "@odoo/hoot";
-import { allowedReports } from "@baseer_reports_menu/report_hub";
+import { allowedReports, initialReportKey } from "@baseer_reports_menu/report_hub";
 import { ReportSelector } from "@baseer_reports_menu/report_selector";
 
 class ReportComponent {}
+
+test("profit and loss opens first when permitted, otherwise the first permitted report opens", async () => {
+    const reports = [
+        { key: "vat", sequence: 10, kind: "component", component: ReportComponent, groups: ["invoice"] },
+        { key: "profit_loss", sequence: 40, kind: "component", component: ReportComponent, groups: ["accounting"] },
+    ];
+    expect(initialReportKey(await allowedReports(reports, async () => true))).toBe("profit_loss");
+    expect(initialReportKey(await allowedReports(reports, async (group) => group === "invoice"))).toBe("vat");
+    expect(initialReportKey([])).toBe("");
+});
 
 test("the shared selector uses the permitted report title in the current language", () => {
     const context = {

@@ -422,7 +422,7 @@ class BaseerProfitLossReport(models.AbstractModel):
                 fields.Date.to_date(selected['date_to']), journal_ids, selected['domain'])
 
     @api.model
-    def _verified_groups(self, domain):
+    def _verified_groups(self, domain, *, adjustments_out=None, tax_evidence_out=None):
         """Aggregate only AML IDs whose linked records have all passed read rules.
 
         AML record rules are applied by search. A linked move, account or journal
@@ -465,7 +465,13 @@ class BaseerProfitLossReport(models.AbstractModel):
             if len(lines) < self.SECURITY_BATCH:
                 break
         if self.env.context.get('_baseer_pl_inclusive'):
-            for line, delta in self._inclusive_adjustments(domain).items():
+            if tax_evidence_out is None:
+                adjustments = self._inclusive_adjustments(domain)
+            else:
+                adjustments = self._inclusive_adjustments(domain, evidence_out=tax_evidence_out)
+            if adjustments_out is not None:
+                adjustments_out.update(adjustments)
+            for line, delta in adjustments.items():
                 entry = totals.get(line.account_id.id)
                 if entry is not None:
                     if line.account_id.account_type in EXPENSE_KEYS:
@@ -474,11 +480,14 @@ class BaseerProfitLossReport(models.AbstractModel):
                         entry['credit'] += delta
         return totals
 
-    def _inclusive_adjustments(self, domain, *, noorix_sources=None):
+    def _inclusive_adjustments(self, domain, *, noorix_sources=None, evidence_out=None):
         """Return proved tax additions on visible P&L lines, or refuse ambiguity."""
         AML = self.env['account.move.line'].with_context(active_test=False)
         visible = AML.search(domain)
         self._verify_links(visible)
+        if evidence_out is not None:
+            evidence_out['line_ids'] = frozenset(visible.ids)
+            evidence_out['noorix_sources'] = {}
         moves = visible.mapped('move_id')
         if not moves:
             return {}
@@ -504,6 +513,8 @@ class BaseerProfitLossReport(models.AbstractModel):
                 companies[0], min(dates), max(dates), domain)
             if noorix_sources is not None:
                 noorix_sources.update(noorix)
+            if evidence_out is not None:
+                evidence_out['noorix_sources'].update(noorix)
         result = {}
         visible_ids = set(visible.ids)
         for move in moves:
@@ -550,6 +561,8 @@ class BaseerProfitLossReport(models.AbstractModel):
                     if target:
                         sign = Decimal('1') if owner.account_type in EXPENSE_KEYS else Decimal('-1')
                         result[target] = result.get(target, Decimal('0')) + sign * self._decimal(tax_line.balance)
+        if evidence_out is not None:
+            evidence_out['adjustments'] = result
         return result
 
     def _native_invoice_tax_adjustments(self, move, entries, taxes):
@@ -619,9 +632,12 @@ class BaseerProfitLossReport(models.AbstractModel):
         lines.mapped('account_id').check_access('read')
 
     @api.model
-    def _section_rows(self, domain):
+    def _section_rows(self, domain, *, adjustments_out=None, tax_evidence_out=None):
         rows = {key: [] for key in SECTION_KEYS}
-        for entry in self._verified_groups(domain).values():
+        verified = self._verified_groups(
+            domain, adjustments_out=adjustments_out, tax_evidence_out=tax_evidence_out,
+        )
+        for entry in verified.values():
             account = entry['account']
             section = account.account_type
             if section not in rows:
@@ -923,13 +939,27 @@ class BaseerProfitLossReport(models.AbstractModel):
         if type(page) is not int or page < 1:
             raise ValidationError(_('Select a valid page.'))
         company, _journal_ids, periods, _period_control, _comparison_control = self._scope(filters)
-        grouped_by_period = {
-            period['key']: self._section_rows(period['domain']) for period in periods
-        }
-        return self._account_section(company, periods, grouped_by_period, section, page=page)
+        # A detail request only needs this section, including its displayed
+        # child types. Tax allocation still inspects the complete source move.
+        section_domain = Domain('account_id.account_type', 'in',
+                                list(SECTION_GROUPS.get(section, (section,))))
+        tax_evidence = ({} if self.env.context.get('_baseer_pl_inclusive')
+                        and section in ('income', 'income_other') else None)
+        grouped_by_period = {}
+        for period in periods:
+            domain = period['domain'] & section_domain
+            if tax_evidence is None:
+                grouped_by_period[period['key']] = self._section_rows(domain)
+            else:
+                evidence = tax_evidence.setdefault(period['key'], {})
+                grouped_by_period[period['key']] = self._section_rows(
+                    domain, tax_evidence_out=evidence,
+                )
+        return self._account_section(company, periods, grouped_by_period, section,
+                                     page=page, tax_evidence=tax_evidence)
 
     def _account_section(self, company, periods, grouped_by_period, section, page=None,
-                         channel_periods=None):
+                         channel_periods=None, tax_evidence=None):
         """Project already verified request-local groups; None selects the full section."""
         section_keys = SECTION_GROUPS.get(section, (section,))
         by_account = {}
@@ -951,7 +981,8 @@ class BaseerProfitLossReport(models.AbstractModel):
             channel_periods = {
                 period['key']: self._revenue_channels(
                     company, period['domain'] & Domain('account_id', 'in',
-                        [item['account'].id for item in selected]))
+                        [item['account'].id for item in selected]),
+                    **({'_tax_evidence': tax_evidence[period['key']]} if tax_evidence is not None else {}))
                 for period in periods
             } if section in ('income', 'income_other') else {}
         for row in selected:
@@ -1391,7 +1422,7 @@ class BaseerProfitLossReport(models.AbstractModel):
         }
 
     @api.model
-    def _revenue_channels(self, company, domain, provenance=None, _export_channel_budget=None):
+    def _revenue_channels(self, company, domain, provenance=None, _export_channel_budget=None, _tax_evidence=None):
         """Only attribute a whole move/account after exact POS net matching."""
         lines = self.env['account.move.line'].search(domain)
         self._verify_links(lines)
@@ -1405,7 +1436,15 @@ class BaseerProfitLossReport(models.AbstractModel):
         approved_mappings = []
         inclusive = self.env.context.get('_baseer_pl_inclusive')
         if inclusive:
-            for line, delta in self._inclusive_adjustments(domain, noorix_sources=noorix).items():
+            # Reuse verified data only if this page contains exactly the same
+            # visible source lines. Different pages require a fresh proof.
+            if (_tax_evidence and _tax_evidence.get('line_ids') == frozenset(lines.ids)
+                    and 'adjustments' in _tax_evidence):
+                noorix.update(_tax_evidence['noorix_sources'])
+                adjustments = _tax_evidence['adjustments']
+            else:
+                adjustments = self._inclusive_adjustments(domain, noorix_sources=noorix)
+            for line, delta in adjustments.items():
                 key = (line.move_id.id, line.account_id.id)
                 grouped[key] = grouped.get(key, Decimal('0')) + delta
         dates = [line.date for line in lines if line.date]

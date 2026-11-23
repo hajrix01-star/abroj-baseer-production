@@ -272,6 +272,41 @@ class RepresentativePettyCashCase(TransactionCase):
         self.assertEqual(Model.dashboard_data(successor.id, '2025-03-01')['summary']['closing'], 10)
         self.assertEqual(Model.dashboard_data(rep.id, '2025-03-01')['summary']['closing'], 90)
 
+    def test_legacy_custody_transfers_are_included_in_representative_balance(self):
+        self._use_isolated_sar_company()
+        self.company.write({
+            'baseer_procurement_custody_account_id': self.petty_cash_account.id,
+            'baseer_procurement_custody_journal_id': self.general_journal.id,
+        })
+        employee = self.env['hr.employee'].create({
+            'name': 'Legacy custody employee', 'company_id': self.company.id,
+            'work_contact_id': self.representative.id,
+        })
+        custody = self.env['baseer.procurement.custody'].create({
+            'company_id': self.company.id, 'employee_id': employee.id,
+        })
+        Event = self.env['baseer.procurement.custody.event']
+        first = Event.create({
+            'custody_id': custody.id, 'event_type': 'funding', 'event_date': '2025-01-04',
+            'amount': 100, 'cash_journal_id': self.bank_journal.id,
+        })
+        first.action_post()
+        returned = Event.create({
+            'custody_id': custody.id, 'event_type': 'return', 'event_date': '2025-02-04',
+            'amount': 20, 'cash_journal_id': self.bank_journal.id,
+        })
+        returned.action_post()
+        self.assertFalse(first.representative_partner_id)
+        Model = self.env['baseer.procurement.representative.advance']
+        Model.submit_funding(False, self.bank_journal.id, self.representative.id, 50, str(uuid4()), '2025-02-10')
+        jan = Model.dashboard_data(self.representative.id, '2025-01-01')
+        feb = Model.dashboard_data(self.representative.id, '2025-02-01')
+        self.assertEqual((jan['summary']['funded'], jan['summary']['closing']), (100, 100))
+        self.assertEqual((feb['summary']['opening'], feb['summary']['funded'], feb['summary']['returned'], feb['summary']['closing']), (100, 50, 20, 130))
+        self.assertEqual(Model._baseer_representative_available_amount(self.company, self.representative), 130)
+        self.assertEqual([(row['type'], row['amount']) for row in feb['daily_movements']], [('funding', 50), ('return', 20)])
+        self.assertIn(100, [row['amount'] for row in feb['carryovers']])
+
     def test_funding_posts_once_and_is_immutable(self):
         request = self._sent_request()
         token = str(uuid4())

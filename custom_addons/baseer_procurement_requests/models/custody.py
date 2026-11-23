@@ -266,7 +266,7 @@ class ProcurementCustody(models.Model):
         """, settlement_params)
         settled = self.env.cr.fetchone()[0]
         payments = self._vendor_payment_deduction()
-        return float(event_balance - settled - payments)
+        return float(Decimal(str(event_balance)) - Decimal(str(settled)) - Decimal(str(payments)))
 
     @api.model_create_multi
     def create(self, vals_list):

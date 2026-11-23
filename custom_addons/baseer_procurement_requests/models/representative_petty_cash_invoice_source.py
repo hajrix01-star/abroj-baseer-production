@@ -118,8 +118,46 @@ class RepresentativePettyCashAggregate(models.Model):
             ('state', '=', 'posted'),
         ])
         native_spend, _ = self._native_custody_spend(company, representative.id)
+        legacy_funded, legacy_returned = self._legacy_custody_totals(company, representative.id)
         return (Decimal(str(funded)) - Decimal(str(returned)) - Decimal(str(reversed_funding))
-                - Decimal(str(historical)) - Decimal(str(settled)) - native_spend).quantize(MONEY_QUANTUM)
+                - Decimal(str(historical)) - Decimal(str(settled)) - native_spend
+                + legacy_funded - legacy_returned).quantize(MONEY_QUANTUM)
+
+    def _legacy_custody_activity_sql(self):
+        """Read historical transfers from their posted representative ledger lines."""
+        self.env['baseer.procurement.custody.event'].flush_model(
+            ['company_id', 'event_type', 'event_date', 'state', 'move_id', 'reference'])
+        self.env['res.company'].flush_model(['baseer_procurement_custody_account_id'])
+        self.env['account.move'].flush_model(['company_id', 'state'])
+        self.env['account.move.line'].flush_model(['company_id', 'move_id', 'account_id', 'partner_id', 'balance'])
+        self.flush_model(['company_id', 'move_id'])
+        return '''
+            SELECT e.id, l.partner_id, e.event_date AS day, e.event_type AS movement_type,
+                   ABS(SUM(l.balance::numeric)) AS amount, COALESCE(e.reference, m.name) AS reference
+              FROM baseer_procurement_custody_event e
+              JOIN res_company c ON c.id = e.company_id
+              JOIN account_move m ON m.id = e.move_id AND m.company_id = e.company_id AND m.state = 'posted'
+              JOIN account_move_line l ON l.move_id = m.id AND l.company_id = e.company_id
+                   AND l.account_id = c.baseer_procurement_custody_account_id
+             WHERE e.company_id = %(company)s AND e.state = 'posted' AND l.partner_id IS NOT NULL
+               AND (%(partner)s IS NULL OR l.partner_id = %(partner)s)
+               AND NOT EXISTS (SELECT 1 FROM baseer_procurement_representative_advance a
+                                WHERE a.company_id = e.company_id AND a.move_id = e.move_id)
+             GROUP BY e.id, l.partner_id, e.event_date, e.event_type, e.reference, m.name
+            HAVING SUM(l.balance::numeric) <> 0
+        '''
+
+    def _legacy_custody_totals(self, company, representative_id, start=None, end=None):
+        activity = self._legacy_custody_activity_sql()
+        self.env.cr.execute(f'''
+            SELECT COALESCE(SUM(amount) FILTER (WHERE movement_type = 'funding'), 0),
+                   COALESCE(SUM(amount) FILTER (WHERE movement_type = 'return'), 0)
+              FROM ({activity}) legacy_activity
+             WHERE (%(start)s::date IS NULL OR day >= %(start)s)
+               AND (%(end)s::date IS NULL OR day < %(end)s)
+        ''', {'company': company.id, 'partner': representative_id or None, 'start': start, 'end': end})
+        funded, returned = self.env.cr.fetchone()
+        return Decimal(str(funded)), Decimal(str(returned))
 
     def _native_custody_spend(self, company, representative_id, start=None, end=None):
         """Return net native purchases split at the month, or the overall total."""
@@ -260,6 +298,7 @@ class RepresentativePettyCashAggregate(models.Model):
         self.env['account.move'].flush_model(['company_id', 'date'])
         self._flush_native_custody_activity()
         native_activity = self._native_custody_activity_sql()
+        legacy_activity = self._legacy_custody_activity_sql()
         params = {
             'company': company.id,
             'partner': int(representative_id) if representative_id else None,
@@ -292,6 +331,9 @@ class RepresentativePettyCashAggregate(models.Model):
                 SELECT partner_id, day, -amount::numeric
                   FROM ({native_activity}) native_activity
                  WHERE day < %(before)s
+                UNION ALL
+                SELECT partner_id, day, CASE WHEN movement_type = 'funding' THEN amount ELSE -amount END
+                  FROM ({legacy_activity}) legacy_activity WHERE day < %(before)s
             ), totals AS (
                 SELECT partner_id,
                        CASE WHEN day < %(window_start)s THEN NULL
@@ -357,6 +399,7 @@ class RepresentativePettyCashAggregate(models.Model):
         self.env['account.move'].flush_model(['company_id', 'date'])
         self._flush_native_custody_activity()
         native_activity = self._native_custody_activity_sql()
+        legacy_activity = self._legacy_custody_activity_sql()
         can_see_purchase_reference = (
             self.env.user.has_group('baseer_procurement_requests.group_procurement_accountant')
             or self.env.user.has_group('baseer_procurement_requests.group_procurement_manager')
@@ -396,6 +439,10 @@ class RepresentativePettyCashAggregate(models.Model):
                 UNION ALL
                 SELECT 'native_payment', id, day, 'purchase', partner_id, amount, reference, NULL::integer, NULL::varchar
                   FROM ({native_activity}) native_activity
+                 WHERE day >= %(start)s AND day < %(end)s
+                UNION ALL
+                SELECT 'legacy_custody', id, day, movement_type, partner_id, amount, reference, NULL::integer, NULL::varchar
+                  FROM ({legacy_activity}) legacy_activity
                  WHERE day >= %(start)s AND day < %(end)s
             ) activity
             LEFT JOIN res_partner p ON p.id = activity.partner_id
@@ -469,6 +516,12 @@ class RepresentativePettyCashAggregate(models.Model):
 
         previous_funded, previous_returned, previous_settled, previous_reversed = period([('<', start)])
         funded, returned, settled, reversed_funding = period([('>=', start), ('<', end)])
+        old_funded, old_returned = self._legacy_custody_totals(company, partner_id, end=start)
+        month_funded, month_returned = self._legacy_custody_totals(company, partner_id, start=start, end=end)
+        previous_funded += old_funded
+        previous_returned += old_returned
+        funded += month_funded
+        returned += month_returned
         previous_native_spend, native_spend = self._native_custody_spend(company, partner_id, start, end)
         settled = (settled + native_spend).quantize(MONEY_QUANTUM)
         previous_settled = (previous_settled + previous_native_spend).quantize(MONEY_QUANTUM)

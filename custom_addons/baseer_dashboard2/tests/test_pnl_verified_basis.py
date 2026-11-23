@@ -21,15 +21,21 @@ class TestPnlVerifiedBasis(TransactionCase):
         expense = account('D2CPEXP', 'expense')
         direct_cost = account('400003D2COST', 'expense_direct_cost')
         other_expense = account('400055D2OTHER', 'expense_other')
+        operating_tax = account('400055D2OPER', 'expense')
+        depreciation_tax = account('400055D2DEPR', 'expense_depreciation')
+        operating_cost_prefix = account('400001D2OPER', 'expense')
         cash = account('D2CPCASH', 'asset_current')
         journal = self.env['account.journal'].create({'name': 'D2 classification', 'code': 'D2CP',
                                                       'type': 'general', 'company_id': company.id})
         move = self.env['account.move'].create({'move_type': 'entry', 'date': '2026-10-05',
             'journal_id': journal.id, 'line_ids': [
-                Command.create({'account_id': cash.id, 'debit': 72.36}),
+                Command.create({'account_id': cash.id, 'debit': 53.36}),
                 Command.create({'account_id': expense.id, 'debit': 10}),
                 Command.create({'account_id': direct_cost.id, 'debit': 7}),
                 Command.create({'account_id': other_expense.id, 'debit': 13}),
+                Command.create({'account_id': operating_tax.id, 'debit': 13}),
+                Command.create({'account_id': depreciation_tax.id, 'debit': 2}),
+                Command.create({'account_id': operating_cost_prefix.id, 'debit': 4}),
                 Command.create({'account_id': sale.id, 'credit': 100}),
                 Command.create({'account_id': cash_gain.id, 'credit': 2.36})]})
         move.action_post()
@@ -41,10 +47,11 @@ class TestPnlVerifiedBasis(TransactionCase):
             self.assertEqual(f"{rows['revenue']['total']:.2f}", '100.00')
             self.assertEqual(f"{rows['food_cost']['total']:.2f}", '-7.00')
             self.assertEqual(f"{rows['gross_profit']['total']:.2f}", '93.00')
-            self.assertEqual(f"{rows['operating_profit']['total']:.2f}", '83.00')
+            self.assertEqual(f"{rows['zakat_tax']['total']:.2f}", '-15.00')
+            self.assertEqual(f"{rows['operating_profit']['total']:.2f}", '64.00')
             self.assertEqual(f"{rows['other_income']['total']:.2f}", '2.36')
             self.assertEqual(f"{rows['other_expense']['total']:.2f}", '-13.00')
-            self.assertEqual(f"{rows['net_profit']['total']:.2f}", '72.36')
+            self.assertEqual(f"{rows['net_profit']['total']:.2f}", '53.36')
             descriptor = {**filters, 'section': 'pnl', 'key': 'other_income', 'column': 0, 'child': None}
             summary = service.get_pnl_details(descriptor, {'kind': 'row'})
             self.assertEqual(summary['value'], '2.36')
@@ -53,7 +60,8 @@ class TestPnlVerifiedBasis(TransactionCase):
             self.assertEqual(detail['value'], '2.36')
             self.assertEqual(service.open_pnl_detail_source(descriptor, detail['rows'][0]['source'])['res_id'], move.id)
             for key, target, value in (('food_cost', direct_cost, '-7.00'), ('other_expense', other_expense, '-13.00'),
-                                       ('operating_profit', None, '83.00'), ('net_profit', None, '72.36')):
+                                       ('zakat_tax', operating_tax, '-15.00'),
+                                       ('operating_profit', None, '64.00'), ('net_profit', None, '53.36')):
                 item = service.get_pnl_details({**descriptor, 'key': key}, {'kind': 'row'})
                 self.assertEqual(item['value'], value)
                 if target:

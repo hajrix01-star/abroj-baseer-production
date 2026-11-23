@@ -1,0 +1,23 @@
+name: Test backup retention
+on:
+  pull_request:
+    paths:
+      - 'ops/production/backup-retention.py'
+      - 'ops/production/tests/test_backup_retention.py'
+      - 'ops/production/systemd/baseer-backup-retention.*'
+      - '.github/workflows/test-backup-retention.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'ops/production/backup-retention.py'
+      - 'ops/production/tests/test_backup_retention.py'
+      - 'ops/production/systemd/baseer-backup-retention.*'
+      - '.github/workflows/test-backup-retention.yml'
+permissions:
+  contents: read
+jobs:
+  retention:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - run: python3 -m unittest discover -s ops/production/tests -p test_backup_retention.py -v

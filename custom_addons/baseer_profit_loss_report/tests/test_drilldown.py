@@ -54,6 +54,24 @@ class TestProfitLossDrill(TransactionCase):
         with self.assertRaises(AccessError):
             self.engine.open_source('profit_loss', self.filters, dict(token, move_id=self.expense_move.id))
 
+    def test_account_detail_reuses_verified_tax_allocation(self):
+        report = self.report.with_user(self.reader)
+        selector = {'kind': 'account', 'account_id': self.accounts['income'].id, 'period_key': 'current'}
+        line = self.sale.line_ids.filtered(lambda item: item.account_id == self.accounts['income'])
+        self.assertEqual(len(line), 1)
+        # This synthetic tax allocation makes both the value and source line
+        # observable, and catches a second call independently of call timing.
+        with patch.object(type(report), '_inclusive_adjustments', return_value={line: Decimal('18')}) as tax:
+            detail = report._get_drilldown({**self.filters, 'tax_inclusive': True}, selector)
+            self.assertEqual(tax.call_count, 1)
+        self.assertEqual(detail['value'], '138.00')
+        self.assertEqual(detail['rows'][0]['cells']['amount'], '138.00')
+        with patch.object(type(report), '_inclusive_adjustments') as tax:
+            detail = report._get_drilldown({**self.filters, 'tax_inclusive': False}, selector)
+            self.assertEqual(tax.call_count, 0)
+        self.assertEqual(detail['value'], '120.00')
+        self.assertEqual(detail['rows'][0]['cells']['amount'], '120.00')
+
     def test_invalid_selectors_company_period_and_zero(self):
         selector = {'kind': 'row', 'row_key': 'net_income', 'period_key': 'current'}
         for invalid in [dict(selector, domain=[]), dict(selector, row_key='missing'), {'kind': 'account', 'account_id': True, 'period_key': 'current'}]:

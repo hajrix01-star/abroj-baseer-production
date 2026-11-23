@@ -124,14 +124,16 @@ class ProfitLossDrill(models.AbstractModel):
                         rows.append({'key': move.id, 'cells': {'label': move.name or '', 'amount': fmt(item['value'])},
                             'source': {'kind': 'channel_source', 'parent': dict(selector), 'move_id': move.id}})
             else:
-                grouped = self._section_rows(domain)
+                # Reuse only this request's verified tax allocations. Recomputing
+                # them for each line repeats the full move and source checks.
+                adjustments = {}
+                grouped = self._section_rows(domain, adjustments_out=adjustments)
                 matches = [item for items in grouped.values() for item in items if item['account'].id == account.id]
                 if not matches and account.account_type not in grouped:
                     raise AccessError(_('The account is not in this report.'))
                 value = fmt(matches[0]['raw'] if matches else Decimal('0'))
                 lines = self.env['account.move.line'].with_context(active_test=False).search(domain, order='date,id')
                 self._verify_links(lines)
-                adjustments = self._inclusive_adjustments(domain) if self.env.context.get('_baseer_pl_inclusive') else {}
                 for line in lines:
                     amount = self._decimal(line.debit) - self._decimal(line.credit)
                     if account.account_type not in EXPENSE_KEYS:

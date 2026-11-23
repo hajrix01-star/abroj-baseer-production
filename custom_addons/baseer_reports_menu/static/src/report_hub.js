@@ -38,6 +38,10 @@ export async function allowedReports(definitions, hasGroup) {
     return allowed.filter(Boolean).sort((left, right) => left.sequence - right.sequence);
 }
 
+export function initialReportKey(options) {
+    return options.find((option) => option.key === "profit_loss")?.key || options[0]?.key || "";
+}
+
 export class BaseerReportsHub extends Component {
     static template = "baseer_reports_menu.Hub";
     static components = { ReportSelector };
@@ -51,7 +55,7 @@ export class BaseerReportsHub extends Component {
             try {
                 const definitions = registry.category("baseer_reports").getAll();
                 this.options = await allowedReports(definitions, (group) => user.hasGroup(group));
-                if (this.options.length) { this.selectReport(this.options[0].key); }
+                if (this.options.length) { this.selectReport(initialReportKey(this.options)); }
             } catch (error) {
                 this.state.error = this.labels.error;
             } finally {

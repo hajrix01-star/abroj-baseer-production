@@ -4,4 +4,4 @@ Description=Remove expired Baseer deployment backups
 [Service]
 Type=oneshot
 User=root
-ExecStart=/usr/local/libexec/baseer-backup-retention.py --apply
+ExecStart=/usr/bin/python3 /usr/local/libexec/baseer-backup-retention.py --apply

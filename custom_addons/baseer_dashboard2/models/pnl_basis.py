@@ -75,7 +75,12 @@ class DashboardPnlBasis(models.AbstractModel):
             for rows in grouped.values():
                 for row in rows:
                     account = row['account'].with_company(company)
-                    key = self._category(account, categories)
+                    # The P&L statement places income by its accounting type.
+                    # A dashboard expense prefix (e.g. 999002 cash differences)
+                    # must not move other income above operating profit.
+                    key = ('revenue' if account.account_type == 'income' else
+                           'other_income' if account.account_type == 'income_other' else
+                           self._category(account, categories))
                     if not key or key not in totals:
                         raise UserError(_('A profit and loss account has no dashboard category.'))
                     amount = (row['credit'] - row['debit']) if key in ('revenue', 'other_income') else (row['debit'] - row['credit'])

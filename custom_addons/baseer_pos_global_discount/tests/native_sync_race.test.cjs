@@ -2,12 +2,12 @@
 // from the candidate Odoo image into the worktree's temporary directory.
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { readFileSync, existsSync } = require('node:fs');
+const { readFileSync } = require('node:fs');
 const { resolve } = require('node:path');
 const sourcePath = resolve(__dirname, '../../../tmp/pos-discount-native-pos-store.js');
 const modelsPath = resolve(__dirname, '../../../tmp/pos-discount-native-related-models.js');
 
-test('native sync clears edits made while its older RPC response is pending', { skip: !existsSync(sourcePath) }, async () => {
+test('native sync clears edits made while its older RPC response is pending', async () => {
     const source = readFileSync(sourcePath, 'utf8');
     const start = source.indexOf('    async syncAllOrders(options = {}) {');
     const end = source.indexOf('\n    pushSingleOrder(', start);
@@ -53,7 +53,7 @@ test('native sync clears edits made while its older RPC response is pending', { 
     assert.equal(store.pendingRemoved, true);
 });
 
-test('experimental tracker subscribes to the exact native model event API', { skip: !existsSync(modelsPath) }, () => {
+test('experimental tracker subscribes to the exact native model event API', () => {
     const source = readFileSync(modelsPath, 'utf8');
     const start = source.indexOf('        addEventListener(event, callback) {');
     const end = source.indexOf('\n        _sanitizeRawData(', start);
@@ -82,7 +82,7 @@ test('experimental tracker subscribes to the exact native model event API', { sk
     assert.equal(tracker.get(), 2);
 });
 
-test('experimental allowance detach removes the unlink created by native Odoo deletion', { skip: !existsSync(modelsPath) }, () => {
+test('experimental allowance detach removes the unlink created by native Odoo deletion', () => {
     const source = readFileSync(modelsPath, 'utf8');
     const start = source.indexOf('        _delete(record, opts = {}) {');
     const end = source.indexOf('\n        backLink(', start);

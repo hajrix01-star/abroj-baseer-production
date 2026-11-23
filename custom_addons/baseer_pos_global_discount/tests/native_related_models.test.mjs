@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { resolve } from 'node:path';
 import { chromium } from 'playwright';
@@ -8,7 +8,6 @@ const root = resolve(import.meta.dirname, '../../../tmp');
 const related = resolve(root, 'odoo_related_models');
 const files = [resolve(root, 'odoo_proxy_trap.js'), resolve(root, 'odoo_lazy_getter.js'),
     ...['utils', 'base', 'record_store', 'model_defs', 'model_classes', 'serialization', 'index'].map((name) => resolve(related, `${name}.js`))];
-const ready = files.every(existsSync);
 function nativeBundle() {
     const source = files.map((file) => readFileSync(file, 'utf8')
         .replace(/^import\s[\s\S]*?;\s*$/gm, '')
@@ -28,7 +27,7 @@ function loadNative() { return new Function(`${nativeBundle()}\nreturn { createR
 const expSource = readFileSync(new URL('../static/src/app/draft_snapshot_experiment.js', import.meta.url), 'utf8');
 const { detachServerAllowancesExperiment, replaceServerAllowancesExperiment, hydrateSharedDraftExperiment, stageNativeServerGraphExperiment, stagePaidServerGraphExperiment, trackDraftGraphGeneration } = await import(`data:text/javascript;base64,${Buffer.from(expSource).toString('base64')}`);
 
-test('native POS startup drops locally stored product lines if their product is absent from loaded models', { skip: !existsSync('tmp/pos-discount-native-data-service.js') }, async () => {
+test('native POS startup drops locally stored product lines if their product is absent from loaded models', async () => {
     const native = readFileSync('tmp/pos-discount-native-data-service.js', 'utf8');
     const method = (start, end) => { const a = native.indexOf(start), b = native.indexOf(end, a); assert.ok(a >= 0 && b > a); return native.slice(a, b); };
     const getLocal = method('    async getLocalDataFromIndexedDB(data = false) {', '    async getCachedServerDataFromIndexedDB(');
@@ -56,7 +55,7 @@ test('native POS startup drops locally stored product lines if their product is 
     assert.deepEqual(resolved['pos.order.line'].filter((line) => line.uuid === 'food').map((line) => line.id), ['food', 634]);
 });
 
-test('native models restore an acknowledged numeric child under the local UUID order', { skip: !ready }, async () => {
+test('native models restore an acknowledged numeric child under the local UUID order', async () => {
     const { createRelatedModels } = loadNative();
     const src = readFileSync(new URL('../static/src/app/global_discount.js', import.meta.url), 'utf8');
     const begin = src.indexOf('function reconnectAcknowledgedDraftRows('), end = src.indexOf('\nfunction pendingDeletedIds(', begin);
@@ -131,8 +130,8 @@ test('native models restore an acknowledged numeric child under the local UUID o
     assert.throws(() => reconnect(conflict), /Conflicting local draft ownership/);
 });
 
-test('browser IndexedDB restart reconnects numeric children and protects paid records from stale duplicates', { skip: !ready }, async () => {
-    const browser = await chromium.launch({ headless: true, executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe' });
+test('browser IndexedDB restart reconnects numeric children and protects paid records from stale duplicates', async () => {
+    const browser = await chromium.launch({ headless: true, ...(process.platform === 'win32' ? { executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe' } : {}) });
     try {
         const context = await browser.newContext();
         await context.route('**/*', (route) => route.fulfill({ status: 200, contentType: 'text/html', body: '<html></html>' }));
@@ -169,8 +168,8 @@ test('browser IndexedDB restart reconnects numeric children and protects paid re
     } finally { await browser.close(); }
 });
 
-test('actual managed save and sync accept a verified ACK without a false failure', { skip: !ready }, async () => {
-    const browser = await chromium.launch({ headless: true, executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe' });
+test('actual managed save and sync accept a verified ACK without a false failure', async () => {
+    const browser = await chromium.launch({ headless: true, ...(process.platform === 'win32' ? { executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe' } : {}) });
     try {
         const context = await browser.newContext();
         await context.route('**/*', (route) => route.fulfill({ status: 200, contentType: 'text/html', body: '<html></html>' }));
@@ -212,7 +211,7 @@ test('actual managed save and sync accept a verified ACK without a false failure
     } finally { await browser.close(); }
 });
 
-test('native related_models detach preserves source line and unrelated deletion commands', { skip: !ready }, () => {
+test('native related_models detach preserves source line and unrelated deletion commands', () => {
     const { createRelatedModels } = loadNative();
     const defs = {
         'pos.order': { id: { type: 'integer' }, uuid: { type: 'char' }, state: { type: 'char' }, baseer_offline_draft_kind: { type: 'char' },
@@ -418,8 +417,8 @@ test('native related_models detach preserves source line and unrelated deletion 
     tracker.dispose();
 });
 
-test('native Odoo models and real IndexedDB retain a later draft edit during isolated RPC', { skip: !ready }, async () => {
-    const browser = await chromium.launch({ headless: true, executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe' });
+test('native Odoo models and real IndexedDB retain a later draft edit during isolated RPC', async () => {
+    const browser = await chromium.launch({ headless: true, ...(process.platform === 'win32' ? { executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe' } : {}) });
     try {
         const context = await browser.newContext();
         await context.route('**/*', (route) => route.fulfill({ status: 200, contentType: 'text/html', body: '<html></html>' }));
@@ -571,8 +570,8 @@ test('native Odoo models and real IndexedDB retain a later draft edit during iso
     } finally { await browser.close(); }
 });
 
-test('paid ACK is reconciled after browser reload using native related models', { skip: !ready }, async () => {
-    const browser = await chromium.launch({ headless: true, executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe' });
+test('paid ACK is reconciled after browser reload using native related models', async () => {
+    const browser = await chromium.launch({ headless: true, ...(process.platform === 'win32' ? { executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe' } : {}) });
     try {
         const context = await browser.newContext();
         await context.route('**/*', (route) => route.fulfill({ status: 200, contentType: 'text/html', body: '<html></html>' }));

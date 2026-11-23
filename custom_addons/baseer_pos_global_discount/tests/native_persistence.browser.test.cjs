@@ -5,7 +5,7 @@ const { join } = require('node:path');
 const { chromium } = require('playwright');
 
 test('native IndexedDB commits order, lines and payment together; abort and quota fail closed', async () => {
-    const browser = await chromium.launch({ headless: true, executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe' });
+    const browser = await chromium.launch({ headless: true, ...(process.platform === 'win32' ? { executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe' } : {}) });
     try {
         const context = await browser.newContext();
         await context.route('**/*', (route) => route.fulfill({ status: 200, contentType: 'text/html', body: '<html></html>' }));

@@ -5,7 +5,7 @@ const { join } = require('node:path');
 const { chromium } = require('playwright');
 
 test('experimental isolated draft retains pending and later edits in real IndexedDB', async () => {
-    const browser = await chromium.launch({ headless: true, executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe' });
+    const browser = await chromium.launch({ headless: true, ...(process.platform === 'win32' ? { executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe' } : {}) });
     try {
         const context = await browser.newContext();
         await context.route('**/*', (route) => route.fulfill({ status: 200, contentType: 'text/html', body: '<html></html>' }));
@@ -60,7 +60,7 @@ test('experimental isolated draft retains pending and later edits in real Indexe
 });
 
 test('experimental native-store transaction repeats on concurrent edit and preserves other orders', async () => {
-    const browser = await chromium.launch({ headless: true, executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe' });
+    const browser = await chromium.launch({ headless: true, ...(process.platform === 'win32' ? { executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe' } : {}) });
     try {
         const context = await browser.newContext();
         await context.route('**/*', (route) => route.fulfill({ status: 200, contentType: 'text/html', body: '<html></html>' }));
@@ -122,7 +122,7 @@ test('experimental native-store transaction repeats on concurrent edit and prese
 });
 
 test('remote deletion marker commits edited graph and survives database reopen; quota failure preserves previous graph', async () => {
-    const browser = await chromium.launch({ headless: true, executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe' });
+    const browser = await chromium.launch({ headless: true, ...(process.platform === 'win32' ? { executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe' } : {}) });
     try {
         const context = await browser.newContext();
         await context.route('**/*', (route) => route.fulfill({ status: 200, contentType: 'text/html', body: '<html></html>' }));
@@ -156,7 +156,7 @@ test('remote deletion marker commits edited graph and survives database reopen; 
 });
 
 test('experimental lost ACK reuses the persisted command after real browser reload', async () => {
-    const browser = await chromium.launch({ headless: true, executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe' });
+    const browser = await chromium.launch({ headless: true, ...(process.platform === 'win32' ? { executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe' } : {}) });
     try {
         const context = await browser.newContext();
         await context.route('**/*', (route) => route.fulfill({ status: 200, contentType: 'text/html', body: '<html></html>' }));
@@ -199,7 +199,7 @@ test('experimental lost ACK reuses the persisted command after real browser relo
 });
 
 test('experimental native order adapter commits pending command with the latest complete graph', async () => {
-    const browser = await chromium.launch({ headless: true, executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe' });
+    const browser = await chromium.launch({ headless: true, ...(process.platform === 'win32' ? { executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe' } : {}) });
     try {
         const context = await browser.newContext();
         await context.route('**/*', (route) => route.fulfill({ status: 200, contentType: 'text/html', body: '<html></html>' }));
@@ -237,7 +237,7 @@ test('experimental native order adapter commits pending command with the latest 
 });
 
 test('experimental ACK commit retains a newer graph and persists UUID deletion mapping atomically', async () => {
-    const browser = await chromium.launch({ headless: true, executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe' });
+    const browser = await chromium.launch({ headless: true, ...(process.platform === 'win32' ? { executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe' } : {}) });
     try {
         const context = await browser.newContext();
         await context.route('**/*', (route) => route.fulfill({ status: 200, contentType: 'text/html', body: '<html></html>' }));
@@ -283,7 +283,7 @@ test('experimental ACK commit retains a newer graph and persists UUID deletion m
 });
 
 test('experimental cancel ACK is durable and retains later edits for review', async () => {
-    const browser = await chromium.launch({ headless: true, executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe' });
+    const browser = await chromium.launch({ headless: true, ...(process.platform === 'win32' ? { executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe' } : {}) });
     try {
         const context = await browser.newContext();
         await context.route('**/*', (route) => route.fulfill({ status: 200, contentType: 'text/html', body: '<html></html>' }));

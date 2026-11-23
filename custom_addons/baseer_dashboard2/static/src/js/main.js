@@ -12,10 +12,6 @@ export function pnlTaxLabel(inclusive, lang) {
     : (inclusive ? "Tax inclusive" : "Tax exclusive");
 }
 
-export function pnlChannelEstimateLabel(lang) {
-  return (lang || "").startsWith("ar") ? "توزيع تقديري" : "Estimated allocation";
-}
-
 const clonePnlScope = (value) => JSON.parse(JSON.stringify(value));
 
 // The service returns verified, formatted contributions; this controller only
@@ -865,7 +861,6 @@ export class Dashboard2 extends Component {
     this.state.closed[key] = !this.state.closed[key];
   }
   get pnlTaxLabel() { return pnlTaxLabel(this.state.tax_inclusive, user.lang); }
-  get pnlChannelEstimateLabel() { return pnlChannelEstimateLabel(user.lang); }
   get pnlTaxNote() {
     return user.lang?.startsWith("ar")
       ? "عرض إداري شامل الضريبة؛ صافي الربح ليس صافي الربح المحاسبي."

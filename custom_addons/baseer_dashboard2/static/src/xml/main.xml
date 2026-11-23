@@ -482,7 +482,6 @@
                             <td>
                                 <span class="muted account-code" dir="ltr" t-esc="child.code"/>
                                 <t t-esc="child.code ? ' '+child.name : child.name"/>
-                                <small t-if="child.key?.startsWith('channel:')" class="muted pnl-channel-estimate" t-esc="this.pnlChannelEstimateLabel"/>
                             </td>
                             <td t-if="pnlColumns.length &gt; 1">
                                 <Sparkline months="pnlColumns.map(x=&gt;x.month)" previousYear="child.previous_year_months" values="child.months" partial="pnlColumns.map(x=&gt;x.partial)"/>

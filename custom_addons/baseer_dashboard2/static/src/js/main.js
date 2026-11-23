@@ -139,6 +139,7 @@ const labels = {
   non_operating: "غير تشغيلي",
   zakat_tax: "الزكاة والضريبة",
   other_income: "الإيرادات الأخرى",
+  other_expense: "المصروفات الأخرى",
   food_pct: "نسبة تكلفة الأكل",
   salaries_pct: "نسبة الرواتب",
   prime_pct: "التكلفة الأساسية",
@@ -549,7 +550,7 @@ export class Dashboard2 extends Component {
     );
   }
   pnlDrillable(key, child) {
-    return ["revenue", "food_cost", "gross_profit", "salaries", "rent", "utilities", "marketing", "commissions", "other_opex", "depreciation", "operating_profit", "other_income", "zakat_tax", "net_profit"].includes(key) && (!child || !child.startsWith("channel:"));
+    return ["revenue", "food_cost", "gross_profit", "salaries", "rent", "utilities", "marketing", "commissions", "other_opex", "depreciation", "operating_profit", "other_income", "other_expense", "zakat_tax", "net_profit"].includes(key) && (!child || !child.startsWith("channel:"));
   }
   bridgeDrillKey(key) {
     if (key === "commissions") return "recorded_commissions";

@@ -4,6 +4,50 @@ const { readFileSync } = require('node:fs');
 const { join } = require('node:path');
 const { chromium } = require('playwright');
 
+test('fenced cancellation atomically keeps edited basket while removing old pending command', async () => {
+    const browser = await chromium.launch({ headless: true, ...(process.platform === 'win32' ? { executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe' } : {}) });
+    try {
+        const page = await browser.newPage();
+        await page.route('**/*', (route) => route.fulfill({ status: 200, contentType: 'text/html', body: '<html></html>' }));
+        await page.goto('http://baseer-fence-recovery.invalid/');
+        const source = readFileSync(join(__dirname, '../static/src/app/draft_snapshot_experiment.js'), 'utf8').replaceAll('export async function', 'async function').replaceAll('export function', 'function');
+        await page.addScriptTag({ content: `${source}\nwindow.persistCancelFenceRecovery = persistCancelFenceRecovery;` });
+        const result = await page.evaluate(async () => {
+            const request = indexedDB.open('fence-proof', 1);
+            request.onupgradeneeded = () => {
+                for (const name of ['pos.order', 'pos.order.line', 'pos.payment']) request.result.createObjectStore(name, { keyPath: 'uuid' });
+                request.result.createObjectStore('product.attribute.custom.value', { keyPath: 'id' });
+            };
+            const db = await new Promise((resolve, reject) => { request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error); });
+            const pending = { order_uuid: 'order', revision: 3, command_uuid: 'old', generation: 1 };
+            const order = { id: 42, uuid: 'order', state: 'draft', amount_total: 3,
+                lines: [{ uuid: 'water', order_id: 42, quantity: 3, serializeForIndexedDB() { return { uuid: this.uuid, order_id: this.order_id, quantity: this.quantity }; } }], payment_ids: [],
+                uiState: { baseerSharedDraftCancelPending: pending, baseerSharedDraftRemoveRequested: true, baseerSharedDraftNeedsSync: true },
+                serializeForIndexedDB() { return { uuid: this.uuid, id: this.id, amount_total: this.amount_total, JSONuiState: JSON.stringify(this.uiState) }; } };
+            const params = { data: { indexedDB: { db } }, order, tracker: { get: () => 2 }, pending, protect: () => {} };
+            let rejected = false;
+            try { await window.persistCancelFenceRecovery({ ...params, resolution: { outcome: 'fenced', uuid: 'order', state: 'draft', revision: 9 } }); }
+            catch { rejected = true; }
+            const retainedBefore = order.uiState.baseerSharedDraftCancelPending.command_uuid;
+            await window.persistCancelFenceRecovery({ ...params, resolution: { outcome: 'fenced', uuid: 'order', state: 'draft', revision: 4 } });
+            const read = (store, key) => new Promise((resolve, reject) => { const req = db.transaction(store).objectStore(store).get(key); req.onsuccess = () => resolve(req.result); req.onerror = () => reject(req.error); });
+            const persisted = await read('pos.order', 'order'); const line = await read('pos.order.line', 'water'); db.close();
+            return { rejected, retainedBefore, persisted, line, memory: order.uiState };
+        });
+        assert.equal(result.rejected, true);
+        assert.equal(result.retainedBefore, 'old');
+        assert.equal(result.persisted.amount_total, 3);
+        assert.equal(result.line.quantity, 3);
+        const state = JSON.parse(result.persisted.JSONuiState);
+        assert.equal(state.baseerSharedDraftRevision, 4);
+        assert.equal(state.baseerSharedDraftNeedsSync, true);
+        assert.equal(state.baseerSharedDraftRecoverySync, true);
+        assert.equal(state.baseerSharedDraftRemoveRequested, true);
+        assert.equal(state.baseerSharedDraftCancelPending, undefined);
+        assert.equal(result.memory.baseerSharedDraftRevision, 4);
+    } finally { await browser.close(); }
+});
+
 test('experimental isolated draft retains pending and later edits in real IndexedDB', async () => {
     const browser = await chromium.launch({ headless: true, ...(process.platform === 'win32' ? { executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe' } : {}) });
     try {

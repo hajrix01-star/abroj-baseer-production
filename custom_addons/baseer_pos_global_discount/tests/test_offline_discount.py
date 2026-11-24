@@ -1,6 +1,7 @@
 from copy import deepcopy
 import json
 from uuid import uuid4
+from unittest.mock import patch
 
 from odoo import Command, fields
 from odoo.exceptions import AccessError, ValidationError
@@ -373,6 +374,245 @@ class TestOfflineDiscountSync(TransactionCase):
         with self.assertRaisesRegex(ValidationError, 'payment or kitchen'), self.env.cr.savepoint():
             Pos.baseer_cancel_offline_draft(order.uuid, 1, str(uuid4()))
         self.assertEqual(order.state, 'draft')
+
+    def _shared_kitchen_draft(self):
+        draft = self._payload()
+        draft.update(state='draft', payment_ids=[], amount_paid=0)
+        draft['baseer_offline_draft_command'] = {'revision': 0, 'command_uuid': str(uuid4()), 'operation': 'set'}
+        draft = json.loads(json.dumps(draft, default=str))
+        self.env['pos.order'].sync_from_ui([draft])
+        order = self.env['pos.order'].search([('uuid', '=', draft['uuid'])])
+        agent = self.env['baseer.print.agent'].create({
+            'name': 'Shared kitchen agent', 'device_uid': str(uuid4()),
+            'allowed_company_ids': [Command.set(self.env.company.ids)],
+        })
+        agent.with_context(baseer_print_internal=True).write({'agent_version': '1.5.16'})
+        printers = self.env['baseer.print.printer']
+        for name in ('Kitchen A', 'Kitchen B'):
+            printers |= printers.with_context(baseer_print_discovery=True).create({
+                'name': name, 'agent_id': agent.id, 'machine_identifier': str(uuid4()),
+                'active': True, 'paper_width': '80',
+                'allowed_company_ids': [Command.set(self.env.company.ids)],
+            })
+        self.config.write({'baseer_receipt_printer_id': printers[0].id, 'baseer_direct_print_enabled': True})
+        line = order.lines.filtered(lambda item: not item.baseer_global_discount_line).ensure_one()
+        for printer in printers:
+            self.env['baseer.print.preparation.state'].sudo().create({
+                'company_id': order.company_id.id, 'order_id': order.id, 'order_line_id': line.id,
+                'line_uuid': line.uuid, 'product_id': line.product_id.id, 'printer_id': printer.id,
+                'quantity': 1, 'details': {'line_uuid': line.uuid, 'name': line.product_id.display_name},
+            })
+        return order
+
+    def test_shared_kitchen_cancellation_is_atomic_and_idempotent(self):
+        order = self._shared_kitchen_draft()
+        Pos = self.env['pos.order']
+        command_uuid = str(uuid4())
+        kitchen = {'session_id': self.session.id, 'reason_code': 'wrong_order', 'reason_note': ''}
+        # A command persisted by an older client was definitively rejected by
+        # the old route. Reuse its exact UUID with the now-protected command.
+        with self.assertRaisesRegex(ValidationError, 'payment or kitchen'), self.env.cr.savepoint():
+            Pos.baseer_cancel_offline_draft(order.uuid, 1, command_uuid)
+        result = Pos.baseer_cancel_offline_draft(order.uuid, 1, command_uuid, kitchen)
+        self.assertEqual(result, {'uuid': order.uuid, 'state': 'cancel', 'revision': 2})
+        Cancellation = self.env['baseer.print.cancellation'].sudo()
+        Job = self.env['baseer.print.job'].sudo()
+        cancellation = Cancellation.search([('order_id', '=', order.id)])
+        self.assertEqual(len(cancellation), 1)
+        self.assertEqual(cancellation.reason_code, 'wrong_order')
+        jobs = Job.search([('cancellation_id', '=', cancellation.id)])
+        self.assertEqual(len(jobs), 2)
+        self.assertEqual(len(jobs.mapped('printer_id')), 2)
+        self.assertEqual(Pos.baseer_cancel_offline_draft(order.uuid, 1, command_uuid, kitchen), result)
+        self.assertEqual(Job.search_count([('cancellation_id', '=', cancellation.id)]), 2)
+        with self.assertRaises(ValidationError), self.env.cr.savepoint():
+            Pos.baseer_cancel_offline_draft(order.uuid, 1, command_uuid, dict(kitchen, reason_code='staff_error'))
+
+    def test_shared_kitchen_cancellation_rejects_stale_and_invalid_context(self):
+        order = self._shared_kitchen_draft()
+        Pos = self.env['pos.order']
+        kitchen = {'session_id': self.session.id, 'reason_code': 'wrong_order', 'reason_note': ''}
+        cases = ((2, kitchen, ValidationError),
+                 (1, dict(kitchen, session_id=self.session.id + 999999), AccessError),
+                 (1, dict(kitchen, reason_code='other'), ValidationError))
+        for revision, details, expected_error in cases:
+            with self.subTest(revision=revision, details=details), self.assertRaises(expected_error), self.env.cr.savepoint():
+                Pos.baseer_cancel_offline_draft(order.uuid, revision, str(uuid4()), details)
+        self.assertEqual(order.state, 'draft')
+        self.assertEqual(order.baseer_offline_draft_revision, 1)
+        self.assertFalse(self.env['baseer.print.cancellation'].sudo().search([('order_id', '=', order.id)]))
+
+    def test_shared_kitchen_cancellation_rejects_paid_balance(self):
+        order = self._shared_kitchen_draft()
+        order._gd_internal().write({'amount_paid': 1})
+        kitchen = {'session_id': self.session.id, 'reason_code': 'wrong_order', 'reason_note': ''}
+        with self.assertRaises(ValidationError), self.env.cr.savepoint():
+            self.env['pos.order'].baseer_cancel_offline_draft(order.uuid, 1, str(uuid4()), kitchen)
+        order.invalidate_recordset()
+        self.assertEqual(order.state, 'draft')
+        self.assertEqual(order.baseer_offline_draft_revision, 1)
+        self.assertFalse(self.env['baseer.print.cancellation'].sudo().search([('order_id', '=', order.id)]))
+
+    def test_shared_kitchen_cancellation_after_synchronized_discount_removal(self):
+        order = self._shared_kitchen_draft()
+        Pos = self.env['pos.order']
+        remove = self._payload()
+        remove.update(uuid=order.uuid, state='draft', payment_ids=[], amount_paid=0,
+                      amount_total=115, amount_tax=15, lines=[])
+        remove.pop('baseer_offline_discount_intent')
+        remove['baseer_offline_draft_command'] = {
+            'revision': 1, 'command_uuid': str(uuid4()), 'operation': 'remove',
+        }
+        Pos.sync_from_ui([json.loads(json.dumps(remove, default=str))])
+        self.assertEqual(order.baseer_offline_draft_revision, 2)
+        self.assertFalse(order.lines.filtered('baseer_global_discount_line'))
+        kitchen = {'session_id': self.session.id, 'reason_code': 'wrong_order', 'reason_note': ''}
+        result = Pos.baseer_cancel_offline_draft(order.uuid, 2, str(uuid4()), kitchen)
+        self.assertEqual(result['state'], 'cancel')
+        self.assertEqual(result['revision'], 3)
+        self.assertEqual(self.env['baseer.print.cancellation'].sudo().search_count([('order_id', '=', order.id)]), 1)
+
+    def test_resolve_legacy_kitchen_cancellation_fences_delayed_rpc(self):
+        order = self._shared_kitchen_draft()
+        Pos = self.env['pos.order']
+        command_uuid = str(uuid4())
+        result = Pos.baseer_resolve_offline_draft_cancel(order.uuid, 1, command_uuid, self.session.id)
+        self.assertEqual(result, {'uuid': order.uuid, 'state': 'draft', 'revision': 2, 'outcome': 'fenced'})
+        self.assertEqual(Pos.baseer_resolve_offline_draft_cancel(order.uuid, 1, command_uuid, self.session.id), result)
+        self.assertEqual(order.state, 'draft')
+        self.assertFalse(self.env['baseer.print.cancellation'].sudo().search([('order_id', '=', order.id)]))
+        self.assertFalse(self.env['baseer.print.job'].sudo().search([('source_order_id', '=', order.id)]))
+        kitchen = {'session_id': self.session.id, 'reason_code': 'wrong_order', 'reason_note': ''}
+        for args in ((order.uuid, 1, command_uuid), (order.uuid, 1, command_uuid, kitchen)):
+            with self.assertRaises(ValidationError), self.env.cr.savepoint():
+                Pos.baseer_cancel_offline_draft(*args)
+        # Once the next draft sync replaces the receipt, monotonic revision
+        # still rejects a delayed copy of the old cancellation command.
+        remove = self._payload()
+        remove.update(uuid=order.uuid, state='draft', payment_ids=[], amount_paid=0,
+                      amount_total=115, amount_tax=15, lines=[])
+        remove.pop('baseer_offline_discount_intent')
+        remove['baseer_offline_draft_command'] = {
+            'revision': 2, 'command_uuid': str(uuid4()), 'operation': 'remove',
+        }
+        Pos.sync_from_ui([json.loads(json.dumps(remove, default=str))])
+        self.assertEqual(order.baseer_offline_draft_revision, 3)
+        with self.assertRaises(ValidationError), self.env.cr.savepoint():
+            Pos.baseer_cancel_offline_draft(order.uuid, 1, command_uuid)
+        self.assertEqual(Pos.baseer_resolve_offline_draft_cancel(order.uuid, 1, command_uuid, self.session.id)['outcome'], 'review')
+
+    def test_resolve_legacy_cancellation_recognizes_committed_and_conflict(self):
+        draft = self._payload()
+        draft.update(state='draft', payment_ids=[], amount_paid=0)
+        draft['baseer_offline_draft_command'] = {'revision': 0, 'command_uuid': str(uuid4()), 'operation': 'set'}
+        self.env['pos.order'].sync_from_ui([json.loads(json.dumps(draft, default=str))])
+        order = self.env['pos.order'].search([('uuid', '=', draft['uuid'])])
+        Pos = self.env['pos.order']
+        command_uuid = str(uuid4())
+        Pos.baseer_cancel_offline_draft(order.uuid, 1, command_uuid)
+        result = Pos.baseer_resolve_offline_draft_cancel(order.uuid, 1, command_uuid, self.session.id)
+        self.assertEqual(result, {'uuid': order.uuid, 'state': 'cancel', 'revision': 2, 'outcome': 'committed'})
+        self.assertEqual(Pos.baseer_resolve_offline_draft_cancel(order.uuid, 1, str(uuid4()), self.session.id)['outcome'], 'review')
+
+    def test_resolve_legacy_cancellation_rejects_mismatched_session_without_changes(self):
+        order = self._shared_kitchen_draft()
+        with self.assertRaises(AccessError), self.env.cr.savepoint():
+            self.env['pos.order'].baseer_resolve_offline_draft_cancel(order.uuid, 1, str(uuid4()), self.session.id + 999999)
+        order.invalidate_recordset()
+        self.assertEqual(order.state, 'draft')
+        self.assertEqual(order.baseer_offline_draft_revision, 1)
+        self.assertFalse(self.env['baseer.print.cancellation'].sudo().search([('order_id', '=', order.id)]))
+
+    def test_resolve_legacy_cancellation_rejects_other_company_and_non_pos(self):
+        order = self._shared_kitchen_draft()
+        other = self.env['res.company'].create({'name': 'Other fence company'})
+        groups = [self.env.ref('base.group_user').id, self.env.ref('point_of_sale.group_pos_user').id]
+        other_user = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'Other fence cashier', 'login': 'other-fence-%s' % uuid4().hex,
+            'company_id': other.id, 'company_ids': [Command.set(other.ids)], 'group_ids': [Command.set(groups)],
+        })
+        non_pos = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'No fence POS', 'login': 'nonpos-fence-%s' % uuid4().hex,
+            'company_id': self.env.company.id, 'company_ids': [Command.set(self.env.company.ids)],
+            'group_ids': [Command.set([self.env.ref('base.group_user').id])],
+        })
+        for user, company_ids in ((other_user, other.ids), (non_pos, self.env.company.ids)):
+            denied = False
+            with self.env.cr.savepoint():
+                try:
+                    self.env['pos.order'].with_user(user).with_context(
+                        allowed_company_ids=company_ids
+                    ).baseer_resolve_offline_draft_cancel(order.uuid, 1, str(uuid4()), self.session.id)
+                except (AccessError, ValidationError):
+                    denied = True
+            self.assertTrue(denied)
+        order.invalidate_recordset()
+        self.assertEqual(order.state, 'draft')
+        self.assertEqual(order.baseer_offline_draft_revision, 1)
+        self.assertFalse(self.env['baseer.print.cancellation'].sudo().search([('order_id', '=', order.id)]))
+        self.assertFalse(self.env['baseer.print.job'].sudo().search([('source_order_id', '=', order.id)]))
+
+    def test_shared_kitchen_cancellation_rejects_user_without_pos_permission(self):
+        order = self._shared_kitchen_draft()
+        user = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'No POS permission', 'login': 'no-pos-kitchen-%s' % uuid4().hex,
+            'company_id': self.env.company.id, 'company_ids': [Command.set(self.env.company.ids)],
+            'group_ids': [Command.set([self.env.ref('base.group_user').id])],
+        })
+        kitchen = {'session_id': self.session.id, 'reason_code': 'wrong_order', 'reason_note': ''}
+        # Record rules may conceal the order before the explicit POS group
+        # check, so denial can surface as inaccessible or unavailable.
+        denied = False
+        with self.env.cr.savepoint():
+            try:
+                self.env['pos.order'].with_user(user).with_context(
+                    allowed_company_ids=self.env.company.ids
+                ).baseer_cancel_offline_draft(order.uuid, 1, str(uuid4()), kitchen)
+            except (AccessError, ValidationError):
+                denied = True
+        self.assertTrue(denied, 'A user without POS access must not cancel a kitchen order')
+        order.invalidate_recordset()
+        self.assertEqual(order.state, 'draft')
+        self.assertEqual(order.baseer_offline_draft_revision, 1)
+        self.assertFalse(self.env['baseer.print.cancellation'].sudo().search([('order_id', '=', order.id)]))
+        self.assertFalse(self.env['baseer.print.job'].sudo().search([('source_order_id', '=', order.id)]))
+
+    def test_shared_kitchen_cancellation_rejects_other_company_cashier(self):
+        order = self._shared_kitchen_draft()
+        other = self.env['res.company'].create({'name': 'Other kitchen cancellation company'})
+        user = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'Other company cashier', 'login': 'other-kitchen-%s' % uuid4().hex,
+            'company_id': other.id, 'company_ids': [Command.set(other.ids)],
+            'group_ids': [Command.set([self.env.ref('base.group_user').id,
+                                       self.env.ref('point_of_sale.group_pos_user').id])],
+        })
+        kitchen = {'session_id': self.session.id, 'reason_code': 'wrong_order', 'reason_note': ''}
+        denied = False
+        with self.env.cr.savepoint():
+            try:
+                self.env['pos.order'].with_user(user).with_context(
+                    allowed_company_ids=other.ids
+                ).baseer_cancel_offline_draft(order.uuid, 1, str(uuid4()), kitchen)
+            except (AccessError, ValidationError):
+                denied = True
+        self.assertTrue(denied, 'A cashier in another company must not cancel this kitchen order')
+        order.invalidate_recordset()
+        self.assertEqual(order.state, 'draft')
+        self.assertEqual(order.baseer_offline_draft_revision, 1)
+        self.assertFalse(self.env['baseer.print.cancellation'].sudo().search([('order_id', '=', order.id)]))
+        self.assertFalse(self.env['baseer.print.job'].sudo().search([('source_order_id', '=', order.id)]))
+
+    def test_shared_kitchen_cancellation_rolls_back_all_on_queue_failure(self):
+        order = self._shared_kitchen_draft()
+        kitchen = {'session_id': self.session.id, 'reason_code': 'wrong_order', 'reason_note': ''}
+        State = type(self.env['baseer.print.preparation.state'])
+        with self.assertRaises(ValidationError), self.env.cr.savepoint(), patch.object(
+                State, '_enqueue_cancellation_jobs', side_effect=ValidationError('queue failure')):
+            self.env['pos.order'].baseer_cancel_offline_draft(order.uuid, 1, str(uuid4()), kitchen)
+        order.invalidate_recordset()
+        self.assertEqual(order.state, 'draft')
+        self.assertEqual(order.baseer_offline_draft_revision, 1)
+        self.assertFalse(self.env['baseer.print.cancellation'].sudo().search([('order_id', '=', order.id)]))
 
     def test_server_mismatch_rolls_back_order_and_payment(self):
         payload = self._payload(total='94.00')

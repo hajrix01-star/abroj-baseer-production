@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 const source = readFileSync(new URL('../static/src/app/draft_snapshot_experiment.js', import.meta.url), 'utf8');
-const { syncDraftSnapshot, cancelDraftSnapshot, singleFlightDraftExperiment, createDraftSyncAdapterExperiment, runPaidAfterDraftExperiment, verifyPaidInvoiceExperiment, trackDraftGraphGeneration, attachDraftGenerationExperiment, detachServerAllowancesExperiment, acknowledgeDraftTombstonesExperiment, planDraftAckExperiment, mappedDraftDeletionExperiment } = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
+const { syncDraftSnapshot, cancelDraftSnapshot, kitchenCancelIntent, cancelGraphFingerprint, cancelGraphUnchanged, singleFlightDraftExperiment, createDraftSyncAdapterExperiment, runPaidAfterDraftExperiment, verifyPaidInvoiceExperiment, trackDraftGraphGeneration, attachDraftGenerationExperiment, detachServerAllowancesExperiment, acknowledgeDraftTombstonesExperiment, planDraftAckExperiment, mappedDraftDeletionExperiment } = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
 
 test('invoice remains pending without permission or an explicitly posted matching move', async () => {
     const pending = { order_uuid: 'order', payload_json: JSON.stringify({ to_invoice: true }) };
@@ -302,4 +302,37 @@ test('cancellation retries the same UUID and retains the order until verified ac
     input.sendCancel = async () => ({ uuid: 'order', state: 'cancel', revision: 4 });
     await cancelDraftSnapshot(input);
     assert.equal(state.exists, false);
+});
+
+test('kitchen cancellation freezes reason and session across an unknown response', () => {
+    const selected = { reasonCode: 'customer_cancelled', reasonNote: '' };
+    const saved = kitchenCancelIntent(null, selected, 27);
+    assert.deepEqual(saved, { session_id: 27, reason_code: 'customer_cancelled', reason_note: '' });
+    assert.deepEqual(kitchenCancelIntent(saved, selected, 27), saved);
+    assert.deepEqual(kitchenCancelIntent(saved, null, 27), saved);
+    assert.throws(() => kitchenCancelIntent(saved, { reasonCode: 'staff_error' }, 27), /original reason/);
+    assert.throws(() => kitchenCancelIntent(saved, null, 28), /needs review/);
+    assert.equal(kitchenCancelIntent(null, null, undefined), null);
+    assert.throws(() => kitchenCancelIntent(null, selected, 0), /session/);
+});
+test('unrelated order edits do not block a lost kitchen ACK, while this order edits do', () => {
+    const order = { uuid: 'order', amount: 2, uiState: { baseerOfflineDiscount: { value: 1 } },
+        serializeForIndexedDB() { return { uuid: this.uuid, amount: this.amount, JSONuiState: JSON.stringify(this.uiState) }; },
+        lines: [{ qty: 3, serializeForIndexedDB() { return { uuid: 'line', qty: this.qty }; } }], payment_ids: [] };
+    const pending = { generation: 4, graph_fingerprint: cancelGraphFingerprint(order) };
+    const tracker = { get: () => 5 };
+    order.uiState.baseerSharedDraftCancelPending = pending;
+    order.uiState.baseerSharedDraftKitchenCancelIntent = { reason_code: 'wrong_order' };
+    order.uiState.baseerSharedDraftGeneration = 5;
+    assert.equal(cancelGraphUnchanged(order, pending, tracker), true);
+    const restored = { ...order, uiState: JSON.parse(JSON.stringify(order.uiState)),
+        lines: order.lines.map((line) => ({ ...line })), payment_ids: [] };
+    assert.equal(cancelGraphUnchanged(restored, pending, tracker), true, 'restoring the same graph preserves its fingerprint');
+    order.uiState.baseerOfflineDiscount.value = 2;
+    assert.equal(cancelGraphUnchanged(order, pending, { get: () => 4 }), false, 'same shared generation does not bypass graph comparison');
+    order.uiState.baseerOfflineDiscount.value = 1;
+    order.lines[0].qty = 4;
+    assert.equal(cancelGraphUnchanged(order, pending, tracker), false);
+    assert.equal(cancelGraphUnchanged(order, { generation: 4 }, tracker), false, 'legacy missing fingerprint fails closed');
+    assert.equal(cancelGraphUnchanged(order, { generation: 4 }, { get: () => 4 }), false, 'legacy still fails closed if generation matches');
 });

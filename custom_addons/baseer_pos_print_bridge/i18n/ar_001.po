@@ -2947,3 +2947,8 @@ msgstr "إجمالي الطلبات المكتملة شامل الضريبة و�
 #: code:addons/baseer_pos_print_bridge/models/pos_session.py:0
 msgid "Unavailable"
 msgstr "غير متاح"
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/static/src/app/kitchen_send_button.js:0
+msgid "The kitchen order could not be sent. Keep it open and ask a manager for help."
+msgstr "تعذر إرسال الطلب إلى المطبخ. أبقِ الطلب مفتوحًا واطلب المساعدة من المدير."

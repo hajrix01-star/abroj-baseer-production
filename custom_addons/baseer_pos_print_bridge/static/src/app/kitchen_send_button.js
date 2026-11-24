@@ -13,7 +13,22 @@ import { ActionpadWidget } from "@point_of_sale/app/screens/product_screen/actio
 patch(ActionpadWidget.prototype, {
     setup() {
         super.setup();
-        this.doBaseerSubmitOrder = useTrackedAsync(() => this.pos.baseerSendCurrentOrder());
+        this.doBaseerSubmitOrder = useTrackedAsync(async () => {
+            try {
+                return await this.pos.baseerSendCurrentOrder();
+            } catch (error) {
+                // useTrackedAsync consumes ordinary exceptions; make a failed
+                // send visible so it cannot look like kitchen success.
+                if (odoo.debug) {
+                    console.warn("Kitchen send failed:", error?.data?.message || error?.message || "unknown");
+                }
+                this.pos.notification.add(
+                    _t("The kitchen order could not be sent. Keep it open and ask a manager for help."),
+                    { type: "danger", sticky: true }
+                );
+                return false;
+            }
+        });
     },
 
     get baseerPreparationCategoryCount() {

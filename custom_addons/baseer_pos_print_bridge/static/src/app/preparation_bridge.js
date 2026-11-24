@@ -14,6 +14,7 @@ import { ask, makeAwaitable } from "@point_of_sale/app/utils/make_awaitable_dial
 import { buildBaseerPreparationAction, captureBaseerCancellationRoute, navigateBaseerAfterCancellation } from "./line_actions";
 import { encodeReceiptJpeg, renderReceiptCanvas } from "./receipt_image";
 import { DraftBill, usesBaseerDraftBill } from "./draft_bill";
+import { relinkSharedDraftForKitchen } from "./shared_draft_relink";
 
 const BASEER_CANCELLATION_REASONS = [
     ["customer_cancelled", _t("Customer cancelled")],
@@ -626,7 +627,7 @@ patch(PosStore.prototype, {
     },
 
     async _baseerSendCurrentOrder(actionType, paymentReview) {
-        const order = this.getOrder();
+        let order = this.getOrder();
         if (!this.config.baseer_direct_print_enabled || !order) {
             return;
         }
@@ -642,6 +643,9 @@ patch(PosStore.prototype, {
         // save a quantity change before its intent reaches the server.
         if (!order.isSynced) {
             await this.syncAllOrders({ orders: [order], throw: true });
+        }
+        if (!order.isSynced && Number.isSafeInteger(order.uiState?.baseerSharedDraftServerOrderId)) {
+            order = await relinkSharedDraftForKitchen(this, order);
         }
         if (!order.isSynced || !order.id) {
             throw new Error("Baseer direct printing could not synchronize this order before sending to kitchen.");

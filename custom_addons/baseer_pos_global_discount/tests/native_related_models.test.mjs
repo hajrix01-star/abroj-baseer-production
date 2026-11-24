@@ -183,7 +183,7 @@ test('actual managed save and sync accept a verified ACK without a false failure
         const protect = get('function protectOfflineStorage(', '// Native cleanup');
         const experiment = expSource.replaceAll('export async function', 'async function').replaceAll('export function', 'function');
         await page.addScriptTag({ content: `const crypto = { randomUUID: () => '00000000-0000-4000-8000-000000000001' };\n${nativeBundle()}\n${experiment}\n${protect}
-            const SHARED_DRAFT_FLOW_ENABLED=true, sharedRefreshOrders=new WeakSet(), sharedRevisionPromises=new WeakMap(), sharedRevisionWarningOwners=new WeakMap();
+            const SHARED_DRAFT_FLOW_ENABLED=true, sharedRefreshOrders=new WeakSet(), sharedRevisionPromises=new WeakMap(), sharedRevisionWarningOwners=new WeakMap(), sharedDraftReviewNotices=new WeakSet();
             const _t=value=>value, isManagedSharedDraft=order=>!!order.uiState?.baseerOfflineDiscount;
             const refreshOfflineDiscount=()=>{}, calculateOfflineDiscount=()=>{}, hydrateSharedDraftExperimentUnused=()=>{};
             const accountTaxHelpers={}; class ConnectionLostError extends Error {};
@@ -618,7 +618,7 @@ test('paid ACK is reconciled after browser reload using native related models', 
         const warningStart = posPatch.indexOf('function touchExperimentalDraftGraph('), warningEnd = posPatch.indexOf('\nfunction noteSharedDraftEdit(', warningStart);
         assert.ok(warningStart >= 0 && warningEnd > warningStart);
         const experiment = expSource.replaceAll('export async function', 'async function').replaceAll('export function', 'function');
-        await page.addScriptTag({ content: `${nativeBundle()}\n${experiment}\nconst paidReconciliationOrders = new WeakSet(), sharedRefreshOrders = new WeakSet(), sharedRevisionPromises = new WeakMap(), sharedRevisionWarningOwners = new WeakMap();
+        await page.addScriptTag({ content: `${nativeBundle()}\n${experiment}\nconst paidReconciliationOrders = new WeakSet(), sharedRefreshOrders = new WeakSet(), sharedRevisionPromises = new WeakMap(), sharedRevisionWarningOwners = new WeakMap(), sharedDraftReviewNotices = new WeakSet();
             const SHARED_DRAFT_FLOW_ENABLED = true, _t = value => value, isManagedSharedDraft = order => Boolean(order.uiState?.baseerSharedDraftPaidAckPending);
             class ConnectionLostError extends Error {} class ParentStore { async syncAllOrders() { return []; } }
             ${posPatch.slice(protectionStart, protectionEnd)}\n${posPatch.slice(warningStart, warningEnd)}\nclass TestStore extends ParentStore { ${reconcileMethod} ${syncMethod} }\nwindow.resumePaid = async () => {

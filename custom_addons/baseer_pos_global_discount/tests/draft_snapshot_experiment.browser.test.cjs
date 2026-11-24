@@ -4,6 +4,68 @@ const { readFileSync } = require('node:fs');
 const { join } = require('node:path');
 const { chromium } = require('playwright');
 
+test('refreshing the POS catalog keeps drafts and pending payments in real IndexedDB', async () => {
+    const browser = await chromium.launch({ headless: true, ...(process.platform === 'win32' ? { executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe' } : {}) });
+    try {
+        const page = await browser.newPage();
+        await page.route('**/*', (route) => route.fulfill({ status: 200, contentType: 'text/html', body: '<html></html>' }));
+        await page.goto('http://baseer-pos-session-refresh.invalid/');
+        const source = readFileSync(join(__dirname, '../static/src/app/global_discount.js'), 'utf8');
+        const start = source.indexOf('const localOrderStores');
+        const end = source.indexOf('function localRecordsForRefresh', start);
+        await page.addScriptTag({ content: source.slice(start, end) + '\nwindow.replacePosCatalog = replacePosCatalog;' });
+        const result = await page.evaluate(async () => {
+            const request = indexedDB.open('pos-session-refresh', 1);
+            const models = ['pos.session', 'pos.config', 'product.product', 'pos.order', 'pos.order.line', 'pos.payment'];
+            request.onupgradeneeded = () => {
+                for (const model of models) request.result.createObjectStore(model, { keyPath: 'id' });
+            };
+            const db = await new Promise((resolve, reject) => { request.onsuccess = () => resolve(request.result); request.onerror = reject; });
+            const otherTabRequest = indexedDB.open('pos-session-refresh', 1);
+            const otherTab = await new Promise((resolve, reject) => { otherTabRequest.onsuccess = () => resolve(otherTabRequest.result); otherTabRequest.onerror = reject; });
+            const complete = (tx) => new Promise((resolve, reject) => { tx.oncomplete = resolve; tx.onabort = reject; });
+            const first = db.transaction(models, 'readwrite');
+            first.objectStore('pos.session').put({ id: 1, state: 'closed' });
+            first.objectStore('pos.config').put({ id: 2, name: 'old' });
+            first.objectStore('product.product').put({ id: 100 });
+            first.objectStore('pos.order').put({ id: 42, state: 'draft', session_id: 1 });
+            first.objectStore('pos.order.line').put({ id: 43, order_id: 42, product_id: 100 });
+            await complete(first);
+            const data = { indexedDB: { db }, opts: { databaseTable: {} } };
+            const updating = window.replacePosCatalog(data, {
+                'pos.session': [{ id: 3, state: 'opened' }],
+                'pos.config': [{ id: 2, name: 'updated' }],
+                'product.product': [{ id: 101 }],
+                'pos.order': [{ id: 42, state: 'cancel' }],
+                'pos.payment': [],
+            });
+            const concurrentPayment = otherTab.transaction(['pos.payment'], 'readwrite');
+            concurrentPayment.objectStore('pos.payment').put({ id: 44, pos_order_id: 42, amount: 3 });
+            await Promise.all([updating, complete(concurrentPayment)]);
+            let aborted = false;
+            try { await window.replacePosCatalog(data, { 'pos.session': [{ id: 4 }], 'pos.config': [{ name: 'missing key' }] }); }
+            catch { aborted = true; }
+            const read = db.transaction(models);
+            const rows = await Promise.all(models.map((model) => new Promise((resolve, reject) => {
+                const query = read.objectStore(model).getAll();
+                query.onsuccess = () => resolve(query.result);
+                query.onerror = reject;
+            })));
+            otherTab.close();
+            db.close();
+            return { aborted, rows };
+        });
+        assert.equal(result.aborted, true);
+        assert.deepEqual(result.rows, [
+            [{ id: 3, state: 'opened' }], [{ id: 2, name: 'updated' }], [{ id: 101 }],
+            [{ id: 42, state: 'draft', session_id: 1 }], [{ id: 43, order_id: 42, product_id: 100 }],
+            [{ id: 44, pos_order_id: 42, amount: 3 }],
+        ]);
+    } finally {
+        await browser.close();
+    }
+});
+
 test('fenced cancellation atomically keeps edited basket while removing old pending command', async () => {
     const browser = await chromium.launch({ headless: true, ...(process.platform === 'win32' ? { executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe' } : {}) });
     try {

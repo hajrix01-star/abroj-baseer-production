@@ -58,6 +58,30 @@ msgstr "تعذّر التحقق من بيانات نقطة البيع على ا�
 #. module: baseer_pos_global_discount
 #. odoo-javascript
 #: code:addons/baseer_pos_global_discount/static/src/app/global_discount.js:0
+msgid "The current point-of-sale session could not be verified. Keep the local orders for review."
+msgstr "تعذّر التحقق من جلسة نقطة البيع الحالية. احتفظ بالطلبات على الجهاز للمراجعة."
+
+#. module: baseer_pos_global_discount
+#. odoo-javascript
+#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.js:0
+msgid "A saved order needs review before it can synchronize. Its local data was kept."
+msgstr "يوجد طلب محفوظ يحتاج مراجعة قبل المزامنة. بقيت بياناته على الجهاز."
+
+#. module: baseer_pos_global_discount
+#. odoo-javascript
+#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.js:0
+msgid "The register could not be refreshed safely. Check the connection and wait for orders to finish saving."
+msgstr "تعذّر تحديث نقطة البيع. تحقّق من الاتصال وانتظر اكتمال حفظ الطلبات."
+
+#. module: baseer_pos_global_discount
+#. odoo-javascript
+#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.js:0
+msgid "The current session is available online. Its offline catalog could not be saved."
+msgstr "الجلسة الحالية تعمل عبر الإنترنت. تعذّر حفظ الكتالوج لاستخدامه دون اتصال."
+
+#. module: baseer_pos_global_discount
+#. odoo-javascript
+#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.js:0
 msgid "A paid offline order is waiting to synchronize. Reconnect or ask a manager before refreshing point-of-sale data."
 msgstr "يوجد طلب مدفوع دون اتصال ينتظر المزامنة. أعد الاتصال أو اطلب من المدير المراجعة قبل تحديث بيانات نقطة البيع."
 

@@ -592,6 +592,8 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
             baseer_substitution_silent_quantity = 1
             qty = 1
         line = SilentLine()
+        line.order_id = order
+        line.product_id = order.lines.product_id
         self.assertEqual(State._kitchen_quantity(line), 0)
         line.qty = 3
         self.assertEqual(State._kitchen_quantity(line), 2)
@@ -654,6 +656,38 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
         self.assertTrue(result['job_ids'])
         self.assertEqual(states.mapped('line_uuid'), [normal.uuid])
         self.assertIn(discount, order.lines)
+
+    def test_native_discount_product_never_reaches_kitchen(self):
+        if 'discount_product_id' not in self.config._fields:
+            self.skipTest('Native POS discount addon is not installed')
+        self._enable()
+        category = self.env['pos.category'].create({'name': 'Native discount route QA'})
+        self.env['baseer.print.route'].create({
+            'pos_config_id': self.config.id, 'printer_id': self.kitchen_a.id,
+            'pos_category_ids': [Command.set(category.ids)],
+        })
+        order = self._order(1)
+        normal = order.lines
+        normal.product_id.product_tmpl_id.pos_categ_ids = [Command.set(category.ids)]
+        product = self.env['product.product'].create({
+            'name': 'Native discount QA', 'type': 'service', 'available_in_pos': True,
+            'pos_categ_ids': [Command.set(category.ids)],
+        })
+        self.config.discount_product_id = product
+        discount = self.env['pos.order.line'].create({
+            'order_id': order.id, 'product_id': product.id, 'qty': 1,
+            'price_unit': -2, 'price_subtotal': -2, 'price_subtotal_incl': -2,
+        })
+        State = self.env['baseer.print.preparation.state']
+        self.assertEqual(State._kitchen_quantity(discount), 0)
+        action = State._normalize_action({
+            'action_uuid': str(uuid4()), 'action_type': 'send_before_payment', 'lines': [
+                {'line_uuid': line.uuid, 'expected_quantity': 0, 'new_quantity': 1}
+                for line in (normal | discount)
+            ],
+        })
+        self.assertTrue(State._apply_action(order, action)['job_ids'])
+        self.assertEqual(State.search([('order_id', '=', order.id)]).mapped('line_uuid'), [normal.uuid])
 
     def test_receipt_is_config_owned_not_a_route(self):
         self._enable()

@@ -27,6 +27,7 @@ class TestKitchenNotes(TransactionCase):
             uuid='new', product_id=SimpleNamespace(id=1, display_name='Food'),
             full_product_name='Food', note='[{"text":"أول"}]',
             customer_note='[{"text":"ثان"}]', qty=1, _fields={},
+            order_id=SimpleNamespace(config_id=SimpleNamespace(_fields={})),
         )
         current = model._line_details(line)
         self.assertEqual((current['note'], current['customer_note']), ('أول', 'ثان'))

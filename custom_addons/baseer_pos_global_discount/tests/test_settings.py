@@ -20,6 +20,27 @@ class TestGlobalDiscountSettings(TransactionCase):
             'name': 'GD untouched settings', 'baseer_global_discount_account_id': self.account.id,
         })
 
+    def test_explicit_native_product_setup_is_company_owned_and_idempotent(self):
+        self.config.action_baseer_setup_native_discount()
+        product = self.config.discount_product_id
+        self.assertNotEqual(product, self.native_product)
+        self.assertEqual(product.default_code, "BASEER-NATIVE-DISC")
+        self.assertNotEqual(product, self.config.baseer_global_discount_product_id)
+        self.assertEqual(product.company_id, self.config.company_id)
+        self.assertEqual(product.type, 'service')
+        self.assertTrue(product.available_in_pos)
+        self.assertFalse(product.taxes_id)
+        self.assertEqual(product.property_account_income_id, self.account)
+        self.config.action_baseer_setup_native_discount()
+        self.assertEqual(self.config.discount_product_id, product)
+        cashier = self.env['res.users'].create({
+            'name': 'Native discount cashier', 'login': 'native-discount-cashier',
+            'group_ids': [Command.set([self.env.ref('point_of_sale.group_pos_user').id])],
+            'company_id': self.env.company.id, 'company_ids': [Command.set(self.env.company.ids)],
+        })
+        with self.assertRaises(AccessError):
+            self.config.with_user(cashier).action_baseer_setup_native_discount()
+
     def test_native_settings_switch_limits_and_product_round_trip(self):
         settings = self.env['res.config.settings'].create({
             'company_id': self.env.company.id, 'pos_config_id': self.config.id,

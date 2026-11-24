@@ -27,6 +27,10 @@ Apply/remove/refund preparation requires an online connection. Original native
 payment, receipt, invoice, credit-note and Saudi EDI ownership is preserved.
 Arabic/English native OWL controls support desktop and touch screens.
 
+The POS settings also have an explicit manager-only action to assign
+a company-owned product to the native discount setting. This prepares the
+product only; it does not change the current managed discount workflow.
+
 ## Candidate boundaries
 
 - Company currency with `0.01` rounding; no cash rounding.
@@ -48,3 +52,14 @@ review, actual accounting/XML evidence, QA deployment and outstanding release
 gates. A successful XML export alone does not establish ZATCA acceptance.
 
 Managed shared drafts cancelled or removed on the server are removed locally when neither copy has payments. A POS manager can audit and discard a stuck local copy after checking local payments against the terminal. An unavailable server leaves the copy protected.
+
+### Native fixed discount option
+
+When the legacy invoice-discount flow is not active, managers can enable fixed
+amounts on the native discount button and choose who may use them. The optional
+maximum is tax-inclusive; zero adds no cap beyond the eligible total. Use the
+company product setup button to assign a dedicated native discount product.
+The amount can be applied offline, but payment requires a connection to avoid
+two devices paying different snapshots of a shared order. Fixed discounts are
+recalculated when the order changes. The legacy flow remains in charge when its
+existing setting is enabled.

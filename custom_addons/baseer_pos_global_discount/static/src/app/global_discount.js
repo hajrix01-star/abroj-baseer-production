@@ -757,6 +757,7 @@ export class BaseerGlobalDiscountDialog extends Component {
 }
 
 patch(PosStore.prototype, {
+    baseerIsDiscountFrozen(order) { return isDiscountFrozen(order); },
     async reloadData(fullReload = false) {
         // Let the native autosave finish; its reconciliation also runs on
         // other tabs. A reload never clears or rewrites their order stores.

@@ -39,8 +39,18 @@ class BaseerPrintPreparationState(models.Model):
                 raise AccessError(_('Preparation state printer configuration is not valid.'))
 
     @api.model
+    def _is_discount_line(self, line):
+        config = line.order_id.config_id
+        return bool(
+            ('baseer_global_discount_line' in line._fields and line.baseer_global_discount_line)
+            or ('baseer_discount_kind' in line._fields and line.baseer_discount_kind)
+            or ('discount_product_id' in config._fields and config.discount_product_id
+                and line.product_id == config.discount_product_id)
+        )
+
+    @api.model
     def _kitchen_quantity(self, line):
-        if 'baseer_global_discount_line' in line._fields and line.baseer_global_discount_line:
+        if self._is_discount_line(line):
             return 0.0
         # Accepted financial replacements are silent. Only quantities above
         # that immutable allowance may become subsequent kitchen additions.
@@ -171,7 +181,7 @@ class BaseerPrintPreparationState(models.Model):
         for requested in action['lines']:
             current = by_uuid.get(requested['line_uuid'])
             line = lines_by_uuid.get(requested['line_uuid'])
-            if line and 'baseer_global_discount_line' in line._fields and line.baseer_global_discount_line:
+            if line and self._is_discount_line(line):
                 continue
             if not current and requested['expected_quantity']:
                 line = lines_by_uuid.get(requested['line_uuid'])
@@ -357,7 +367,7 @@ class BaseerPrintPreparationState(models.Model):
         for requested in action['lines']:
             old = by_uuid.get(requested['line_uuid'])
             line = lines_by_uuid.get(requested['line_uuid'])
-            if line and 'baseer_global_discount_line' in line._fields and line.baseer_global_discount_line:
+            if line and self._is_discount_line(line):
                 continue
             previous = requested['expected_quantity']
             target = requested['new_quantity']
@@ -458,7 +468,7 @@ class BaseerPrintPreparationState(models.Model):
         else:
             action_uuid = str(uuid4())
         for line in order.lines:
-            if 'baseer_global_discount_line' in line._fields and line.baseer_global_discount_line:
+            if self._is_discount_line(line):
                 prior_by_line.pop(line.uuid, None)
                 continue
             details = self._line_details(line)

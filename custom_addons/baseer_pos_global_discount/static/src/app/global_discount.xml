@@ -13,6 +13,14 @@
             </div>
         </xpath>
     </t>
+    <t t-name="baseer_pos_global_discount.StuckDraftAction" t-inherit="point_of_sale.TicketScreen" t-inherit-mode="extension">
+        <xpath expr="//td[@name='delete-column']" position="inside">
+            <button t-if="pos.getCashier()?._role === 'manager' and pos.baseerStuckDraft(order)" class="btn btn-outline-danger" t-on-click.stop="() => pos.baseerDiscardLocalCopy(order)">Discard local copy</button>
+        </xpath>
+        <xpath expr="//div[@name='delete-column']" position="inside">
+            <button t-if="pos.getCashier()?._role === 'manager' and pos.baseerStuckDraft(order)" class="btn btn-outline-danger" t-on-click.stop="() => pos.baseerDiscardLocalCopy(order)">Discard local copy</button>
+        </xpath>
+    </t>
     <t t-name="baseer_pos_global_discount.Dialog">
         <Dialog title.translate="Invoice discount" size="'md'">
             <div class="baseer-discount-dialog">

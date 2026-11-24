@@ -24,7 +24,8 @@ const cancelGraphUnchanged = (order, pending, tracker) => tracker.get() === pend
 const cancelGraphFingerprint = () => 'test-graph';
 const useState = (value) => value;
 const useAutofocus = () => {};
-class Component {} class Dialog {} class AlertDialog {};
+class Component {} class Dialog {} class AlertDialog {} class ConfirmationDialog {};
+const ask = async () => globalThis.baseerTestConfirm;
 class ControlButtons { clickFiscalPosition() { this.nativeCalled = true; } }
 class PosStore { applyDiscount() { this.nativeCalled = true; } async beforeDeleteOrder() { this.nativeBeforeDelete = true; return true; } async deleteOrders() { this.nativeDeleted = true; return true; } async afterProcessServerData() { return this.nativeStartup(); } async syncAllOrders(options) { return this.nativeSync(options); } async preSyncAllOrders(orders) { return orders; } async postSyncAllOrders() {} }
 class PosOrder { update(values) { this.nativeValues = values; } addPaymentline() { this.nativeCalled = true; } removePaymentline() { this.nativeCalled = true; } removeOrderline() { this.nativeCalled = true; } serializeForIndexedDB() { return { JSONuiState: JSON.stringify(this.uiState) }; } serializeForORM() {
@@ -1680,4 +1681,122 @@ test("paid sync stops before RPC when immutable payload cannot be persisted", as
     await assert.rejects(() => extensions.get("PosStore").preSyncAllOrders.call(pos, [order]), /quota/);
     assert.equal(order.uiState.baseerOfflineDiscount.retry_payload, undefined);
     assert.equal(alert, true);
+});
+
+function recoveryFixture(status, payments = []) {
+    const methods = experimentalExtensions.get('PosStore');
+    const order = { id: 42, uuid: 'sale', state: 'draft', lines: [], payment_ids: payments,
+        uiState: { baseerSharedDraftRevision: 1, baseerSharedDraftRefreshError: 'review', baseerSharedDraftNeedsSync: true } };
+    const calls = [];
+    const pos = Object.assign({}, methods, { config: { id: 2, current_session_id: 27 }, models: {},
+        pendingOrder: { create: new Set([42]), write: new Set([42]), delete: new Set([42]) },
+        data: { network: { offline: false }, indexedDB: { _baseerOfflineProtection: new Map([['sale', { 'pos.order': new Set(['sale']) }]]),
+            async delete(model, keys) { calls.push([model, keys]); } },
+            orm: { async call(model, method) { calls.push(method); if (status instanceof Error) throw status; return method === 'baseer_shared_draft_remote_status' ? { sale: status } : true; } },
+            localDeleteCascade() { calls.push('removed'); } },
+        notification: { add(message) { calls.push(message); } }, getCashier: () => ({ _role: 'manager' }), dialog: {},
+    });
+    return { pos, order, calls };
+}
+
+test('remote cancellation and missing order remove an unpaid local graph', async () => {
+    for (const exists of [true, false]) {
+        const { pos, order, calls } = recoveryFixture({ exists, state: exists ? 'cancel' : false, payment_count: 0, amount_paid: 0 });
+        assert.equal(await pos.baseerTryRemoteRemoval(order), true);
+        assert.ok(calls.includes('removed'));
+        assert.equal(pos.pendingOrder.write.size, 0);
+        assert.equal(pos.data.indexedDB._baseerOfflineProtection.size, 0);
+    }
+});
+
+test('missing never-synced managed draft is retained without calling removal', async () => {
+    const { pos, order, calls } = recoveryFixture({ exists: false, payment_count: 0, amount_paid: 0 });
+    order.id = 'local-id';
+    order.uiState = { baseerOfflineDiscount: {}, baseerSharedDraftServerOrderId: 0, baseerSharedDraftRevision: 0 };
+    let removalCalled = false;
+    pos.baseerRemoveLocalCopy = async () => { removalCalled = true; };
+    assert.equal(await pos.baseerTryRemoteRemoval(order), false);
+    assert.equal(removalCalled, false);
+    assert.ok(!calls.includes('removed'));
+});
+
+test('missing managed draft is removed for each kind of server evidence', async () => {
+    for (const evidence of [
+        { id: 42 },
+        { uiState: { baseerSharedDraftServerOrderId: 42 } },
+        { baseer_offline_draft_revision: 1 },
+        { uiState: { baseerSharedDraftRevision: 1 } },
+    ]) {
+        const { pos, order, calls } = recoveryFixture({ exists: false, payment_count: 0, amount_paid: 0 });
+        order.id = evidence.id ?? 'local-id';
+        order.baseer_offline_draft_revision = evidence.baseer_offline_draft_revision;
+        order.uiState = { baseerOfflineDiscount: {}, ...evidence.uiState };
+        assert.equal(await pos.baseerTryRemoteRemoval(order), true);
+        assert.ok(calls.includes('removed'));
+    }
+});
+
+test('server cancellation removes a managed draft even without local server evidence', async () => {
+    const { pos, order, calls } = recoveryFixture({ exists: true, state: 'cancel', payment_count: 0, amount_paid: 0 });
+    order.id = 'local-id';
+    order.uiState = { baseerOfflineDiscount: {} };
+    assert.equal(await pos.baseerTryRemoteRemoval(order), true);
+    assert.ok(calls.includes('removed'));
+});
+
+test('unknown status and existing paid draft retain the local copy', async () => {
+    for (const status of [new Error('offline'), { exists: true, state: 'draft', payment_count: 1, amount_paid: 3 }]) {
+        const { pos, order, calls } = recoveryFixture(status);
+        assert.equal(await pos.baseerTryRemoteRemoval(order), false);
+        pos.data.network.offline = true;
+        assert.equal(await pos.baseerTryRemoteRemoval(order), false);
+        assert.ok(!calls.includes('removed'));
+    }
+});
+
+test('manager discard audits before removal and retains copy on failure', async () => {
+    globalThis.baseerTestConfirm = true;
+    const fixture = recoveryFixture({ exists: false, payment_count: 0, amount_paid: 0 }, [{ amount: 3, payment_method_id: { name: 'Bank' } }]);
+    assert.equal(await fixture.pos.baseerDiscardLocalCopy(fixture.order), true);
+    assert.ok(fixture.calls.indexOf('baseer_log_discarded_local_copy') < fixture.calls.indexOf('removed'));
+    const failed = recoveryFixture(new Error('RPC failed'));
+    assert.equal(await failed.pos.baseerDiscardLocalCopy(failed.order), false);
+    assert.ok(!failed.calls.includes('removed'));
+});
+
+test('non-manager is directed to a manager', async () => {
+    const { pos, order, calls } = recoveryFixture(new Error('RPC failed'));
+    pos.getCashier = () => ({ _role: 'cashier' });
+    assert.equal(await pos.beforeDeleteOrder(order), false);
+    assert.ok(calls.some((item) => typeof item === 'string' && item.includes('Ask a manager')));
+});
+
+test('review notification is limited to one per POS session', async () => {
+    const { pos, order, calls } = recoveryFixture(new Error('RPC failed'));
+    pos.getPendingOrder = () => ({ orderToCreate: [], orderToUpdate: [] });
+    await pos.syncAllOrders({ orders: [order] });
+    await pos.syncAllOrders({ orders: [order] });
+    assert.equal(calls.filter((item) => typeof item === 'string' && item.startsWith('A saved order needs review')).length, 1);
+});
+
+test('cancelled server with local payment remains available for manager review', async () => {
+    const { pos, order, calls } = recoveryFixture({ exists: true, state: 'cancel', payment_count: 0, amount_paid: 0 },
+        [{ amount: 3, payment_method_id: { name: 'Bank' } }]);
+    assert.equal(await pos.baseerTryRemoteRemoval(order), false);
+    assert.equal(order.uiState.baseerSharedDraftRemoteDeleted, true);
+    assert.ok(!calls.includes('removed'));
+});
+
+test('local cascade can remove protected line and payment records', async () => {
+    const { pos, order } = recoveryFixture({ exists: false, payment_count: 0, amount_paid: 0 });
+    const line = { id: 'line', uuid: 'line', order_id: order };
+    const payment = { id: 'payment', uuid: 'payment', pos_order_id: order };
+    order.lines = [line]; order.payment_ids = [payment];
+    pos.data.localDeleteCascade = () => {
+        experimentalExtensions.get('PosOrderline').delete.call(line);
+        experimentalExtensions.get('PosPayment').delete.call(payment);
+    };
+    await pos.baseerRemoveLocalCopy(order);
+    assert.equal(line.nativeDeleted, true);
+    assert.equal(payment.nativeDeleted, true);
 });

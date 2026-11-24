@@ -46,3 +46,5 @@ Run Odoo with `--test-tags=/baseer_pos_global_discount` on an isolated database.
 See `docs/build-governance/POS-GLOBAL-DISCOUNT-QA.md` for exact source, independent
 review, actual accounting/XML evidence, QA deployment and outstanding release
 gates. A successful XML export alone does not establish ZATCA acceptance.
+
+Managed shared drafts cancelled or removed on the server are removed locally when neither copy has payments. A POS manager can audit and discard a stuck local copy after checking local payments against the terminal. An unavailable server leaves the copy protected.

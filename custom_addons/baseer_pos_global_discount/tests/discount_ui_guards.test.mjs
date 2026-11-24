@@ -250,6 +250,284 @@ test('newer shared server revision blocks payment and preserves local edit', asy
     assert.match(order.uiState.baseerSharedDraftRefreshError, /changed on another device/);
     assert.equal(order.lines[0].qty, 2);
 });
+test('removed discount and confirmed card waits for matching revision without losing the payment', async () => {
+    let release;
+    const response = new Promise((resolve) => { release = resolve; });
+    const order = { id: 42, uuid: 'removed-discount', state: 'paid', baseer_offline_draft_revision: 3,
+        uiState: { baseerSharedDraftRevision: 3, baseerSharedDraftRemoveRequested: true },
+        lines: [{ uuid: 'food', qty: 1 }], payment_ids: [{ uuid: 'bank', amount: 3, payment_status: 'done' }] };
+    let sent = false;
+    const store = { data: { orm: { call: async () => response } },
+        getPendingOrder: () => ({ orderToCreate: [], orderToUpdate: [] }), notification: { add() {} }, removePendingOrder() {},
+        async baseerRunSharedDraftExperiment() { sent = true; } };
+    const verifying = experimentalExtensions.get('PosStore').baseerVerifyIncomingSharedRevisionExperiment.call(store, order, 42);
+    const syncing = experimentalExtensions.get('PosStore').syncAllOrders.call(store, { orders: [order], throw: true });
+    await Promise.resolve();
+    assert.equal(sent, false);
+    assert.deepEqual(order.payment_ids, [{ uuid: 'bank', amount: 3, payment_status: 'done' }]);
+    release({ 'pos.order': [{ id: 42, uuid: order.uuid, state: 'draft', baseer_offline_draft_revision: 3 }] });
+    assert.equal(await verifying, true);
+    assert.deepEqual(await syncing, [order]); assert.equal(sent, true);
+    assert.equal(order.uiState.baseerSharedDraftRefreshError, undefined);
+    assert.deepEqual(order.payment_ids, [{ uuid: 'bank', amount: 3, payment_status: 'done' }]);
+});
+test('lost revision-check response leaves review flag on removed-discount order with completed bank line', async () => {
+    const order = { id: 42, uuid: 'card-offline', state: 'paid', baseer_offline_draft_revision: 3,
+        uiState: { baseerSharedDraftRevision: 3, baseerSharedDraftRemoveRequested: true },
+        lines: [{ uuid: 'food', qty: 1 }], payment_ids: [{ uuid: 'bank', amount: 3, payment_status: 'done' }] };
+    const store = { data: { orm: { async call() { throw new ConnectionLostError(); } } },
+        getPendingOrder: () => ({ orderToCreate: [], orderToUpdate: [] }), notification: { add() {} } };
+    await assert.rejects(() => experimentalExtensions.get('PosStore').baseerVerifyIncomingSharedRevisionExperiment.call(store, order, 42), ConnectionLostError);
+    assert.match(order.uiState.baseerSharedDraftRefreshError, /changed on another device/);
+    await assert.rejects(() => experimentalExtensions.get('PosStore').syncAllOrders.call(store, { orders: [order], throw: true }), /Shared draft requires review/);
+    assert.deepEqual(order.payment_ids, [{ uuid: 'bank', amount: 3, payment_status: 'done' }]);
+});
+test('payment remains protected while in-flight revision check finds conflicts, deletion, or loses network', async () => {
+    for (const outcome of ['revision', 'identity', 'deleted', 'network', 'paid']) {
+        let release, reject;
+        const response = new Promise((resolve, fail) => { release = resolve; reject = fail; });
+        const order = { id: 42, uuid: `order-${outcome}`, state: 'paid', baseer_offline_draft_revision: 3,
+            uiState: { baseerSharedDraftRevision: 3, baseerSharedDraftRemoveRequested: true },
+            lines: [{ uuid: 'food', qty: 1 }], payment_ids: [{ uuid: 'bank', amount: 3, payment_status: 'done' }] };
+        let sent = false;
+        const store = { data: { orm: { call: async () => response } },
+            getPendingOrder: () => ({ orderToCreate: [], orderToUpdate: [] }), notification: { add() {} },
+            async baseerAcceptRemoteSharedDeletionExperiment() { /* order remains intact for review */ },
+            async baseerRunSharedDraftExperiment() { sent = true; } };
+        const verifying = experimentalExtensions.get('PosStore').baseerVerifyIncomingSharedRevisionExperiment.call(store, order, 42);
+        const syncing = experimentalExtensions.get('PosStore').syncAllOrders.call(store, { orders: [order], throw: true });
+        const verifierOutcome = verifying.catch((error) => error);
+        const syncOutcome = syncing.catch((error) => error);
+        if (outcome === 'network') reject(new ConnectionLostError());
+        else if (outcome === 'deleted') release({ 'pos.order': [] });
+        else release({ 'pos.order': [{ id: 42, uuid: outcome === 'identity' ? 'other' : order.uuid,
+            state: outcome === 'paid' ? 'paid' : 'draft', baseer_offline_draft_revision: outcome === 'revision' ? 4 : 3 }] });
+        await verifierOutcome;
+        const result = await syncOutcome;
+        assert.ok(result instanceof Error, outcome);
+        assert.equal(sent, false, outcome);
+        assert.deepEqual(order.payment_ids, [{ uuid: 'bank', amount: 3, payment_status: 'done' }], outcome);
+    }
+});
+test('payment waits for latest revision check when responses arrive in reverse order', async () => {
+    const resolvers = [];
+    const order = { id: 42, uuid: 'order', state: 'paid', baseer_offline_draft_revision: 3,
+        uiState: { baseerSharedDraftRevision: 3, baseerSharedDraftRemoveRequested: true },
+        lines: [{ uuid: 'food' }], payment_ids: [{ uuid: 'bank', amount: 3, payment_status: 'done' }] };
+    let sent = false;
+    const store = { data: { orm: { call: async () => new Promise((resolve) => resolvers.push(resolve)) } },
+        getPendingOrder: () => ({ orderToCreate: [], orderToUpdate: [] }), notification: { add() {} },
+        async baseerRunSharedDraftExperiment() { sent = true; } };
+    const verify = experimentalExtensions.get('PosStore').baseerVerifyIncomingSharedRevisionExperiment;
+    const first = verify.call(store, order, 42), second = verify.call(store, order, 42);
+    const syncing = experimentalExtensions.get('PosStore').syncAllOrders.call(store, { orders: [order], throw: true });
+    resolvers[1]({ 'pos.order': [{ id: 42, uuid: 'order', state: 'draft', baseer_offline_draft_revision: 4 }] });
+    assert.equal(await second, false);
+    await assert.rejects(syncing, /Shared draft requires review/);
+    resolvers[0]({ 'pos.order': [{ id: 42, uuid: 'order', state: 'draft', baseer_offline_draft_revision: 3 }] });
+    assert.equal(await first, false);
+    assert.equal(sent, false);
+    assert.equal(order.payment_ids[0].amount, 3);
+    assert.match(order.uiState.baseerSharedDraftRefreshError, /changed on another device/);
+});
+test('delayed paid server response does not discard a locally finalized bank payment', async () => {
+    let release;
+    const response = new Promise((resolve) => { release = resolve; });
+    const order = { id: 42, uuid: 'late-paid', state: 'draft', baseer_offline_draft_revision: 3,
+        uiState: { baseerSharedDraftRevision: 3, baseerSharedDraftRemoveRequested: true },
+        lines: [{ uuid: 'food' }], payment_ids: [{ uuid: 'bank', amount: 3, payment_status: 'done' }] };
+    let remoteDeleteCalls = 0, sent = false;
+    const methods = experimentalExtensions.get('PosStore');
+    const store = { data: { orm: { call: async () => response } }, models: {},
+        getPendingOrder: () => ({ orderToCreate: [], orderToUpdate: [] }), notification: { add() {} },
+        async baseerAcceptRemoteSharedDeletionExperiment(value) {
+            remoteDeleteCalls++;
+            return methods.baseerAcceptRemoteSharedDeletionExperiment.call(this, value);
+        }, async baseerRunSharedDraftExperiment() { sent = true; } };
+    const checking = methods.baseerVerifyIncomingSharedRevisionExperiment.call(store, order, 42);
+    order.state = 'paid';
+    const syncing = methods.syncAllOrders.call(store, { orders: [order], throw: true });
+    release({ 'pos.order': [{ id: 42, uuid: order.uuid, state: 'paid', baseer_offline_draft_revision: 4 }] });
+    assert.equal(await checking, false);
+    await assert.rejects(syncing, /Shared draft requires review/);
+    assert.equal(remoteDeleteCalls, 0);
+    assert.equal(order.uiState.baseerSharedDraftRemoteDeleted, undefined);
+    assert.equal(sent, false);
+    assert.deepEqual(order.payment_ids, [{ uuid: 'bank', amount: 3, payment_status: 'done' }]);
+});
+test('overlapping draft checks release only their own provisional warning on paid ACK', async () => {
+    for (const priorConflict of [false, true]) {
+        const resolvers = [], conflict = 'The shared order changed on another device. Keep your local changes for review.';
+        const order = { id: 42, uuid: 'two-checks', state: 'draft', uiState: { baseerSharedDraftRevision: 3,
+            ...(priorConflict ? { baseerSharedDraftRefreshError: conflict } : {}) },
+            payment_ids: [{ uuid: 'bank', amount: 3, payment_status: 'done' }] };
+        let reconciled = 0, newCommands = 0;
+        const methods = experimentalExtensions.get('PosStore');
+        const store = { data: { orm: { call: () => new Promise((resolve) => resolvers.push(resolve)) } },
+            getPendingOrder: () => ({ orderToCreate: [], orderToUpdate: [] }), notification: { add() {} },
+            async baseerRunSharedDraftExperiment() { newCommands++; },
+            async baseerReconcileSharedPaidExperiment(value) { reconciled++; delete value.uiState.baseerSharedDraftPaidAckPending; } };
+        const first = methods.baseerVerifyIncomingSharedRevisionExperiment.call(store, order, 42);
+        const second = methods.baseerVerifyIncomingSharedRevisionExperiment.call(store, order, 42);
+        order.state = 'paid'; order.uiState.baseerSharedDraftPaidAckPending = true;
+        const syncing = methods.syncAllOrders.call(store, { orders: [order], throw: true });
+        const observed = syncing.catch((error) => error);
+        resolvers[0]({ 'pos.order': [] }); assert.equal(await first, false);
+        resolvers[1]({ 'pos.order': [] }); assert.equal(await second, false);
+        const result = await observed;
+        if (priorConflict) { assert.match(result.message, /Shared draft requires review/); assert.equal(reconciled, 0); }
+        else { assert.deepEqual(result, [order]); assert.equal(reconciled, 1); }
+        assert.equal(newCommands, 0); assert.equal(order.payment_ids[0].amount, 3);
+    }
+});
+test('an independent newer-server warning survives a pending check and paid ACK', async () => {
+    let release;
+    const response = new Promise((resolve) => { release = resolve; });
+    const order = { id: 42, uuid: 'independent', state: 'draft', lines: [{ id: 11, uuid: 'food' }],
+        payment_ids: [{ uuid: 'bank', amount: 3, payment_status: 'done' }],
+        uiState: { baseerOfflineDiscount: {}, baseerSharedDraftHydratedOnly: false, baseerSharedDraftRevision: 3 } };
+    const methods = experimentalExtensions.get('PosStore');
+    const pos = { data: { orm: { call: () => response } } };
+    const checking = methods.baseerVerifyIncomingSharedRevisionExperiment.call(pos, order, 42);
+    const updated = { 'pos.order': [{ id: 42, uuid: order.uuid, baseer_offline_draft_revision: 4 }], 'pos.order.line': [], 'pos.payment': [] };
+    const models = { 'pos.order': { getAll: () => [order] }, 'pos.config': { get: () => ({}) },
+        'pos.session': { get: () => ({}) }, connectNewData: () => ({ 'pos.order': [] }) };
+    const service = { models, execute: async () => updated, missingRecursive: async (value) => value,
+        synchronizeServerDataInIndexedDB() {}, deviceSync: { pos: { async baseerRefreshCleanSharedDraftExperiment() {} } } };
+    await experimentalExtensions.get('PosData').loadServerOrders.call(service, []);
+    order.state = 'paid'; order.uiState.baseerSharedDraftPaidAckPending = true;
+    release({ 'pos.order': [] }); assert.equal(await checking, false);
+    assert.match(order.uiState.baseerSharedDraftRefreshError, /changed on another device/);
+    assert.equal(order.payment_ids[0].amount, 3);
+});
+test('paid ACK arriving during stale draft lookup is reconciled without a new payment command', async () => {
+    for (const lookup of ['paid', 'empty', 'network']) for (const matches of [true, false]) {
+        let release, reject;
+        const response = new Promise((resolve, fail) => { release = resolve; reject = fail; });
+        const payment = { uuid: 'bank', amount: 3, payment_status: 'done' };
+        const order = { id: 42, uuid: 'late-ack', state: 'draft', baseer_offline_draft_revision: 3,
+            uiState: { baseerSharedDraftRevision: 3, baseerSharedDraftRemoveRequested: true },
+            lines: [{ uuid: 'food' }], payment_ids: [payment] };
+        let newCommands = 0, reconciliations = 0;
+        const methods = experimentalExtensions.get('PosStore');
+        const store = { data: { orm: { call: async () => response } },
+            getPendingOrder: () => ({ orderToCreate: [], orderToUpdate: [] }), notification: { add() {} },
+            async baseerRunSharedDraftExperiment() { newCommands++; },
+            async baseerReconcileSharedPaidExperiment(value) {
+                reconciliations++;
+                assert.equal(value.uiState.baseerSharedDraftPaidCommand.command_uuid, 'frozen-paid');
+                if (!matches) throw new Error('paid acknowledgement mismatch');
+                delete value.uiState.baseerSharedDraftPaidAckPending;
+            } };
+        const checking = methods.baseerVerifyIncomingSharedRevisionExperiment.call(store, order, 42);
+        order.state = 'paid';
+        order.uiState.baseerSharedDraftPaidAckPending = true;
+        order.uiState.baseerSharedDraftPaidCommand = { command_uuid: 'frozen-paid' };
+        const syncing = methods.syncAllOrders.call(store, { orders: [order], throw: true });
+        const observed = syncing.catch((error) => error);
+        if (lookup === 'network') reject(new ConnectionLostError());
+        else release({ 'pos.order': lookup === 'empty' ? [] : [{ id: 42, uuid: order.uuid, state: 'paid', baseer_offline_draft_revision: 4 }] });
+        assert.equal(await checking, false);
+        const result = await observed;
+        if (matches) assert.deepEqual(result, [order]);
+        else { assert.match(result.message, /paid acknowledgement mismatch/); assert.equal(order.uiState.baseerSharedDraftPaidAckPending, true); }
+        assert.equal(reconciliations, 1); assert.equal(newCommands, 0);
+        assert.deepEqual(order.payment_ids, [payment]);
+    }
+});
+test('stale lookup cannot clear review after local state or revision changed without a paid ACK', async () => {
+    for (const changed of ['state', 'revision']) {
+        let release;
+        const response = new Promise((resolve) => { release = resolve; });
+        const order = { id: 42, uuid: 'order', state: 'draft', uiState: { baseerSharedDraftRevision: 3 },
+            payment_ids: [{ uuid: 'bank', amount: 3, payment_status: 'done' }] };
+        const store = { data: { orm: { call: async () => response } } };
+        const checking = experimentalExtensions.get('PosStore').baseerVerifyIncomingSharedRevisionExperiment.call(store, order, 42);
+        if (changed === 'state') order.state = 'paid'; else order.uiState.baseerSharedDraftRevision = 4;
+        release({ 'pos.order': [{ id: 42, uuid: order.uuid, state: changed === 'state' ? 'paid' : 'draft', baseer_offline_draft_revision: changed === 'revision' ? 4 : 3 }] });
+        assert.equal(await checking, false);
+        assert.match(order.uiState.baseerSharedDraftRefreshError, /changed on another device/);
+        assert.equal(order.payment_ids[0].amount, 3);
+    }
+});
+test('local paid transition without command continues only after matching server draft', async () => {
+    for (const priorConflict of [false, true]) {
+        let release;
+        const response = new Promise((resolve) => { release = resolve; });
+        const conflict = 'The shared order changed on another device. Keep your local changes for review.';
+        const order = { id: 42, uuid: 'new-paid', state: 'draft', uiState: { baseerSharedDraftRevision: 3,
+            ...(priorConflict ? { baseerSharedDraftRefreshError: conflict } : {}) },
+            payment_ids: [{ uuid: 'bank', amount: 3, payment_status: 'done' }] };
+        let sent = 0;
+        const methods = experimentalExtensions.get('PosStore');
+        const store = { data: { orm: { call: async () => response } }, getPendingOrder: () => ({ orderToCreate: [], orderToUpdate: [] }),
+            notification: { add() {} }, async baseerRunSharedDraftExperiment() { sent++; } };
+        const checking = methods.baseerVerifyIncomingSharedRevisionExperiment.call(store, order, 42);
+        order.state = 'paid';
+        const syncing = methods.syncAllOrders.call(store, { orders: [order], throw: true });
+        const observed = syncing.catch((error) => error);
+        release({ 'pos.order': [{ id: 42, uuid: order.uuid, state: 'draft', baseer_offline_draft_revision: 3 }] });
+        assert.equal(await checking, true);
+        const result = await observed;
+        if (priorConflict) { assert.match(result.message, /Shared draft requires review/); assert.equal(sent, 0); }
+        else { assert.deepEqual(result, [order]); assert.equal(sent, 1); }
+        assert.equal(order.payment_ids[0].amount, 3);
+    }
+});
+test('paid ACK arriving after a failed lookup clears only that lookup warning', async () => {
+    const order = { id: 42, uuid: 'after-network', state: 'draft', uiState: { baseerSharedDraftRevision: 3 },
+        payment_ids: [{ uuid: 'bank', amount: 3, payment_status: 'done' }] };
+    let reconciled = 0, sent = 0;
+    const methods = experimentalExtensions.get('PosStore');
+    const store = { data: { orm: { async call() { throw new ConnectionLostError(); } } },
+        getPendingOrder: () => ({ orderToCreate: [], orderToUpdate: [] }), notification: { add() {} },
+        async baseerRunSharedDraftExperiment() { sent++; },
+        async baseerReconcileSharedPaidExperiment(value) { reconciled++; delete value.uiState.baseerSharedDraftPaidAckPending; } };
+    await assert.rejects(() => methods.baseerVerifyIncomingSharedRevisionExperiment.call(store, order, 42), ConnectionLostError);
+    order.state = 'paid'; order.uiState.baseerSharedDraftPaidAckPending = true;
+    assert.deepEqual(await methods.syncAllOrders.call(store, { orders: [order], throw: true }), [order]);
+    assert.equal(reconciled, 1); assert.equal(sent, 0); assert.equal(order.payment_ids[0].amount, 3);
+});
+test('paid server or empty lookup before a later paid ACK preserves provenance and the bank line', async () => {
+    for (const outcome of ['paid', 'empty']) {
+        let release;
+        const response = new Promise((resolve) => { release = resolve; });
+        const order = { id: 42, uuid: `late-${outcome}`, state: 'draft', uiState: { baseerSharedDraftRevision: 3 },
+            payment_ids: [{ uuid: 'bank', amount: 3, payment_status: 'done' }] };
+        let reconciled = 0, sent = 0;
+        const methods = experimentalExtensions.get('PosStore');
+        const store = { data: { orm: { call: () => response } },
+            getPendingOrder: () => ({ orderToCreate: [], orderToUpdate: [] }), notification: { add() {} },
+            async baseerRunSharedDraftExperiment() { sent++; },
+            async baseerReconcileSharedPaidExperiment(value) { reconciled++; delete value.uiState.baseerSharedDraftPaidAckPending; } };
+        const checking = methods.baseerVerifyIncomingSharedRevisionExperiment.call(store, order, 42);
+        order.state = 'paid';
+        release({ 'pos.order': outcome === 'empty' ? [] : [{ id: 42, uuid: order.uuid, state: 'paid', baseer_offline_draft_revision: 4 }] });
+        assert.equal(await checking, false);
+        await assert.rejects(() => methods.syncAllOrders.call(store, { orders: [order], throw: true }), /Shared draft requires review/);
+        order.uiState.baseerSharedDraftPaidAckPending = true;
+        assert.deepEqual(await methods.syncAllOrders.call(store, { orders: [order], throw: true }), [order]);
+        assert.equal(reconciled, 1); assert.equal(sent, 0); assert.equal(order.payment_ids[0].amount, 3);
+    }
+});
+test('paid order with a frozen lost-ACK command retries only that command after stale lookup', async () => {
+    let release;
+    const response = new Promise((resolve) => { release = resolve; });
+    const pending = { command_uuid: 'original-paid', target_state: 'paid', payload_json: '{"frozen":true}' };
+    const order = { id: 42, uuid: 'frozen', state: 'draft', uiState: { baseerSharedDraftRevision: 3 },
+        payment_ids: [{ uuid: 'bank', amount: 3, payment_status: 'done' }] };
+    let sent;
+    const methods = experimentalExtensions.get('PosStore');
+    const store = { data: { orm: { call: async () => response } },
+        getPendingOrder: () => ({ orderToCreate: [], orderToUpdate: [] }), notification: { add() {} },
+        async baseerRunSharedDraftExperiment(value) { sent = structuredClone(value.uiState.baseerSharedDraftPending); delete value.uiState.baseerSharedDraftPending; } };
+    const checking = methods.baseerVerifyIncomingSharedRevisionExperiment.call(store, order, 42);
+    order.state = 'paid'; order.uiState.baseerSharedDraftPending = pending;
+    const syncing = methods.syncAllOrders.call(store, { orders: [order], throw: true });
+    release({ 'pos.order': [] }); assert.equal(await checking, false);
+    assert.deepEqual(await syncing, [order]); assert.deepEqual(sent, pending);
+    assert.deepEqual(order.payment_ids, [{ uuid: 'bank', amount: 3, payment_status: 'done' }]);
+});
 test('revision warning permits only a frozen pending retry and clears after acknowledgement', async () => {
     const warning = 'The shared order changed on another device. Keep your local changes for review.';
     const order = { id: 'order', uuid: 'order', state: 'draft', uiState: { baseerOfflineDiscount: {}, baseerSharedDraftRefreshError: warning,
@@ -735,6 +1013,62 @@ test('local UUID draft verifies its server identity and asks the kitchen reason 
     order.id = 42; order.isSynced = true; allow = true;
     assert.equal(await experimentalExtensions.get('PosStore').beforeDeleteOrder.call(pos, order), true);
     assert.equal(questions, 2, 'bridge owns the numeric synchronized case');
+});
+test('cancel first synchronizes removed discount and deleted card without accepting a remaining payment', async () => {
+    const method = experimentalExtensions.get('PosStore').beforeDeleteOrder;
+    const create = () => ({ id: 42, uuid: 'draft', state: 'draft', isSynced: true, payment_ids: [],
+        uiState: { baseerSharedDraftRevision: 3, baseerSharedDraftGeneration: experimentalGeneration,
+            baseerSharedDraftRemoveRequested: true, baseerSharedDraftPaymentDeletions: [{ id: 88, token: 'deleted-card' }] } });
+    let calls = 0;
+    const pos = { models: {}, data: { network: { offline: false } }, config: { baseer_direct_print_enabled: true },
+        notification: { add() {} }, async baseerRunSharedDraftExperiment(order) {
+            calls++; assert.equal(order.uiState.baseerSharedDraftRemoveRequested, true);
+            assert.deepEqual(order.uiState.baseerSharedDraftPaymentDeletions, [{ id: 88, token: 'deleted-card' }]);
+            order.uiState.baseerSharedDraftPaymentDeletions = []; order.uiState.baseerSharedDraftNeedsSync = false;
+            order.uiState.baseerSharedDraftGeneration = experimentalGeneration;
+        } };
+    const clean = create();
+    assert.equal(await method.call(pos, clean), true); assert.equal(calls, 1); assert.equal(pos.nativeBeforeDelete, true);
+    const withCard = create(); withCard.payment_ids = [{ uuid: 'card', amount: 3, payment_status: 'done' }];
+    pos.nativeBeforeDelete = false;
+    assert.equal(await method.call(pos, withCard), false); assert.equal(calls, 1); assert.equal(pos.nativeBeforeDelete, false);
+    const lateCard = create();
+    pos.baseerRunSharedDraftExperiment = async (order) => { order.payment_ids.push({ uuid: 'card', amount: 3 }); order.uiState.baseerSharedDraftGeneration = experimentalGeneration; };
+    assert.equal(await method.call(pos, lateCard), false); assert.equal(lateCard.payment_ids[0].amount, 3);
+    const disconnected = create(); pos.data.network.offline = true;
+    assert.equal(await method.call(pos, disconnected), false);
+});
+test('a payment added while cancellation waits for draft sync prevents cancellation', async () => {
+    let release, started;
+    const inFlight = new Promise((resolve) => { release = resolve; });
+    const entered = new Promise((resolve) => { started = resolve; });
+    const order = { id: 42, uuid: 'draft', state: 'draft', isSynced: true, payment_ids: [],
+        uiState: { baseerSharedDraftRevision: 3, baseerSharedDraftRemoveRequested: true } };
+    const pos = { models: {}, data: { network: { offline: false } }, config: { baseer_direct_print_enabled: true },
+        notification: { add() {} }, async baseerRunSharedDraftExperiment(value) {
+            started(); await inFlight; value.uiState.baseerSharedDraftGeneration = experimentalGeneration;
+        } };
+    const cancelling = experimentalExtensions.get('PosStore').beforeDeleteOrder.call(pos, order);
+    await entered;
+    order.payment_ids.push({ uuid: 'bank', amount: 3, payment_status: 'done' });
+    release();
+    assert.equal(await cancelling, false);
+    assert.equal(pos.nativeBeforeDelete, undefined);
+    assert.deepEqual(order.payment_ids, [{ uuid: 'bank', amount: 3, payment_status: 'done' }]);
+});
+test('lost draft synchronization response keeps frozen command and prevents cancellation', async () => {
+    const pending = { command_uuid: 'frozen-draft', target_state: 'draft', payload_json: '{"unchanged":true}' };
+    const order = { id: 42, uuid: 'draft', state: 'draft', isSynced: true, payment_ids: [],
+        uiState: { baseerSharedDraftRevision: 3, baseerSharedDraftRemoveRequested: true } };
+    const pos = { models: {}, data: { network: { offline: false } }, config: { baseer_direct_print_enabled: true },
+        notification: { add() {} }, async baseerRunSharedDraftExperiment(value) {
+            value.uiState.baseerSharedDraftPending = structuredClone(pending);
+            throw new ConnectionLostError();
+        } };
+    assert.equal(await experimentalExtensions.get('PosStore').beforeDeleteOrder.call(pos, order), false);
+    assert.equal(pos.nativeBeforeDelete, undefined);
+    assert.deepEqual(order.uiState.baseerSharedDraftPending, pending);
+    assert.equal(order.uiState.baseerSharedDraftRevision, 3);
 });
 test('restored kitchen cancellation with lost ACK retries its frozen intent before server preview', async () => {
     const moduleSource = readFileSync(new URL('../static/src/app/draft_snapshot_experiment.js', import.meta.url), 'utf8');

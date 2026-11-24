@@ -15,7 +15,8 @@ const mocks = `
 const extensions = new Map();
 const patch = (target, extension) => { Object.setPrototypeOf(extension, target); extensions.set(target.constructor.name, extension); };
 const _t = (value) => value; const session = { db: 'qa' };
-const odoo = { pos_config_id: 2, pos_session_id: 27 };
+const odoo = { pos_config_id: 2, pos_session_id: 27, last_data_change: '2026-11-24 12:00:00' };
+const luxon = { DateTime: { fromSQL: (text) => Date.parse(text) } };
 const discountStorageKey = (db, config, uuid) => [db, config, uuid].join(':');
 const pendingDiscount = (pos, order) => localStorage.getItem(pos.baseerDiscountKey(order));
 const needsDiscountRefund = (order) => order.needsRefund;
@@ -1404,39 +1405,114 @@ test("device updates and deletions cannot overwrite locally paid order or childr
     assert.equal(sync.forwarded, incoming, "acknowledged orders follow native synchronization");
 });
 
-function resetDatabase(records, fail = false) {
-    return { transaction() {
-        const tx = { objectStore() { return { getAll() {
-            const req = {};
-            queueMicrotask(() => {
-                if (fail) { tx.error = new Error("read failed"); tx.onabort(); return; }
-                req.result = records; req.onsuccess(); tx.oncomplete();
-            });
-            return req;
-        } }; } };
-        return tx;
-    } };
-}
-
-test("native cache reset stops before deletion when a paid discount has not synchronized", async () => {
+test("native cache reset cannot delete the database shared with other registers", async () => {
     const extension = extensions.get("PosData");
-    const pending = { state: "paid", JSONuiState: JSON.stringify({ baseerOfflineDiscount: { kind: "fixed" } }) };
-    const data = { indexedDB: { db: resetDatabase([pending]) } };
-    await assert.rejects(() => extension.resetIndexedDB.call(data), /waiting to synchronize/);
+    const data = {};
+    await assert.rejects(() => extension.resetIndexedDB.call(data), /local point-of-sale data cannot be verified/);
     assert.equal(data.resetCalled, undefined);
-    const acknowledged = { ...pending, baseer_global_discount_locked: true };
-    const draft = { indexedDB: { db: resetDatabase([{ id: 42, state: 'draft' }]) } };
-    await assert.rejects(() => extension.resetIndexedDB.call(draft), /locally saved draft/);
-    assert.equal(draft.resetCalled, undefined);
-    const native = { indexedDB: { db: resetDatabase([acknowledged]) } };
-    await extension.resetIndexedDB.call(native);
-    assert.equal(native.resetCalled, true);
-    const empty = { indexedDB: { db: resetDatabase([]) } };
-    await extension.resetIndexedDB.call(empty);
-    assert.equal(empty.resetCalled, true);
-    const failed = { indexedDB: { db: resetDatabase([], true) } };
-    await assert.rejects(() => extension.resetIndexedDB.call(failed), /read failed/);
-    assert.equal(failed.resetCalled, undefined);
+});
+
+test('POS startup loads the replacement session while preserving an old session draft', async () => {
+    const extension = extensions.get('PosData');
+    const draft = { id: 42, uuid: 'saved-draft', state: 'draft' };
+    const previous = {
+        'pos.config': [{ id: 2, _data_server_date: '2026-11-24 11:00:00' }],
+        'pos.session': [{ id: 26, config_id: 2, state: 'closed' }],
+    };
+    const fresh = {
+        'pos.config': [{ id: 2 }],
+        'pos.session': [{ id: 27, config_id: 2, state: 'opened' }],
+    };
+    globalThis.window = { location: { href: 'https://test.invalid/pos/ui/2' } };
+    try {
+        let reads = 0;
+        const data = {
+            network: { offline: false },
+            opts: { databaseTable: { 'pos.order': {} } },
+            indexedDB: {
+                readAll: async () => previous,
+                db: {
+                    objectStoreNames: { contains: () => true },
+                    transaction(models, mode) {
+                        assert.deepEqual(models, ['pos.config', 'pos.session']);
+                        assert.equal(mode, 'readwrite');
+                        const tx = { objectStore: () => ({ clear() {}, put() {} }) };
+                        queueMicrotask(() => tx.oncomplete());
+                        return tx;
+                    },
+                },
+            },
+            getCachedServerDataFromIndexedDB: async () => previous,
+            isLimitedLoading: () => true,
+            loadNative: () => { assert.fail('native startup would clear the order store'); },
+            orm: { call: async (model, method, args, { context }) => {
+                reads++;
+                assert.equal(model, 'pos.session');
+                assert.equal(method, 'load_data');
+                assert.equal(args[0], 27);
+                assert.deepEqual(context, { pos_last_server_date: false, pos_limited_loading: true });
+                return fresh;
+            } },
+        };
+        assert.equal(await extension.loadInitialData.call(data), fresh);
+        assert.equal(reads, 1);
+        assert.equal(data.resetCalled, undefined);
+        assert.deepEqual(draft, { id: 42, uuid: 'saved-draft', state: 'draft' });
+        data.orm.call = async () => previous;
+        await assert.rejects(() => extension.loadInitialData.call(data), /current point-of-sale session could not be verified/);
+        data.orm.call = async () => { throw new ConnectionLostError(); };
+        await assert.rejects(() => extension.loadInitialData.call(data), /local point-of-sale data cannot be verified/);
+        assert.equal(data.network.offline, true);
+    } finally {
+        delete globalThis.window;
+    }
+});
+
+test('manual refresh waits for the live payment before navigating to a non-destructive reload', async () => {
+    const order = {
+        id: 42, uuid: 'sale', state: 'paid', isUnsyncedPaid: true,
+        serializeForIndexedDB: () => ({ uuid: 'sale', JSONuiState: '{"selected_paymentline_uuid":"payment","baseerSharedDraftPaidAckPending":true}' }),
+    };
+    const payment = { uuid: 'payment', amount: 3, pos_order_id: order.id };
+    const pos = {
+        data: {
+            network: { offline: false },
+            opts: { databaseTable: {
+                'pos.order': { condition: () => true, key: 'uuid' },
+                'pos.payment': { condition: () => true, key: 'uuid' },
+            } },
+            models: {
+                'pos.order': { getAll: () => [order] },
+                'pos.payment': { getAll: () => [{ pos_order_id: order, serializeForIndexedDB: () => ({ ...payment }) }] },
+            },
+            indexedDB: { readAll: async () => ({ 'pos.payment': [] }) },
+        },
+        models: { 'pos.order': { getAll: () => [] } },
+        device: { saveUnusedNumber() {} },
+        notification: { add(message) { this.message = message; } },
+        syncingOrders: new Set(),
+    };
+    const original = 'https://test.invalid/pos/ui/2';
+    globalThis.window = { location: { href: original } };
+    try {
+        const refresh = extensions.get('PosStore').reloadData;
+        await refresh.call(pos, true);
+        assert.equal(window.location.href, original);
+        assert.match(pos.notification.message, /wait for orders to finish saving/);
+        const stored = { 'pos.order': [{ uuid: 'sale', JSONuiState: '{"baseerSharedDraftPaidAckPending":true}' }], 'pos.payment': [{ ...payment }] };
+        pos.data.indexedDB.readAll = async () => {
+            payment.amount = 4;
+            return stored;
+        };
+        await refresh.call(pos, true);
+        assert.equal(window.location.href, original);
+        payment.amount = 3;
+        pos.data.indexedDB.readAll = async () => stored;
+        await refresh.call(pos, true);
+        assert.equal(window.location.href, original + '?baseer_preserve_local_orders=1&limited_loading=0');
+    } finally {
+        delete globalThis.window;
+    }
 });
 
 test("late native cleanup cannot delete paid offline keys but leaves unrelated cleanup unchanged", () => {

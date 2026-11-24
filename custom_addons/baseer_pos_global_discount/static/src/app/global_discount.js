@@ -38,6 +38,95 @@ const sharedRevisionPromises = new WeakMap();
 const sharedRevisionWarningOwners = new WeakMap();
 const sharedRefreshOrders = new WeakSet();
 const sharedStageOrders = new WeakSet();
+const sharedDraftReviewNotices = new WeakSet();
+const preserveOrdersRefreshParam = 'baseer_preserve_local_orders';
+
+const localOrderStores = ['pos.order', 'pos.order.line', 'pos.payment', 'product.attribute.custom.value'];
+
+function replacePosCatalog(data, fresh) {
+    const db = data.indexedDB.db;
+    const saleStores = new Set([...localOrderStores, ...(data.opts.dynamicModels || []), ...Object.keys(data.opts.databaseTable)]);
+    const stores = Object.keys(fresh).filter((model) => !saleStores.has(model) && db.objectStoreNames.contains(model));
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(stores, 'readwrite');
+        tx.oncomplete = resolve;
+        tx.onabort = () => reject(tx.error || new Error('POS catalog transaction aborted'));
+        try {
+            for (const model of stores) {
+                const store = tx.objectStore(model);
+                store.clear();
+                for (const record of fresh[model]) store.put(record);
+            }
+        } catch (error) {
+            tx.abort();
+            reject(error);
+        }
+    });
+}
+
+function localRecordsForRefresh(data) {
+    const tables = data.opts.databaseTable;
+    const rows = {};
+    const protectedOrders = new Set((data.models['pos.order']?.getAll() || []).filter((order) =>
+        order.isUnsyncedPaid || isPendingOfflineDiscount(order) || paidReconciliationOrders.has(order)));
+    for (const [model, options] of Object.entries(tables)) {
+        if (!options.getRecordsBasedOnLines) {
+            rows[model] = data.models[model].getAll().filter((record) =>
+                !options.condition(record) || protectedOrders.has(record) || protectedOrders.has(record.pos_order_id) || protectedOrders.has(record.order_id));
+        }
+    }
+    for (const [model, options] of Object.entries(tables)) {
+        if (options.getRecordsBasedOnLines) rows[model] = options.getRecordsBasedOnLines(rows['pos.order.line'] || []) || [];
+    }
+    return Object.fromEntries(Object.entries(rows).map(([model, records]) => [
+        model, records.map((record) => record.serializeForIndexedDB()),
+    ]));
+}
+
+function refreshRecordFingerprint(model, record) {
+    if (model === 'pos.order' && typeof record.JSONuiState === 'string') {
+        const state = JSON.parse(record.JSONuiState);
+        // Restoring a basket can select a different row without editing the sale.
+        delete state.selected_orderline_uuid;
+        delete state.selected_paymentline_uuid;
+        record = { ...record, JSONuiState: state };
+    }
+    return JSON.stringify(record, (_, value) => value && typeof value === 'object' && !Array.isArray(value)
+        ? Object.fromEntries(Object.keys(value).sort().map((key) => [key, value[key]]))
+        : value);
+}
+
+async function verifyPosRefreshSaved(data) {
+    const before = localRecordsForRefresh(data);
+    const models = Object.keys(before).filter((model) => before[model].length);
+    if (models.length === 0) return true;
+    const key = (model) => data.opts.databaseTable[model].key;
+    const stored = await data.indexedDB.readAll(models);
+    const after = localRecordsForRefresh(data);
+    return JSON.stringify(before) === JSON.stringify(after) && models.every((model) => {
+        const index = new Map((stored?.[model] || []).map((row) => [row[key(model)], refreshRecordFingerprint(model, row)]));
+        return before[model].every((row) => index.get(row[key(model)]) === refreshRecordFingerprint(model, row));
+    });
+}
+
+async function loadCurrentPosSession(data) {
+    // Native startup restores the order stores separately after loading the
+    // server catalog. Replace only catalog stores, and only after a valid reply.
+    const fresh = await data.orm.call('pos.session', 'load_data', [odoo.pos_session_id, PosData.modelToLoad], {
+        context: { pos_last_server_date: false, pos_limited_loading: data.isLimitedLoading() },
+    });
+    const config = fresh?.['pos.config']?.find((record) => record.id === odoo.pos_config_id);
+    const session = fresh?.['pos.session']?.find((record) => record.id === odoo.pos_session_id);
+    if (!config || !session || !['opening_control', 'opened'].includes(session.state) || relationId(session.config_id) !== config.id) {
+        throw new Error(_t('The current point-of-sale session could not be verified. Keep the local orders for review.'));
+    }
+    try { await replacePosCatalog(data, fresh); }
+    catch {
+        // A quota/transaction failure leaves the previous catalog intact.
+        data.notification?.add(_t('The current session is available online. Its offline catalog could not be saved.'), { type: 'warning' });
+    }
+    return fresh;
+}
 function isDiscountFrozen(order) {
     return Boolean(order && (paidReconciliationOrders.has(order) || sharedRemoteDeleteOrders.has(order) || SHARED_DRAFT_FLOW_ENABLED && (order.uiState?.baseerSharedDraftCancelPending || order.uiState?.baseerSharedDraftCancelAcknowledged) || order.baseer_global_discount_locked || (order.config_id && localStorage.getItem(
         discountStorageKey(session.db || "", order.config_id.id, order.uuid)
@@ -410,6 +499,30 @@ patch(PosData.prototype, {
         }
         let cached;
         if (!this.network.offline) {
+            if (this.indexedDB?.db && this.orm) {
+                const headers = await this.indexedDB.readAll(['pos.config', 'pos.session']);
+                const oldSession = headers?.['pos.session']?.[0];
+                const url = new URL(window.location.href);
+                const forceRefresh = url.searchParams.has(preserveOrdersRefreshParam);
+                const serverDate = headers?.['pos.config']?.[0]?._data_server_date;
+                const needsReset = (oldSession?.state !== 'opened' || oldSession?.id !== odoo.pos_session_id || odoo.from_backend) &&
+                    luxon.DateTime.fromSQL(serverDate) < luxon.DateTime.fromSQL(odoo.last_data_change);
+                if (forceRefresh || needsReset) {
+                    try {
+                        const fresh = await loadCurrentPosSession(this);
+                        if (forceRefresh) {
+                            url.searchParams.delete(preserveOrdersRefreshParam);
+                            window.history.replaceState(window.history.state, '', url.href);
+                        }
+                        return fresh;
+                    } catch (error) {
+                        if (!(error instanceof ConnectionLostError)) throw error;
+                        markPosDisconnected(this);
+                    }
+                }
+            }
+        }
+        if (!this.network.offline) {
             // Native loadInitialData catches its own RPC errors. Observe only
             // connection loss on its two reads so a loss after ping still sets
             // offline before local-order verification runs.
@@ -433,7 +546,7 @@ patch(PosData.prototype, {
             finally { this.orm = originalOrm; }
             if (!this.network.offline) return cached;
         } else {
-            cached = await this.getCachedServerDataFromIndexedDB();
+            cached ??= await this.getCachedServerDataFromIndexedDB();
         }
         const config = cached?.['pos.config']?.find((record) => record.id === odoo.pos_config_id);
         const session = cached?.['pos.session']?.find((record) => record.id === odoo.pos_session_id);
@@ -522,38 +635,9 @@ patch(PosData.prototype, {
         return result;
     },
     async resetIndexedDB() {
-        // Native startup resets the cache when configuration changes. Inspect
-        // its persisted paid orders first, before the reset can erase payments.
-        const db = this.indexedDB?.db;
-        if (!db) throw new Error(_t("The local point-of-sale data cannot be verified. Ask a manager before clearing it."));
-        const savedOrders = await new Promise((resolve, reject) => {
-            let transaction;
-            try {
-                transaction = db.transaction(["pos.order"], "readonly");
-                const request = transaction.objectStore("pos.order").getAll();
-                let values;
-                request.onsuccess = () => { values = request.result; };
-                request.onerror = () => reject(request.error || new Error("IndexedDB read failed"));
-                transaction.oncomplete = () => resolve(values || []);
-                transaction.onabort = () => reject(transaction.error || new Error("IndexedDB read aborted"));
-                transaction.onerror = () => {};
-            } catch (error) { reject(error); }
-        });
-        for (const saved of savedOrders) {
-            // Numeric IDs may still have local edits. IndexedDB does not retain
-            // enough dirty/relationship-command information to prove otherwise.
-            if (saved.state === 'draft') {
-                throw new Error(_t('A locally saved draft is waiting. Synchronize or remove it before refreshing point-of-sale data.'));
-            }
-            if (saved.state !== "paid" || saved.baseer_global_discount_locked || !saved.JSONuiState) continue;
-            let state;
-            try { state = JSON.parse(saved.JSONuiState); }
-            catch { throw new Error(_t("The local point-of-sale data cannot be verified. Ask a manager before clearing it.")); }
-            if (state.baseerOfflineDiscount) {
-                throw new Error(_t("A paid offline order is waiting to synchronize. Reconnect or ask a manager before refreshing point-of-sale data."));
-            }
-        }
-        return super.resetIndexedDB(...arguments);
+        // Other tabs may still be saving orders even when this tab sees none.
+        // Automated refreshes must never delete the shared database.
+        throw new Error(_t('The local point-of-sale data cannot be verified. Ask a manager before clearing it.'));
     },
     async checkAndDeleteMissingOrders(results) {
         if (this.network?.offline) return;
@@ -665,6 +749,24 @@ export class BaseerGlobalDiscountDialog extends Component {
 }
 
 patch(PosStore.prototype, {
+    async reloadData(fullReload = false) {
+        // Let the native autosave finish; its reconciliation also runs on
+        // other tabs. A reload never clears or rewrites their order stores.
+        let saved = false;
+        if (!this.data.network.offline && !this.syncingOrders?.size) {
+            try { saved = await verifyPosRefreshSaved(this.data); }
+            catch { /* A read or serialization error must keep the active page open. */ }
+        }
+        if (!saved || this.syncingOrders?.size || this.data.network.offline) {
+            this.notification.add(_t('The register could not be refreshed safely. Check the connection and wait for orders to finish saving.'), { type: 'warning' });
+            return;
+        }
+        this.device.saveUnusedNumber(this.models['pos.order'].getAll());
+        const url = new URL(window.location.href);
+        url.searchParams.set(preserveOrdersRefreshParam, '1');
+        if (fullReload) url.searchParams.set('limited_loading', '0');
+        window.location.href = url.href;
+    },
     baseerDiscountKey(order) { return discountStorageKey(session.db || "", this.config.id, order.uuid); },
     async clickSaveOrder() {
         const order = this.getOrder();
@@ -1514,11 +1616,15 @@ patch(PosStore.prototype, {
                         if (!order.uiState.baseerSharedDraftNeedsSync && !order.uiState.baseerSharedDraftPending &&
                             !order.uiState.baseerSharedDraftPaidAckPending && Number.isSafeInteger(order.uiState.baseerSharedDraftRevision)) {
                             if (order.state === 'draft') this.removePendingOrder(order);
+                            sharedDraftReviewNotices.delete(order);
                             results.push(order);
                         }
                     } catch (error) {
                         if (options.throw) throw error;
-                        if (!(error instanceof ConnectionLostError)) this.notification.add(_t('A shared discount order needs manager review. Keep its local data.'), { type: 'danger', sticky: true });
+                        if (!(error instanceof ConnectionLostError) && !sharedDraftReviewNotices.has(order)) {
+                            sharedDraftReviewNotices.add(order);
+                            this.notification.add(_t('A saved order needs review before it can synchronize. Its local data was kept.'), { type: 'danger', sticky: true });
+                        }
                     }
                 }
                 return results;

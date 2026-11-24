@@ -165,3 +165,77 @@ class TestNativeDiscountSync(TransactionCase):
                 command[2]['baseer_discount_approved_by_user_id'] = cashier.id
         with self.assertRaises(UserError), self.env.cr.savepoint():
             self.env['pos.order'].with_user(cashier).sync_from_ui([copy.deepcopy(payload)])
+
+    def test_native_shares_and_refund_validation(self):
+        order = TestGlobalDiscount._order(self, price=7, qty=3)
+        source = order.lines
+        for _ in range(2):
+            self.env['pos.order.line'].create({
+                'order_id': order.id, 'product_id': self.product.id, 'qty': 1, 'price_unit': 7,
+                'price_subtotal': 7, 'price_subtotal_incl': 8.05, 'tax_ids': [Command.set(self.tax.ids)],
+            })
+        self.env['pos.order.line'].create({
+            'order_id': order.id, 'product_id': self.product.id, 'qty': 1, 'price_unit': 5,
+            'price_subtotal': 5, 'price_subtotal_incl': 5, 'tax_ids': [Command.set(self.zero.ids)],
+        })
+        bases = order._gd_tax_base_lines(order.lines)
+        for base in self.env['account.tax']._prepare_global_discount_lines(bases, order.company_id, 'fixed', 10):
+            detail = base['tax_details']
+            self.env['pos.order.line'].create({
+                'order_id': order.id, 'product_id': self.config.discount_product_id.id,
+                'qty': base['quantity'], 'price_unit': base['price_unit'], 'tax_ids': [Command.set(base['tax_ids'].ids)],
+                'price_subtotal': detail['total_excluded_currency'], 'price_subtotal_incl': detail['total_included_currency'],
+                'extra_tax_data': self.env['account.tax']._export_base_line_extra_tax_data(base),
+                'baseer_discount_kind': 'fixed', 'baseer_discount_input': 10,
+                'baseer_discount_approved_by_user_id': self.env.user.id,
+            })
+        order._baseer_validate_native_discount()
+        discounts = order.lines.filtered(lambda l: l.product_id == self.config.discount_product_id)
+        sources = order.lines - discounts
+        for tax in (self.tax, self.zero):
+            group = sources.filtered(lambda l: l.tax_ids == tax)
+            discount = discounts.filtered(lambda l: l.tax_ids == tax)
+            self.assertAlmostEqual(sum(group.mapped('baseer_discount_share_incl')), sum(discount.mapped('price_subtotal_incl')), places=2)
+            self.assertAlmostEqual(sum(group.mapped('baseer_discount_share_excl')), sum(discount.mapped('price_subtotal')), places=2)
+        refund_shares = []
+        for index in range(3):
+            refund = TestGlobalDiscount._refund(self, order, 1, source)
+            refund_line = refund.lines
+            previous = source.refund_orderline_ids - refund_line
+            incl = self.env.company.currency_id.round(-source.baseer_discount_share_incl / 3) if index < 2 else self.env.company.currency_id.round(-source.baseer_discount_share_incl - sum(previous.mapped('baseer_discount_share_incl')))
+            excl = self.env.company.currency_id.round(-source.baseer_discount_share_excl / 3) if index < 2 else self.env.company.currency_id.round(-source.baseer_discount_share_excl - sum(previous.mapped('baseer_discount_share_excl')))
+            discount = self.env['pos.order.line'].create({
+                'order_id': refund.id, 'product_id': self.config.discount_product_id.id,
+                'qty': -1, 'price_unit': -excl, 'price_subtotal': excl,
+                'price_subtotal_incl': incl, 'tax_ids': [Command.set(self.tax.ids)],
+            })
+            tax_model = self.env['account.tax']
+            base = refund._gd_tax_base_lines(discount)[0]
+            detail = base['tax_details']
+            detail['delta_total_excluded_currency'] += -excl - detail['total_excluded_currency'] - detail['delta_total_excluded_currency']
+            detail['delta_total_excluded'] += -excl - detail['total_excluded'] - detail['delta_total_excluded']
+            tax_detail = detail['taxes_data'][0]
+            adjustment = (-incl + excl) - tax_detail['tax_amount_currency']
+            tax_detail['tax_amount_currency'] += adjustment
+            tax_detail['tax_amount'] += adjustment
+            tax_model._fix_base_lines_tax_details_on_manual_tax_amounts([base], refund.company_id)
+            discount.extra_tax_data = tax_model._export_base_line_extra_tax_data(base)
+            refund._baseer_validate_native_refund_discount(refund)
+            refund_shares.append(refund_line.baseer_discount_share_incl)
+            with self.assertRaises(UserError), self.env.cr.savepoint():
+                discount.price_subtotal_incl += 0.01
+                refund._baseer_validate_native_refund_discount(refund)
+        self.assertAlmostEqual(sum(refund_shares), -source.baseer_discount_share_incl, places=2)
+
+    def test_native_report_attributes_discount_to_sources(self):
+        order, payload = self._payload()
+        order._baseer_validate_native_discount()
+        self.env.flush_all()
+        rows = self.env['report.pos.order'].search([('order_id', '=', order.id)])
+        discounts = order.lines.filtered(lambda line: line.product_id == self.config.discount_product_id)
+        sources = order.lines - discounts
+        self.assertEqual(set(rows.ids), set(sources.ids))
+        self.assertAlmostEqual(sum(rows.mapped('baseer_invoice_discount')), -sum(discounts.mapped('price_subtotal')), places=2)
+        for line in sources:
+            row = rows.filtered(lambda item: item.id == line.id)
+            self.assertAlmostEqual(row.baseer_invoice_discount, -line.baseer_discount_share_excl, places=2)

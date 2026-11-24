@@ -14,6 +14,7 @@
         'baseer_pos_global_discount/static/src/app/draft_snapshot_experiment.js',
         'baseer_pos_global_discount/static/src/app/global_discount.js',
         'baseer_pos_global_discount/static/src/app/native_fixed_discount.js',
+        'baseer_pos_global_discount/static/src/app/native_discount_refund.js',
         'baseer_pos_global_discount/static/src/app/global_discount.xml',
         'baseer_pos_global_discount/static/src/app/global_discount.scss',
     ]},

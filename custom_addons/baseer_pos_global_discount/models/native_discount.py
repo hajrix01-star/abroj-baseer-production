@@ -1,6 +1,12 @@
-from odoo import api, fields, models
-from odoo.exceptions import ValidationError
-from odoo import _
+import hashlib
+import json
+import math
+from collections import defaultdict
+from decimal import Decimal, ROUND_FLOOR
+from zoneinfo import ZoneInfo
+
+from odoo import _, api, fields, models
+from odoo.exceptions import UserError, ValidationError
 
 
 class PosConfig(models.Model):
@@ -32,6 +38,9 @@ class ResConfigSettings(models.TransientModel):
 class PosOrderLine(models.Model):
     _inherit = 'pos.order.line'
 
+    baseer_discount_share_incl = fields.Monetary(string='Invoice discount share (incl. tax)', readonly=True, copy=False)
+    baseer_discount_share_excl = fields.Monetary(string='Invoice discount share (excl. tax)', readonly=True, copy=False)
+
     baseer_discount_kind = fields.Selection([('percent', 'Percentage'), ('fixed', 'Fixed amount')], string='Discount kind')
     baseer_discount_input = fields.Float(string='Discount input')
     baseer_discount_approved_by_user_id = fields.Many2one('res.users', string='Discount approving user')
@@ -41,7 +50,7 @@ class PosOrderLine(models.Model):
     @api.model
     def _load_pos_data_fields(self, config):
         result = super()._load_pos_data_fields(config)
-        return list(dict.fromkeys(result + ['baseer_discount_kind', 'baseer_discount_input', 'baseer_discount_approved_by_user_id', 'baseer_discount_approved_by_employee', 'baseer_discount_approved_by_employee_name'])) if result else result
+        return list(dict.fromkeys(result + ['baseer_discount_share_incl', 'baseer_discount_share_excl', 'baseer_discount_kind', 'baseer_discount_input', 'baseer_discount_approved_by_user_id', 'baseer_discount_approved_by_employee', 'baseer_discount_approved_by_employee_name'])) if result else result
 
 
 class PosOrder(models.Model):
@@ -57,16 +66,82 @@ class PosOrder(models.Model):
         self.browse(order_id)._baseer_validate_native_discount()
         return order_id
 
+    def _baseer_allocate_native_shares(self, discounts):
+        self.ensure_one()
+        sources = (self.lines - discounts).filtered(
+            lambda line: not (self.config_id.tip_product_id and line.product_id == self.config_id.tip_product_id))
+        sources.write({'baseer_discount_share_incl': 0, 'baseer_discount_share_excl': 0})
+        groups = defaultdict(list)
+        for line in sources:
+            groups[tuple(sorted(line.tax_ids_after_fiscal_position.ids))].append(line)
+        for discount in discounts:
+            lines = groups[tuple(sorted(discount.tax_ids.ids))]
+            for field, subtotal in [('baseer_discount_share_incl', 'price_subtotal_incl'),
+                                    ('baseer_discount_share_excl', 'price_subtotal')]:
+                weights = [max(Decimal(str(getattr(line, subtotal))), Decimal(0)) for line in lines]
+                total = sum(weights)
+                units = int((Decimal(str(abs(self.currency_id.round(getattr(discount, subtotal))))) /
+                             Decimal(str(self.currency_id.rounding))).to_integral_value())
+                if not total:
+                    if units:
+                        raise UserError(_('The discount lines do not match the approved discount.'))
+                    continue
+                exact = [Decimal(units) * weight / total for weight in weights]
+                allocated = [int(value.to_integral_value(rounding=ROUND_FLOOR)) for value in exact]
+                for index in sorted(range(len(lines)), key=lambda i: (-(exact[i] - allocated[i]), lines[i].id))[:units - sum(allocated)]:
+                    allocated[index] += 1
+                sign = -1 if getattr(discount, subtotal) < 0 else 1
+                for line, amount in zip(lines, allocated):
+                    line[field] = self.currency_id.round(getattr(line, field) + sign * amount * self.currency_id.rounding)
+
     def _baseer_validate_native_refund_discount(self, order):
-        """Extension point for native refund share validation."""
+        if order.baseer_global_discount_locked or order.lines.filtered('baseer_global_discount_line'):
+            return
+        sources = order.lines.filtered('refunded_orderline_id')
+        originals = sources.refunded_orderline_id
+        if not originals or any(line.order_id.baseer_global_discount_locked or line.baseer_global_discount_line for line in originals):
+            return
+        if not any(originals.mapped('baseer_discount_share_incl')) and not any(originals.mapped('baseer_discount_share_excl')):
+            return
+        expected = defaultdict(lambda: [0.0, 0.0])
+        currency = order.currency_id
+        for line in sources.sorted('id'):
+            original = line.refunded_orderline_id
+            if (original.product_id == original.order_id.config_id.discount_product_id
+                    or set(line.tax_ids.ids) != set(original.tax_ids.ids) or line.qty >= 0):
+                raise UserError(_('The discount lines do not match the approved discount.'))
+            previous = original.refund_orderline_ids.filtered(lambda item: item.id != line.id and item.order_id.state != 'cancel' and (item.order_id != order or item.id < line.id))
+            qty = sum(abs(item.qty) for item in previous) + abs(line.qty)
+            if not original.qty or qty > abs(original.qty) + 1e-8:
+                raise UserError(_('The discount lines do not match the approved discount.'))
+            values = {}
+            for field in ('baseer_discount_share_excl', 'baseer_discount_share_incl'):
+                share = getattr(original, field)
+                amount = currency.round(-share - sum(previous.mapped(field))) if qty >= abs(original.qty) - 1e-8 else currency.round(-share * abs(line.qty / original.qty))
+                values[field] = amount
+            line.write(values)
+            key = tuple(sorted(line.tax_ids_after_fiscal_position.ids))
+            expected[key][0] += values['baseer_discount_share_excl']
+            expected[key][1] += values['baseer_discount_share_incl']
+        discounts = order.lines.filtered(lambda line: line.product_id == order.config_id.discount_product_id and not line.refunded_orderline_id)
+        actual = defaultdict(lambda: [0.0, 0.0])
+        bases = order._gd_tax_base_lines(discounts)
+        for line, base in zip(discounts, bases):
+            details = base['tax_details']
+            calculated_excl = details['total_excluded_currency'] + details.get('delta_total_excluded_currency', 0)
+            calculated_incl = calculated_excl + sum(item['tax_amount_currency'] for item in details['taxes_data'])
+            if (not currency.is_zero(abs(calculated_excl) - abs(line.price_subtotal))
+                    or not currency.is_zero(abs(calculated_incl) - abs(line.price_subtotal_incl))):
+                raise UserError(_('The discount lines do not match the approved discount.'))
+            key = tuple(sorted(line.tax_ids.ids))
+            # Native refund lines have negative quantity and negative unit price.
+            actual[key][0] += abs(line.price_subtotal) if line.qty * line.price_unit > 0 else -abs(line.price_subtotal)
+            actual[key][1] += abs(line.price_subtotal_incl) if line.qty * line.price_unit > 0 else -abs(line.price_subtotal_incl)
+        keys = set(expected) | set(actual)
+        if any(not currency.is_zero(expected[key][i] - actual[key][i]) for key in keys for i in (0, 1)):
+            raise UserError(_('The discount lines do not match the approved discount.'))
 
     def _baseer_validate_native_discount(self):
-        import hashlib
-        import json
-        import math
-        from zoneinfo import ZoneInfo
-        from odoo.exceptions import UserError
-
         for order in self:
             if order.is_refund or order.lines.refunded_orderline_id:
                 order._baseer_validate_native_refund_discount(order)
@@ -76,6 +151,7 @@ class PosOrder(models.Model):
             config = order.config_id
             discounts = order.lines.filtered(lambda line: line.product_id == config.discount_product_id)
             if not discounts or not config.discount_product_id:
+                order.lines.write({'baseer_discount_share_incl': 0, 'baseer_discount_share_excl': 0})
                 continue
             fail = _('The discount lines do not match the approved discount.')
             kinds = {line.baseer_discount_kind or 'percent' for line in discounts}
@@ -139,6 +215,7 @@ class PosOrder(models.Model):
                 order._baseer_check_native_tax_groups(discounts, 'fixed', expected_amount, fail, bases)
             else:
                 raise UserError(fail)
+            order._baseer_allocate_native_shares(discounts)
             signature = hashlib.sha256(json.dumps([kind, value, approver._name, approver.id]).encode()).hexdigest()
             if order.baseer_discount_logged_signature != signature:
                 timestamp = fields.Datetime.now().replace(tzinfo=ZoneInfo('UTC')).astimezone(ZoneInfo('Asia/Riyadh')).strftime('%Y-%m-%d %H:%M:%S')
@@ -147,9 +224,6 @@ class PosOrder(models.Model):
                 order.baseer_discount_logged_signature = signature
 
     def _baseer_check_native_tax_groups(self, discounts, kind, value, fail, bases=None):
-        from collections import defaultdict
-        from odoo.exceptions import UserError
-
         self.ensure_one()
         tax = self.env['account.tax']
         if bases is None:

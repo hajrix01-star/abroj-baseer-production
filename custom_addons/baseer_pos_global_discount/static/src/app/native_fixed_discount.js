@@ -51,7 +51,7 @@ patch(PosStore.prototype, {
         await super.setup(...arguments);
         const reapply = debounce((order) => {
             const line = fixedLine(order);
-            if (order?.state === "draft" && line) this.baseerApplyFixedDiscount(line.baseer_discount_input, order);
+            if (order?.state === "draft" && !order.is_refund && line) this.baseerApplyFixedDiscount(line.baseer_discount_input, order);
         });
         this.models["pos.order.line"].addEventListener("update", ({ id }) => {
             const line = this.models["pos.order.line"].get(id);

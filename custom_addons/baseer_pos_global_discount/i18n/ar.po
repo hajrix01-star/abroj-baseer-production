@@ -1200,3 +1200,13 @@ msgstr "بنود الخصم لا تطابق الخصم المعتمد."
 #: model:ir.model.fields,field_description:baseer_pos_global_discount.field_pos_order__baseer_discount_logged_signature
 msgid "Baseer Discount Logged Signature"
 msgstr "بصمة تسجيل الخصم"
+
+#. module: baseer_pos_global_discount
+#: model:ir.model.fields,field_description:baseer_pos_global_discount.field_pos_order_line__baseer_discount_share_incl
+msgid "Invoice discount share (incl. tax)"
+msgstr "حصة خصم الفاتورة (شاملة الضريبة)"
+
+#. module: baseer_pos_global_discount
+#: model:ir.model.fields,field_description:baseer_pos_global_discount.field_pos_order_line__baseer_discount_share_excl
+msgid "Invoice discount share (excl. tax)"
+msgstr "حصة خصم الفاتورة (غير شاملة الضريبة)"

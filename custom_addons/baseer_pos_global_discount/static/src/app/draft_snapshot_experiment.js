@@ -524,7 +524,25 @@ export function cancelGraphFingerprint(order) {
 export function cancelGraphUnchanged(order, pending, tracker) {
     if (!Number.isSafeInteger(pending?.generation) || !tracker?.get) return false;
     if (typeof pending.graph_fingerprint === 'string' && pending.graph_fingerprint) {
-        try { return cancelGraphFingerprint(order) === pending.graph_fingerprint; } catch { return false; }
+        try {
+            const prior = JSON.parse(pending.graph_fingerprint), current = JSON.parse(cancelGraphFingerprint(order));
+            const normalize = (graph) => {
+                const ui = graph?.header?.JSONuiState;
+                if (!ui || typeof ui !== 'object' || Array.isArray(ui)) throw new Error('Invalid order UI state');
+                // Selection is presentation state; it changes on reopening a POS order.
+                delete ui.selected_orderline_uuid;
+                if (order.uiState?.baseerSharedDraftRemoteDeleted === true && order.uiState?.baseerSharedDraftKitchenCancelIntent) {
+                    // A remote-delete notice and the recovery it triggers may be
+                    // this very frozen cancellation. The server still verifies
+                    // the exact command and reason before any local deletion.
+                    delete ui.baseerSharedDraftRemoteDeleted;
+                    delete ui.baseerSharedDraftRefreshError;
+                    delete ui.baseerSharedDraftNeedsSync;
+                }
+                return JSON.stringify(graph);
+            };
+            return normalize(prior) === normalize(current);
+        } catch { return false; }
     }
     return false;
 }

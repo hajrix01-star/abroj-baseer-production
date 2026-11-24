@@ -754,12 +754,19 @@ test('restored kitchen cancellation with lost ACK retries its frozen intent befo
     order.uiState.baseerSharedDraftKitchenCancelIntent = { session_id: 27, reason_code: 'wrong_order', reason_note: '' };
     const pos = { config: { baseer_direct_print_enabled: true, current_session_id: 27 }, models: {}, notification: { add() {} },
         baseerRecoverChangedCancellation: async () => { throw new Error('needs review'); } };
+    order.uiState.selected_orderline_uuid = 'another-selection';
+    order.uiState.baseerSharedDraftRemoteDeleted = true;
+    order.uiState.baseerSharedDraftRefreshError = 'remote deleted';
+    order.uiState.baseerSharedDraftNeedsSync = true;
     assert.equal(await installed.get('PosStore').beforeDeleteOrder.call(pos, order), true);
     assert.equal(order.uiState.baseerSharedDraftCancelPending.command_uuid, 'same');
     assert.equal(order.uiState.baseerSharedDraftKitchenCancelIntent.reason_code, 'wrong_order');
     order.uiState.baseerOfflineDiscount.value = 2;
     assert.equal(await installed.get('PosStore').beforeDeleteOrder.call(pos, order), false, 'own unsynchronized change stays protected');
     order.uiState.baseerOfflineDiscount.value = 1;
+    delete order.uiState.baseerSharedDraftRemoteDeleted;
+    assert.equal(await installed.get('PosStore').beforeDeleteOrder.call(pos, order), false, 'ordinary unsynchronized edits still need review');
+    order.uiState.baseerSharedDraftRemoteDeleted = true;
     delete order.uiState.baseerSharedDraftCancelPending.graph_fingerprint;
     assert.equal(await installed.get('PosStore').beforeDeleteOrder.call(pos, order), false, 'legacy without graph proof stays protected');
 });

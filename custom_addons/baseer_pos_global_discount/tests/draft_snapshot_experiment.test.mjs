@@ -328,6 +328,15 @@ test('unrelated order edits do not block a lost kitchen ACK, while this order ed
     const restored = { ...order, uiState: JSON.parse(JSON.stringify(order.uiState)),
         lines: order.lines.map((line) => ({ ...line })), payment_ids: [] };
     assert.equal(cancelGraphUnchanged(restored, pending, tracker), true, 'restoring the same graph preserves its fingerprint');
+    order.uiState.selected_orderline_uuid = 'line';
+    order.uiState.baseerSharedDraftRemoteDeleted = true;
+    order.uiState.baseerSharedDraftRefreshError = 'remote deletion';
+    order.uiState.baseerSharedDraftNeedsSync = true;
+    assert.equal(cancelGraphUnchanged(order, pending, tracker), true, 'remote notice and selection do not change the frozen order');
+    const intent = order.uiState.baseerSharedDraftKitchenCancelIntent;
+    delete order.uiState.baseerSharedDraftKitchenCancelIntent;
+    assert.equal(cancelGraphUnchanged(order, pending, tracker), false, 'missing frozen kitchen intent fails closed');
+    order.uiState.baseerSharedDraftKitchenCancelIntent = intent;
     order.uiState.baseerOfflineDiscount.value = 2;
     assert.equal(cancelGraphUnchanged(order, pending, { get: () => 4 }), false, 'same shared generation does not bypass graph comparison');
     order.uiState.baseerOfflineDiscount.value = 1;

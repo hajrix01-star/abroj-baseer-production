@@ -95,6 +95,12 @@ function relationId(value) {
     return Array.isArray(value) ? value[0] : typeof value === "object" && value ? value.id : value;
 }
 
+function cancelRequiresSyncReview(order, pending, tracker) {
+    return Boolean(order.uiState?.baseerSharedDraftNeedsSync && !(pending &&
+        order.uiState.baseerSharedDraftRemoteDeleted === true && order.uiState.baseerSharedDraftKitchenCancelIntent &&
+        cancelGraphUnchanged(order, pending, tracker)));
+}
+
 // A preview line is not a kitchen item. Odoo can recompute its visual
 // hasChange flag while saving; retain the actual flag in IndexedDB while
 // excluding only this derived flag from the in-flight comparison.
@@ -796,7 +802,7 @@ patch(PosStore.prototype, {
         const pending = order?.uiState?.baseerSharedDraftCancelPending;
         if (SHARED_DRAFT_FLOW_ENABLED && pending) {
             const tracker = attachDraftGenerationExperiment(this.models);
-            if (order.uiState.baseerSharedDraftNeedsSync || !cancelGraphUnchanged(order, pending, tracker)) {
+            if (cancelRequiresSyncReview(order, pending, tracker) || !cancelGraphUnchanged(order, pending, tracker)) {
                 try {
                     await this.baseerRecoverChangedCancellation(order);
                 } catch (error) {
@@ -825,7 +831,7 @@ patch(PosStore.prototype, {
                 const tracker = attachDraftGenerationExperiment(this.models);
                 const saved = order.uiState.baseerSharedDraftCancelPending;
                 const sessionId = this.config.current_session_id?.id || this.config.current_session_id;
-                if (order.state !== 'draft' || order.uiState.baseerSharedDraftNeedsSync ||
+                if (order.state !== 'draft' || cancelRequiresSyncReview(order, saved, tracker) ||
                     order.uiState.baseerSharedDraftPending || !cancelGraphUnchanged(order, saved, tracker) ||
                     order.uiState.baseerPreparationOutcomeUnknown || order.uiState.baseerSharedDraftPaidAckPending ||
                     order.uiState.baseerBillSplitPending || order.uiState.baseerRestaurantMergePending || order.payment_ids?.length) {
@@ -875,7 +881,7 @@ patch(PosStore.prototype, {
             revision: order.uiState.baseerSharedDraftRevision ?? order.baseer_offline_draft_revision,
             command_uuid: crypto.randomUUID(), generation: tracker.get(),
             graph_fingerprint: cancelGraphFingerprint(order) };
-        if (kitchen && (order.uiState.baseerSharedDraftNeedsSync || !cancelGraphUnchanged(order, pending, tracker) ||
+        if (kitchen && (cancelRequiresSyncReview(order, previousPending, tracker) || !cancelGraphUnchanged(order, pending, tracker) ||
             (!previousPending && Number.isSafeInteger(order.uiState.baseerSharedDraftGeneration) &&
              tracker.get() !== order.uiState.baseerSharedDraftGeneration))) {
             throw new Error(_t('The order has unsynchronized changes. Keep it open and ask a manager to review before cancellation.'));

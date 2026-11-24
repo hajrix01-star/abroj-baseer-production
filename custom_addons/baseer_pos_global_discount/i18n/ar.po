@@ -957,3 +957,42 @@ msgstr "حُفظ الطلب على هذا الجهاز، وستتم مزامنت
 #: code:addons/baseer_pos_global_discount/static/src/app/global_discount.js:0
 msgid "The order could not be synchronized. Keep it for manager review."
 msgstr "تعذرت مزامنة الطلب. احتفظ به لمراجعة المدير."
+
+msgid "The order has payment or synchronization activity. Keep it open for review."
+msgstr "على هذا الطلب دفعات أو مزامنة غير مكتملة. اتركه مفتوحاً للمراجعة."
+
+msgid "This order was cancelled on the server. Its local copy was removed from this device."
+msgstr "تم إلغاء هذا الطلب في النظام، وحُذفت نسخته من هذا الجهاز."
+
+msgid "Discard local copy"
+msgstr "تجاهل النسخة المحلية"
+
+msgid "Local payments listed below will be discarded from this device. Check them against the bank terminal before continuing."
+msgstr "ستُحذف الدفعات المحلية المدرجة أدناه من هذا الجهاز. تحقق منها مقابل جهاز البنك قبل المتابعة."
+
+msgid "Ask a manager to use Discard local copy."
+msgstr "اطلب من المدير استخدام «تجاهل النسخة المحلية»."
+
+msgid "The local copy could not be discarded. Keep it for review."
+msgstr "تعذر تجاهل النسخة المحلية. اتركها للمراجعة."
+
+msgid "Invalid point of sale session."
+msgstr "جلسة نقطة البيع غير صالحة."
+
+msgid "The point of sale session is unavailable."
+msgstr "جلسة نقطة البيع غير متاحة."
+
+msgid "Invalid order identifier."
+msgstr "معرّف الطلب غير صالح."
+
+msgid "Invalid order identifiers."
+msgstr "معرّفات الطلبات غير صالحة."
+
+msgid "Only a POS manager can discard a local copy."
+msgstr "يمكن لمدير نقطة البيع فقط تجاهل النسخة المحلية."
+
+msgid "Invalid local copy summary."
+msgstr "ملخص النسخة المحلية غير صالح."
+
+msgid "Manager discarded local POS order copy: %s"
+msgstr "تجاهل المدير نسخة طلب نقطة البيع المحلية: %s"

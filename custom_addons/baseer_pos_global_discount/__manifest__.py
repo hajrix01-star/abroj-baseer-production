@@ -1,7 +1,7 @@
 {
     'name': 'Baseer POS Global Discount',
     'summary': 'Server-authorized invoice discounts with tax and refund lineage',
-    'version': '19.0.1.0.5',
+    'version': '19.0.1.0.6',
     'category': 'Baseer/POS',
     'author': 'Baseer',
     'license': 'LGPL-3',

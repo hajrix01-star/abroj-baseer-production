@@ -2,6 +2,8 @@
 import hashlib
 import hmac
 import json
+import math
+from markupsafe import Markup, escape
 import re
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from uuid import UUID, uuid4
@@ -105,6 +107,61 @@ class DiscountEvent(models.Model):
 
 class PosOrder(models.Model):
     _inherit = 'pos.order'
+
+    @api.model
+    def _baseer_recovery_session(self, session_id):
+        if type(session_id) is not int or session_id < 1:
+            raise ValidationError(_('Invalid point of sale session.'))
+        session = self.env['pos.session'].browse(session_id).exists()
+        if not session or session.company_id != self.env.company:
+            raise AccessError(_('The point of sale session is unavailable.'))
+        session.check_access('read')
+        return session
+
+    @api.model
+    def _baseer_recovery_uuid(self, value):
+        try:
+            if not isinstance(value, str) or len(value) != 36 or str(UUID(value)) != value.lower():
+                raise ValueError()
+        except (ValueError, AttributeError):
+            raise ValidationError(_('Invalid order identifier.')) from None
+        return value
+
+    @api.model
+    def baseer_shared_draft_remote_status(self, uuids, session_id):
+        session = self._baseer_recovery_session(session_id)
+        if not isinstance(uuids, list) or len(uuids) > 100:
+            raise ValidationError(_('Invalid order identifiers.'))
+        for value in uuids:
+            self._baseer_recovery_uuid(value)
+        orders = self.sudo().search([('uuid', 'in', uuids), ('company_id', '=', session.company_id.id), ('config_id', '=', session.config_id.id)])
+        result = {value: {'exists': False, 'id': False, 'state': False, 'payment_count': 0, 'amount_paid': 0} for value in uuids}
+        for order in orders:
+            result[order.uuid] = {'exists': True, 'id': order.id, 'state': order.state, 'payment_count': len(order.payment_ids), 'amount_paid': order.amount_paid}
+        return result
+
+    @api.model
+    def baseer_log_discarded_local_copy(self, order_uuid, summary, session_id):
+        if not self.env.user.has_group('point_of_sale.group_pos_manager'):
+            raise AccessError(_('Only a POS manager can discard a local copy.'))
+        session = self._baseer_recovery_session(session_id)
+        self._baseer_recovery_uuid(order_uuid)
+        if not isinstance(summary, dict) or set(summary) != {'line_count', 'total', 'payments', 'flags'}:
+            raise ValidationError(_('Invalid local copy summary.'))
+        number = lambda value: type(value) in (int, float) and math.isfinite(value) and abs(value) <= 1000000000
+        payments, flags = summary['payments'], summary['flags']
+        if (type(summary['line_count']) is not int or not 0 <= summary['line_count'] <= 10000
+                or not number(summary['total']) or not isinstance(payments, list) or len(payments) > 100
+                or not isinstance(flags, list) or len(flags) > 20
+                or any(not isinstance(flag, str) or len(flag) > 80 for flag in flags)
+                or any(not isinstance(p, dict) or set(p) != {'method', 'amount'}
+                       or not isinstance(p['method'], str) or len(p['method']) > 120
+                       or not number(p['amount']) for p in payments)):
+            raise ValidationError(_('Invalid local copy summary.'))
+        order = self.sudo().search([('uuid', '=', order_uuid), ('company_id', '=', session.company_id.id), ('config_id', '=', session.config_id.id)], limit=1)
+        target = order or session.sudo()
+        target.message_post(body=Markup('<p>%s</p><pre>%s</pre>') % (escape(_('Manager discarded local POS order copy: %s', order_uuid)), escape(json.dumps(summary, ensure_ascii=False, sort_keys=True))))
+        return True
 
     baseer_global_discount_kind = fields.Selection([('percent', 'Percentage'), ('fixed', 'Fixed amount'), ('refund', 'Refund allocation')], readonly=True, copy=False)
     baseer_global_discount_value = fields.Char(readonly=True, copy=False)

@@ -78,6 +78,37 @@ class TestOfflineDiscountSync(TransactionCase):
             })],
         }
 
+    def test_recovery_status_is_company_scoped(self):
+        payload = self._payload()
+        self.env['pos.order'].sync_from_ui([deepcopy(payload)])
+        order = self.env['pos.order'].search([('uuid', '=', payload['uuid'])])
+        missing = str(uuid4())
+        result = self.env['pos.order'].baseer_shared_draft_remote_status([order.uuid, missing], self.session.id)
+        self.assertEqual(result[order.uuid]['state'], order.state)
+        self.assertEqual(result[order.uuid]['payment_count'], 1)
+        self.assertEqual(result[order.uuid]['amount_paid'], order.amount_paid)
+        self.assertFalse(result[missing]['exists'])
+        company = self.env['res.company'].create({'name': 'Recovery other company'})
+        with self.assertRaises(AccessError):
+            self.env['pos.order'].with_company(company).baseer_shared_draft_remote_status([order.uuid], self.session.id)
+
+    def test_recovery_discard_log_requires_manager_and_only_posts_message(self):
+        payload = self._payload()
+        self.env['pos.order'].sync_from_ui([deepcopy(payload)])
+        order = self.env['pos.order'].search([('uuid', '=', payload['uuid'])])
+        user = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'Recovery cashier', 'login': 'recovery_cashier',
+            'group_ids': [Command.set([self.env.ref('base.group_user').id, self.env.ref('point_of_sale.group_pos_user').id])],
+        })
+        summary = {'line_count': 2, 'total': 95, 'payments': [{'method': 'Bank', 'amount': 3}], 'flags': ['RemoteDeleted']}
+        with self.assertRaises(AccessError):
+            self.env['pos.order'].with_user(user).baseer_log_discarded_local_copy(order.uuid, summary, self.session.id)
+        before = (order.state, order.amount_total, order.payment_ids.ids)
+        messages = len(order.message_ids)
+        self.env['pos.order'].baseer_log_discarded_local_copy(order.uuid, summary, self.session.id)
+        self.assertEqual(len(order.message_ids), messages + 1)
+        self.assertEqual((order.state, order.amount_total, order.payment_ids.ids), before)
+
     def test_paid_fixed_sync_rebuilds_and_retry_does_not_duplicate(self):
         payload = self._payload()
         self.env['pos.order'].sync_from_ui([deepcopy(payload)])

@@ -1743,3 +1743,25 @@ test('review notification is limited to one per POS session', async () => {
     await pos.syncAllOrders({ orders: [order] });
     assert.equal(calls.filter((item) => typeof item === 'string' && item.startsWith('A saved order needs review')).length, 1);
 });
+
+test('cancelled server with local payment remains available for manager review', async () => {
+    const { pos, order, calls } = recoveryFixture({ exists: true, state: 'cancel', payment_count: 0, amount_paid: 0 },
+        [{ amount: 3, payment_method_id: { name: 'Bank' } }]);
+    assert.equal(await pos.baseerTryRemoteRemoval(order), false);
+    assert.equal(order.uiState.baseerSharedDraftRemoteDeleted, true);
+    assert.ok(!calls.includes('removed'));
+});
+
+test('local cascade can remove protected line and payment records', async () => {
+    const { pos, order } = recoveryFixture({ exists: false, payment_count: 0, amount_paid: 0 });
+    const line = { id: 'line', uuid: 'line', order_id: order };
+    const payment = { id: 'payment', uuid: 'payment', pos_order_id: order };
+    order.lines = [line]; order.payment_ids = [payment];
+    pos.data.localDeleteCascade = () => {
+        experimentalExtensions.get('PosOrderline').delete.call(line);
+        experimentalExtensions.get('PosPayment').delete.call(payment);
+    };
+    await pos.baseerRemoveLocalCopy(order);
+    assert.equal(line.nativeDeleted, true);
+    assert.equal(payment.nativeDeleted, true);
+});

@@ -113,7 +113,8 @@ class PosOrder(models.Model):
         if type(session_id) is not int or session_id < 1:
             raise ValidationError(_('Invalid point of sale session.'))
         session = self.env['pos.session'].browse(session_id).exists()
-        if not session or session.company_id != self.env.company:
+        if (not session or session.company_id != self.env.company or session.state not in ('opening_control', 'opened')
+                or session.config_id.current_session_id != session):
             raise AccessError(_('The point of sale session is unavailable.'))
         session.check_access('read')
         return session

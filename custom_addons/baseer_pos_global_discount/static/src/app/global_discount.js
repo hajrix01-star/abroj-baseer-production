@@ -32,6 +32,7 @@ const pendingMessage = () => _t("The discount needs verification. Reconnect and 
 const SHARED_DRAFT_FLOW_ENABLED = true;
 const paidReconciliationOrders = new WeakSet();
 const sharedRemoteDeleteOrders = new WeakSet();
+const sharedLocalRecoveryOrders = new WeakSet();
 const restoredSharedDrafts = new WeakSet();
 const sharedRevisionChecks = new WeakMap();
 const sharedRevisionPromises = new WeakMap();
@@ -785,10 +786,11 @@ patch(PosStore.prototype, {
             return status;
         } catch { return null; }
     },
-    async baseerRemoveLocalCopy(order) {
+    async baseerRemoveLocalCopy(order, { requireNoPayments = false } = {}) {
         if (sharedRemoteDeleteOrders.has(order)) throw new Error('Local removal is already in progress');
         sharedRemoteDeleteOrders.add(order);
         const remove = async () => {
+            if (requireNoPayments && (order.payment_ids?.length || this.syncingOrders?.has(order.uuid))) throw new Error('Order changed during local removal');
             const db = this.data.indexedDB;
             const protection = db._baseerOfflineProtection?.get(order.uuid) || {};
             const records = {
@@ -820,6 +822,7 @@ patch(PosStore.prototype, {
             this.data.localUnsyncedPaidOrderUuids?.delete(order.uuid);
             localStorage.removeItem(this.baseerDiscountKey(order));
             const selected = this.selectedOrderUuid === order.uuid;
+            sharedRemoteDeleteOrders.delete(order);
             this.data.localDeleteCascade(order);
             if (selected) this.selectNextOrder();
         };
@@ -830,16 +833,20 @@ patch(PosStore.prototype, {
     },
     async baseerTryRemoteRemoval(order) {
         if (order?.state !== 'draft' || !isManagedSharedDraft(order) || order.uiState?.baseerSharedDraftPaidAckPending ||
-            order.uiState?.baseerSharedDraftCancelPending || order.uiState?.baseerSharedDraftCancelAcknowledged) return false;
+            order.uiState?.baseerSharedDraftCancelPending || order.uiState?.baseerSharedDraftCancelAcknowledged || sharedLocalRecoveryOrders.has(order)) return false;
+        sharedLocalRecoveryOrders.add(order);
+        try {
         const status = await this.baseerRemoteStatus(order);
         if (!status || (status.exists && status.state !== 'cancel') || status.payment_count !== 0 || status.amount_paid !== 0) return false;
         if (order.payment_ids?.length) {
             order.uiState.baseerSharedDraftRemoteDeleted = true;
             return false;
         }
-        await this.baseerRemoveLocalCopy(order);
+        try { await this.baseerRemoveLocalCopy(order, { requireNoPayments: true }); }
+        catch { return false; }
         this.notification.add(_t('This order was cancelled on the server. Its local copy was removed from this device.'), { type: 'info' });
         return true;
+        } finally { sharedLocalRecoveryOrders.delete(order); }
     },
     async baseerDiscardLocalCopy(order) {
         if (this.getCashier()?._role !== 'manager' || !this.baseerStuckDraft(order) ||
@@ -850,7 +857,8 @@ patch(PosStore.prototype, {
         const confirmed = await ask(this.dialog, { title: _t('Discard local copy'),
             body: _t('Local payments listed below will be discarded from this device. Check them against the bank terminal before continuing.') + '\n' + details,
             confirmLabel: _t('Discard local copy'), confirmClass: 'btn-danger' }, undefined, ConfirmationDialog);
-        if (!confirmed) return false;
+        if (!confirmed || sharedLocalRecoveryOrders.has(order)) return false;
+        sharedLocalRecoveryOrders.add(order);
         const flags = ['RemoteDeleted', 'RefreshError', 'HydrationError', 'Contaminated'].filter((flag) => order.uiState?.['baseerSharedDraft' + flag]);
         const summary = { line_count: (order.lines || []).length, total: Number(order.priceIncl ?? order.amount_total ?? 0), payments, flags };
         try {
@@ -862,7 +870,7 @@ patch(PosStore.prototype, {
         } catch {
             this.notification.add(_t('The local copy could not be discarded. Keep it for review.'), { type: 'warning', sticky: true });
             return false;
-        }
+        } finally { sharedLocalRecoveryOrders.delete(order); }
     },
     async clickSaveOrder() {
         const order = this.getOrder();
@@ -1325,7 +1333,7 @@ patch(PosStore.prototype, {
         } finally { sharedRefreshOrders.delete(order); }
     },
     async baseerAcceptRemoteSharedDeletionExperiment(order) {
-        if (order?.state !== 'draft' || !isManagedSharedDraft(order) || sharedRemoteDeleteOrders.has(order)) return false;
+        if (order?.state !== 'draft' || !isManagedSharedDraft(order) || sharedRemoteDeleteOrders.has(order) || sharedLocalRecoveryOrders.has(order)) return false;
         if (await this.baseerTryRemoteRemoval?.(order)) return true;
         const tracker = attachDraftGenerationExperiment(this.models);
         sharedRemoteDeleteOrders.add(order);

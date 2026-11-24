@@ -499,6 +499,70 @@ export async function runPaidAfterDraftExperiment(adapter, order) {
 }
 
 /** Cancellation is experimental too; the caller owns atomic graph persistence. */
+/** Compare this order's full native graph independently of the shared model generation. */
+export function cancelGraphFingerprint(order) {
+    if (!order?.uuid || !Array.isArray(order.lines) || !Array.isArray(order.payment_ids) ||
+        typeof order.serializeForIndexedDB !== 'function') throw new Error('The order graph is incomplete');
+    const serialize = (record) => {
+        if (!record || typeof record.serializeForIndexedDB !== 'function') throw new Error('The order graph is incomplete');
+        return JSON.parse(JSON.stringify(record.serializeForIndexedDB()));
+    };
+    const header = serialize(order);
+    if (typeof header.JSONuiState !== 'string') throw new Error('The order UI state is incomplete');
+    const ui = JSON.parse(header.JSONuiState);
+    if (!ui || typeof ui !== 'object' || Array.isArray(ui)) throw new Error('The order UI state is incomplete');
+    for (const name of ['baseerSharedDraftCancelPending', 'baseerSharedDraftKitchenCancelIntent',
+        'baseerKitchenCancellation', 'baseerSharedDraftGeneration']) delete ui[name];
+    header.JSONuiState = ui;
+    const canonical = (value) => Array.isArray(value) ? value.map(canonical) : value && typeof value === 'object'
+        ? Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonical(value[key])])) : value;
+    const sort = (values) => values.map(serialize).map(canonical).sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
+    const attrs = [...new Map(order.lines.flatMap((line) => line.custom_attribute_value_ids || []).map((record) => [record.id, record])).values()];
+    return JSON.stringify(canonical({ header, lines: sort(order.lines), payments: sort(order.payment_ids), attrs: sort(attrs) }));
+}
+
+export function cancelGraphUnchanged(order, pending, tracker) {
+    if (!Number.isSafeInteger(pending?.generation) || !tracker?.get) return false;
+    if (typeof pending.graph_fingerprint === 'string' && pending.graph_fingerprint) {
+        try {
+            const prior = JSON.parse(pending.graph_fingerprint), current = JSON.parse(cancelGraphFingerprint(order));
+            const normalize = (graph) => {
+                const ui = graph?.header?.JSONuiState;
+                if (!ui || typeof ui !== 'object' || Array.isArray(ui)) throw new Error('Invalid order UI state');
+                // Selection is presentation state; it changes on reopening a POS order.
+                delete ui.selected_orderline_uuid;
+                if (order.uiState?.baseerSharedDraftRemoteDeleted === true && order.uiState?.baseerSharedDraftKitchenCancelIntent) {
+                    // A remote-delete notice and the recovery it triggers may be
+                    // this very frozen cancellation. The server still verifies
+                    // the exact command and reason before any local deletion.
+                    delete ui.baseerSharedDraftRemoteDeleted;
+                    delete ui.baseerSharedDraftRefreshError;
+                    delete ui.baseerSharedDraftNeedsSync;
+                }
+                return JSON.stringify(graph);
+            };
+            return normalize(prior) === normalize(current);
+        } catch { return false; }
+    }
+    return false;
+}
+
+/** Freeze the kitchen destination and reason before a cancellation can reach the server. */
+export function kitchenCancelIntent(saved, selected, sessionId) {
+    if (!selected && !saved) return null;
+    if (!Number.isSafeInteger(sessionId) || sessionId < 1) throw new Error('The kitchen session is unavailable');
+    const current = selected ? { session_id: sessionId, reason_code: selected.reasonCode,
+        reason_note: selected.reasonNote || '' } : null;
+    if (current && (typeof current.reason_code !== 'string' || !current.reason_code ||
+        typeof current.reason_note !== 'string')) throw new Error('A kitchen cancellation reason is required');
+    if (saved && current && JSON.stringify(saved) !== JSON.stringify(current)) {
+        throw new Error('The previous kitchen cancellation must be resolved with its original reason');
+    }
+    if (saved && (saved.session_id !== sessionId || typeof saved.reason_code !== 'string' || !saved.reason_code ||
+        typeof saved.reason_note !== 'string')) throw new Error('The previous kitchen cancellation needs review');
+    return saved || current;
+}
+
 export async function cancelDraftSnapshot({ readPending, createCancel, persistPending, sendCancel, commitAck }) {
     let pending = readPending();
     if (!pending) {
@@ -548,7 +612,7 @@ export async function persistDraftCancelExperiment({ data, order, tracker, pendi
             const state = serializedOrder.JSONuiState ? JSON.parse(serializedOrder.JSONuiState) : {};
             state.baseerSharedDraftGeneration = generation;
             if (acknowledgement) {
-                needsReview = generation !== pending.generation;
+                needsReview = !cancelGraphUnchanged(order, pending, tracker);
                 delete state.baseerSharedDraftCancelPending;
                 state.baseerSharedDraftCancelAcknowledged = { ...pending, revision: acknowledgement.revision, needs_review: needsReview };
             } else state.baseerSharedDraftCancelPending = pending;
@@ -566,6 +630,55 @@ export async function persistDraftCancelExperiment({ data, order, tracker, pendi
             order.uiState.baseerSharedDraftCancelAcknowledged = { ...pending, revision: acknowledgement.revision, needs_review: needsReview };
         } else order.uiState.baseerSharedDraftCancelPending = JSON.parse(expected);
         return { needsReview: Boolean(needsReview), generation: persisted.generation };
+    }
+}
+
+/** Publish a server fence and the complete latest local graph in one local transaction. */
+export async function persistCancelFenceRecovery({ data, order, tracker, pending, resolution, protect }) {
+    if (!order?.uuid || order.state !== 'draft' || !order.uiState || !tracker?.get || typeof protect !== 'function' ||
+        resolution?.outcome !== 'fenced' || resolution.uuid !== order.uuid || resolution.state !== 'draft' ||
+        !Number.isSafeInteger(pending?.revision) || resolution.revision !== pending.revision + 1 ||
+        pending.order_uuid !== order.uuid || !pending.command_uuid) throw new Error('Cancellation fence cannot be verified');
+    const expected = JSON.stringify(pending);
+    const check = () => {
+        if (JSON.stringify(order.uiState.baseerSharedDraftCancelPending) !== expected ||
+            order.uiState.baseerSharedDraftPending || order.state !== 'draft') {
+            throw new Error('Cancellation recovery changed while saving');
+        }
+    };
+    check(); protect(order);
+    const serialize = (record) => JSON.parse(JSON.stringify(record.serializeForIndexedDB()));
+    for (;;) {
+        const snapshot = await persistDraftGraphExperiment({ data, currentGeneration: () => tracker.get(), capture: () => {
+            check();
+            const generation = tracker.get();
+            const lines = order.lines || [];
+            const attrs = [...new Map(lines.flatMap((line) => line.custom_attribute_value_ids || []).map((record) => [record.id, record])).values()];
+            const row = serialize(order);
+            const state = row.JSONuiState ? JSON.parse(row.JSONuiState) : {};
+            delete state.baseerSharedDraftCancelPending;
+            delete state.baseerSharedDraftKitchenCancelIntent;
+            delete state.baseerKitchenCancellation;
+            state.baseerSharedDraftRevision = resolution.revision;
+            state.baseerSharedDraftGeneration = generation;
+            state.baseerSharedDraftNeedsSync = true;
+            state.baseerSharedDraftHydratedOnly = false;
+            state.baseerSharedDraftRecoverySync = true;
+            row.JSONuiState = JSON.stringify(state);
+            return { generation, orderIds: [order.id, order.uuid], records: {
+                'pos.order': [row], 'pos.order.line': lines.map(serialize), 'pos.payment': (order.payment_ids || []).map(serialize),
+                'product.attribute.custom.value': attrs.map(serialize),
+            } };
+        } });
+        if (snapshot.generation !== tracker.get()) continue;
+        check();
+        delete order.uiState.baseerSharedDraftCancelPending;
+        delete order.uiState.baseerSharedDraftKitchenCancelIntent;
+        delete order.uiState.baseerKitchenCancellation;
+        Object.assign(order.uiState, { baseerSharedDraftRevision: resolution.revision,
+            baseerSharedDraftGeneration: snapshot.generation, baseerSharedDraftNeedsSync: true,
+            baseerSharedDraftHydratedOnly: false, baseerSharedDraftRecoverySync: true });
+        return snapshot;
     }
 }
 
@@ -732,6 +845,7 @@ export async function persistDraftAckExperiment({ data, order, tracker, pending,
             state.baseerSharedDraftRevision = revision;
             state.baseerSharedDraftGeneration = generation;
             state.baseerSharedDraftNeedsSync = plan.needs_sync;
+            if (!plan.needs_sync) delete state.baseerSharedDraftRecoverySync;
             if (pending.target_state === 'draft') state.baseerSharedDraftHydratedOnly = !plan.needs_sync;
             state.baseerSharedDraftLineDeletions = plan.line_deletions;
             state.baseerSharedDraftPaymentDeletions = plan.payment_deletions;
@@ -772,6 +886,7 @@ export async function persistDraftAckExperiment({ data, order, tracker, pending,
             ...(pending.target_state === 'paid' ? { baseerSharedDraftPaidAckPending: true, baseerSharedDraftPaidServerResponse: serverResponse,
                 baseerSharedDraftPaidCommand: pending } : {}),
         });
+        if (!plan.needs_sync) delete order.uiState.baseerSharedDraftRecoverySync;
         return plan;
     }
 }

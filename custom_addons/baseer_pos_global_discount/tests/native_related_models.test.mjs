@@ -178,7 +178,7 @@ test('actual managed save and sync accept a verified ACK without a false failure
         const src = readFileSync(new URL('../static/src/app/global_discount.js', import.meta.url), 'utf8');
         const get = (a, b) => { const i = src.indexOf(a), j = src.indexOf(b, i); assert.ok(i >= 0 && j > i); return src.slice(i, j).replace(/},\s*$/, '}\n'); };
         const click = get('    async clickSaveOrder() {', '    async baseerSettleSharedDraftBeforePaymentExperiment(');
-        const run = get('    async baseerRunSharedDraftExperiment(order) {', '    async baseerCancelSharedDraftExperiment(');
+        const run = get('    async baseerRunSharedDraftExperiment(order) {', '    async baseerRecoverChangedCancellation(');
         const sync = get('    async syncAllOrders(options = {}) {', '    async preSyncAllOrders(');
         const protect = get('function protectOfflineStorage(', '// Native cleanup');
         const experiment = expSource.replaceAll('export async function', 'async function').replaceAll('export function', 'function');

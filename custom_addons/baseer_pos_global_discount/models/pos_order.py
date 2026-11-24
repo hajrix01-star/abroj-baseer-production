@@ -227,7 +227,67 @@ class PosOrder(models.Model):
         return hashlib.sha256(json.dumps(order, sort_keys=True, separators=(',', ':'), default=str).encode()).hexdigest()
 
     @api.model
-    def baseer_cancel_offline_draft(self, order_uuid, revision, command_uuid):
+    def baseer_resolve_offline_draft_cancel(self, order_uuid, revision, command_uuid, session_id):
+        """Fence an uncertain legacy cancellation without changing sale data.
+
+        The order advisory lock serializes this decision with the original RPC.
+        Revision advancement keeps even a delayed old RPC from taking effect
+        after subsequent successful draft commands replace the receipt fields.
+        """
+        try:
+            if str(UUID(order_uuid)) != order_uuid or str(UUID(command_uuid)) != command_uuid:
+                raise ValueError()
+        except (ValueError, TypeError, AttributeError):
+            raise ValidationError(_('The shared order cancellation identifier is invalid.')) from None
+        if (type(revision) is not int or revision < 1 or
+                type(session_id) is not int or session_id < 1):
+            raise ValidationError(_('The shared order cancellation revision or session is invalid.'))
+        self.env.cr.execute('SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))', [order_uuid])
+        order = self.search([('uuid', '=', order_uuid)], limit=1)
+        if not order:
+            raise ValidationError(_('The shared order is no longer available.'))
+        order._gd_lock()
+        order.invalidate_recordset()
+        session = self.env['pos.session'].browse(session_id).exists()
+        if not session:
+            raise AccessError(_('The point of sale session was not found.'))
+        session.check_access('read')
+        if (session != order.session_id or session.company_id != order.company_id
+                or session.config_id != order.config_id):
+            raise AccessError(_('The kitchen cancellation session does not match the order.'))
+        receipt = {'uuid': order_uuid, 'revision': revision,
+                   'command_uuid': command_uuid, 'operation': 'cancel'}
+        cancel_digest = self._gd_offline_order_digest(receipt)
+        fence_digest = self._gd_offline_order_digest(dict(
+            receipt, operation='cancel-fence', session_id=session_id,
+        ))
+        result = {'uuid': order.uuid, 'state': order.state,
+                  'revision': order.baseer_offline_draft_revision}
+        if order.baseer_offline_draft_command_uuid == command_uuid:
+            if (order.state == 'cancel' and order.baseer_offline_draft_revision == revision + 1
+                    and order.baseer_offline_draft_digest == cancel_digest):
+                return dict(result, outcome='committed')
+            if (order.state == 'draft' and order.baseer_offline_draft_revision == revision + 1
+                    and order.baseer_offline_draft_digest == fence_digest):
+                return dict(result, outcome='fenced')
+            return dict(result, outcome='review')
+        if order.state != 'draft' or order.baseer_offline_draft_revision != revision:
+            return dict(result, outcome='review')
+        order._baseer_assert_cancellation_batch(session_id)
+        states = self.env['baseer.print.preparation.state'].sudo().search_count([('order_id', '=', order.id)])
+        jobs = self.env['baseer.print.job'].sudo().search_count([
+            ('source_order_id', '=', order.id), ('ticket_type', '=', 'preparation')])
+        if not states and not jobs:
+            return dict(result, outcome='review')
+        order._gd_internal().write({
+            'baseer_offline_draft_revision': revision + 1,
+            'baseer_offline_draft_command_uuid': command_uuid,
+            'baseer_offline_draft_digest': fence_digest,
+        })
+        return {'uuid': order.uuid, 'state': 'draft', 'revision': revision + 1, 'outcome': 'fenced'}
+
+    @api.model
+    def baseer_cancel_offline_draft(self, order_uuid, revision, command_uuid, kitchen=None):
         try:
             if str(UUID(order_uuid)) != order_uuid or str(UUID(command_uuid)) != command_uuid:
                 raise ValueError()
@@ -235,29 +295,55 @@ class PosOrder(models.Model):
             raise ValidationError(_('The shared order cancellation identifier is invalid.')) from None
         if type(revision) is not int or revision < 1:
             raise ValidationError(_('The shared order cancellation revision is invalid.'))
+        if kitchen is not None:
+            if (not isinstance(kitchen, dict) or set(kitchen) != {'session_id', 'reason_code', 'reason_note'}
+                    or type(kitchen['session_id']) is not int or kitchen['session_id'] < 1):
+                raise ValidationError(_('The kitchen cancellation details are invalid.'))
+            reason_code, reason_note = self.env['baseer.print.cancellation']._normalized_reason(
+                kitchen['reason_code'], kitchen['reason_note'],
+            )
+            kitchen = {'session_id': kitchen['session_id'], 'reason_code': reason_code,
+                       'reason_note': reason_note}
         self.env.cr.execute('SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))', [order_uuid])
         order = self.search([('uuid', '=', order_uuid)], limit=1)
         if not order:
             raise ValidationError(_('The shared order is no longer available.'))
         order._gd_lock()
         order.invalidate_recordset()
-        digest = self._gd_offline_order_digest({'uuid': order_uuid, 'revision': revision,
-                                                'command_uuid': command_uuid, 'operation': 'cancel'})
+        command = {'uuid': order_uuid, 'revision': revision,
+                   'command_uuid': command_uuid, 'operation': 'cancel'}
+        if kitchen is not None:
+            command['kitchen'] = kitchen
+        digest = self._gd_offline_order_digest(command)
         if order.baseer_offline_draft_command_uuid == command_uuid:
             if order.baseer_offline_draft_digest != digest or order.state != 'cancel':
                 raise ValidationError(_('The shared order retry differs from the saved command.'))
             return {'uuid': order.uuid, 'state': order.state, 'revision': order.baseer_offline_draft_revision}
         if order.state != 'draft' or order.baseer_offline_draft_revision != revision:
             raise ValidationError(_('This shared order changed on another device. Keep your local changes for review.'))
+        kitchen_states = self.env['baseer.print.preparation.state'].sudo().search_count([('order_id', '=', order.id)])
+        kitchen_jobs = self.env['baseer.print.job'].sudo().search_count([
+            ('source_order_id', '=', order.id), ('ticket_type', '=', 'preparation')])
         if (order.payment_ids or not order.currency_id.is_zero(order.amount_paid)
-                or self.env['baseer.print.preparation.state'].sudo().search_count([('order_id', '=', order.id)])
-                or self.env['baseer.print.job'].sudo().search_count([
-                    ('source_order_id', '=', order.id), ('ticket_type', '=', 'preparation')])):
+                or ((kitchen_states or kitchen_jobs) and kitchen is None)):
             raise ValidationError(_('This order has a payment or kitchen activity. Use the protected cancellation workflow or ask a manager.'))
+        if kitchen is not None and not kitchen_states:
+            raise ValidationError(_('The kitchen cancellation has no active kitchen ticket. Refresh the order.'))
         order._gd_internal().write({'baseer_offline_draft_revision': revision + 1,
                                     'baseer_offline_draft_command_uuid': command_uuid,
                                     'baseer_offline_draft_digest': digest})
-        order._gd_internal().action_pos_order_cancel()
+        if kitchen is not None:
+            # The protected kitchen workflow records the reason, queues the
+            # cancellation and cancels the order in this same transaction.
+            # Its access/session/payment checks still apply. The unforgeable
+            # token permits only this validated server-owned revision command.
+            order._gd_internal().baseer_cancel_with_preparation_reasons(
+                kitchen['session_id'], {str(order.id): {
+                    'reason_code': kitchen['reason_code'], 'reason_note': kitchen['reason_note'],
+                }},
+            )
+        else:
+            order._gd_internal().action_pos_order_cancel()
         return {'uuid': order.uuid, 'state': order.state, 'revision': order.baseer_offline_draft_revision}
 
     @api.model

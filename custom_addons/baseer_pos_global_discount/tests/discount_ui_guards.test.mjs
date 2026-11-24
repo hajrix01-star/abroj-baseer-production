@@ -19,11 +19,13 @@ const odoo = { pos_config_id: 2, pos_session_id: 27 };
 const discountStorageKey = (db, config, uuid) => [db, config, uuid].join(':');
 const pendingDiscount = (pos, order) => localStorage.getItem(pos.baseerDiscountKey(order));
 const needsDiscountRefund = (order) => order.needsRefund;
+const cancelGraphUnchanged = (order, pending, tracker) => tracker.get() === pending.generation;
+const cancelGraphFingerprint = () => 'test-graph';
 const useState = (value) => value;
 const useAutofocus = () => {};
 class Component {} class Dialog {} class AlertDialog {};
 class ControlButtons { clickFiscalPosition() { this.nativeCalled = true; } }
-class PosStore { applyDiscount() { this.nativeCalled = true; } async deleteOrders() { this.nativeDeleted = true; return true; } async afterProcessServerData() { return this.nativeStartup(); } async syncAllOrders(options) { return this.nativeSync(options); } async preSyncAllOrders(orders) { return orders; } async postSyncAllOrders() {} }
+class PosStore { applyDiscount() { this.nativeCalled = true; } async beforeDeleteOrder() { this.nativeBeforeDelete = true; return true; } async deleteOrders() { this.nativeDeleted = true; return true; } async afterProcessServerData() { return this.nativeStartup(); } async syncAllOrders(options) { return this.nativeSync(options); } async preSyncAllOrders(orders) { return orders; } async postSyncAllOrders() {} }
 class PosOrder { update(values) { this.nativeValues = values; } addPaymentline() { this.nativeCalled = true; } removePaymentline() { this.nativeCalled = true; } removeOrderline() { this.nativeCalled = true; } serializeForIndexedDB() { return { JSONuiState: JSON.stringify(this.uiState) }; } serializeForORM() {
     const commands = (items) => (items || []).filter((item) => item._dirty || typeof item.id !== 'number')
         .map((item) => [typeof item.id === 'number' ? 1 : 0, typeof item.id === 'number' ? item.id : 0, { uuid: item.uuid, value: item.value }]);
@@ -100,6 +102,30 @@ test('native subtotal writes do not rebuild a frozen discount but cashier price 
     assert.equal(tasks.length, 0);
     pos.onUpdate({ id: 1, fields: ['qty'] });
     assert.equal(tasks.length, 1);
+    tasks.shift()();
+    assert.equal(pos.runs, 1);
+});
+test('server staging cancels stale preview work while later cashier edits still rebuild', async () => {
+    const tasks = [];
+    const instrumentedMocks = mocks.replace('class PosStore {', 'class PosStore { async setup() {}')
+        .replace('const refreshOfflineDiscount = () => {};', 'const refreshOfflineDiscount = (pos) => { pos.runs++; };');
+    const { extensions: installed, sharedStageOrders } = new Function('queueMicrotask', `${instrumentedMocks}\n${source}\nreturn { extensions, sharedStageOrders };`)((task) => tasks.push(task));
+    const order = { uuid: 'order', state: 'draft', uiState: { baseerOfflineDiscount: {} } };
+    const pos = { runs: 0, config: { id: 2 }, models: {
+        'pos.order': { getAll: () => [order], addEventListener() {} },
+        'pos.order.line': { get: () => ({ order_id: order }), addEventListener(event, callback) { pos[event] = callback; } },
+    } };
+    await installed.get('PosStore').setup.call(pos);
+    pos.update({ id: 1, fields: ['qty'] });
+    pos._baseerOfflineScheduled.delete(order.uuid); // The fresh stage supersedes old work.
+    sharedStageOrders.add(order);
+    pos.create({ ids: [1] });
+    sharedStageOrders.delete(order);
+    assert.equal(tasks.length, 1);
+    pos.update({ id: 1, fields: ['price_unit'] });
+    assert.equal(tasks.length, 2);
+    tasks.shift()(); // The old ticket must not consume the later cashier edit.
+    assert.equal(pos.runs, 0);
     tasks.shift()();
     assert.equal(pos.runs, 1);
 });
@@ -429,6 +455,144 @@ test('clean draft refresh refuses a response if the cashier edits while fetching
     assert.equal(order.baseer_offline_draft_revision, undefined);
     assert.ok(order.uiState.baseerOfflineDiscount);
 });
+test('exact shared draft refresh never stages stale revision or mismatched identity', async () => {
+    let stages = 0, failFingerprint = false, rollbacks = 0;
+    const installed = new Function('attachDraftGenerationExperiment', 'hydrateSharedDraftExperiment', 'calculateOfflineDiscount', 'accountTaxHelpers', 'persistDraftGraphExperiment', 'stageNativeServerGraphExperiment', 'cancelGraphFingerprint',
+        `${mocks.replace("const cancelGraphFingerprint = () => 'test-graph';", "")}\n${source.replace('const SHARED_DRAFT_FLOW_ENABLED = false;', 'const SHARED_DRAFT_FLOW_ENABLED = true;')}\nreturn extensions;`)(
+        () => ({ get: () => 4 }), () => {}, () => {}, {}, async ({ capture }) => capture(),
+        ({ order, response }) => { stages++; const oldId = order.id; Object.assign(order, response['pos.order'][0]); order.lines = []; return { rollback() { rollbacks++; order.id = oldId; } }; },
+        (order) => { if (failFingerprint) throw new Error('fingerprint unavailable'); return JSON.stringify({ header: { ...order.serializeForIndexedDB(), JSONuiState: order.uiState }, lines: [] }); });
+    const method = installed.get('PosStore').baseerRefreshCleanSharedDraftExperiment;
+    const expected = { serverId: 42, uuid: 'shared', revision: 3, sessionId: 27, configId: 2, companyId: 1,
+        lines: [{ id: 10, uuid: 'source', productId: 9, qty: 1, priceUnit: 100, discount: 0, taxIds: [138] }] };
+    const makeOrder = () => ({ id: 'local', uuid: 'shared', state: 'draft', lines: [], payment_ids: [],
+        uiState: { baseerSharedDraftServerOrderId: 42, baseerSharedDraftRevision: 3, baseerSharedDraftHydratedOnly: true },
+        serializeForIndexedDB() { return { id: this.id, uuid: this.uuid, JSONuiState: JSON.stringify(this.uiState) }; } });
+    const row = { id: 42, uuid: 'shared', state: 'draft', baseer_offline_draft_revision: 3,
+        session_id: [27, 'session'], config_id: [2, 'pos'], company_id: [1, 'company'], lines: [10] };
+    const line = { id: 10, uuid: 'source', order_id: 42, product_id: 9, qty: 1, price_unit: 100,
+        discount: 0, tax_ids: [138], baseer_global_discount_line: false };
+    for (const changed of [{ id: 43 }, { uuid: 'other' }, { state: 'cancel' }, { baseer_offline_draft_revision: 4 },
+        { session_id: [28, 'session'] }, { config_id: [3, 'pos'] }, { company_id: [9, 'company'] }]) {
+        const order = makeOrder();
+        const data = { network: { offline: false }, indexedDB: {}, orm: { call: async () => ({ 'pos.order': [{ ...row, ...changed }], 'pos.order.line': [line] }) },
+            missingRecursive: async (raw) => raw };
+        assert.equal(await method.call({ data, models: {} }, order, { expected }), false);
+        assert.equal(stages, 0); assert.equal(order.id, 'local');
+    }
+    for (const changeAt of ['expand', 'confirm']) {
+        const order = makeOrder(); let calls = 0;
+        const data = { network: { offline: false }, indexedDB: {}, orm: { call: async () => {
+            calls++; return { 'pos.order': [{ ...row, ...(changeAt === 'confirm' && calls === 2 ? { baseer_offline_draft_revision: 4 } : {}) }], 'pos.order.line': [line] };
+        } }, missingRecursive: async (raw) => changeAt === 'expand' ? { 'pos.order': [{ ...row, baseer_offline_draft_revision: 4 }], 'pos.order.line': [line] } : raw };
+        assert.equal(await method.call({ data, models: {} }, order, { expected }), false);
+        assert.equal(stages, 0); assert.equal(order.id, 'local');
+    }
+    for (const lines of [[], [line, line], [{ ...line, uuid: 'other' }], [{ ...line, order_id: 55 }],
+        [{ ...line, product_id: 8 }], [{ ...line, qty: 2 }], [{ ...line, price_unit: 99 }],
+        [{ ...line, discount: 1 }], [{ ...line, baseer_global_discount_line: true }],
+        [{ ...line, tax_ids: [] }], [{ ...line, tax_ids: [139] }],
+        [{ ...line, tax_ids: [138, 138] }], [{ ...line, tax_ids: undefined }]]) {
+        const order = makeOrder();
+        const data = { network: { offline: false }, indexedDB: {},
+            orm: { call: async () => ({ 'pos.order': [row], 'pos.order.line': [line] }) },
+            missingRecursive: async () => ({ 'pos.order': [row], 'pos.order.line': lines }) };
+        assert.equal(await method.call({ data, models: {} }, order, { expected }), false);
+        assert.equal(stages, 0); assert.equal(order.id, 'local');
+    }
+    {
+        const order = makeOrder(), missingAllowance = { ...row, lines: [10, 11] };
+        const data = { network: { offline: false }, indexedDB: {},
+            orm: { call: async () => ({ 'pos.order': [missingAllowance], 'pos.order.line': [line] }) },
+            missingRecursive: async (raw) => raw };
+        assert.equal(await method.call({ data, models: {} }, order, { expected }), false);
+        assert.equal(stages, 0); assert.equal(order.id, 'local');
+    }
+    {
+        const order = makeOrder();
+        const data = { network: { offline: false }, indexedDB: {}, orm: { call: async () => ({ 'pos.order': [row], 'pos.order.line': [line] }) }, missingRecursive: async (raw) => raw };
+        failFingerprint = true;
+        await assert.rejects(() => method.call({ data, models: {} }, order, { expected }), /fingerprint unavailable/);
+        assert.equal(order.id, 'local'); assert.equal(rollbacks, 1);
+        failFingerprint = false; stages = 0;
+    }
+    const order = makeOrder(); let calls = 0;
+    const data = { network: { offline: false }, indexedDB: {}, orm: { call: async () => { calls++; return { 'pos.order': [row], 'pos.order.line': [line] }; } }, missingRecursive: async (raw) => raw };
+    assert.equal(await method.call({ data, models: {} }, order, { expected }), true);
+    assert.equal(stages, 1); assert.equal(calls, 2); assert.equal(order.id, 42);
+});
+test('refresh graph ignores only Odoo hasChange on the identified discount preview', () => {
+    const make = () => ({ header: { JSONuiState: { baseerOfflineDiscount: { preview_line_uuids: ['preview'], value: '10' } } },
+        lines: [{ uuid: 'food', qty: 1, JSONuiState: JSON.stringify({ hasChange: true }) },
+            { uuid: 'preview', price_unit: -10, JSONuiState: JSON.stringify({ hasChange: true, other: 1 }) }], payments: [], attrs: [] });
+    const modifiedMocks = mocks.replace("const cancelGraphFingerprint = () => 'test-graph';", '');
+    const fingerprint = new Function('cancelGraphFingerprint', `${modifiedMocks}\n${source}\nreturn refreshGraphFingerprint;`)((graph) => JSON.stringify(graph));
+    const original = make(), baseline = fingerprint(original), previewChange = make();
+    previewChange.lines[1].JSONuiState = JSON.stringify({ hasChange: false, other: 1 });
+    assert.equal(fingerprint(previewChange), baseline);
+    const cashier = make(); cashier.lines[0].qty = 2;
+    assert.notEqual(fingerprint(cashier), baseline);
+    const kitchen = make(); kitchen.lines[0].JSONuiState = JSON.stringify({ hasChange: false });
+    assert.notEqual(fingerprint(kitchen), baseline);
+    const previewValue = make(); previewValue.lines[1].price_unit = -20;
+    assert.notEqual(fingerprint(previewValue), baseline);
+    const previewOther = make(); previewOther.lines[1].JSONuiState = JSON.stringify({ hasChange: true, other: 2 });
+    assert.notEqual(fingerprint(previewOther), baseline);
+    const missing = make(); missing.lines.pop();
+    assert.throws(() => fingerprint(missing), /Incomplete discount preview/);
+});
+test('exact shared draft refresh preserves and blocks a cashier edit during IndexedDB save', async () => {
+    let generation = 4, saves = 0, lastState;
+    const order = { id: 'local', uuid: 'shared', state: 'draft', lines: [], payment_ids: [],
+        uiState: { baseerSharedDraftServerOrderId: 42, baseerSharedDraftRevision: 3, baseerSharedDraftHydratedOnly: true,
+            baseerOfflineDiscount: { value: '20' } },
+        serializeForIndexedDB() { return { id: this.id, uuid: this.uuid, JSONuiState: JSON.stringify(this.uiState) }; } };
+    const row = { id: 42, uuid: 'shared', state: 'draft', baseer_offline_draft_revision: 3,
+        session_id: 27, config_id: 2, company_id: 1, lines: [10] };
+    const line = { id: 10, uuid: 'source', order_id: 42, product_id: 9, qty: 1, price_unit: 100,
+        discount: 0, tax_ids: [138], baseer_global_discount_line: false };
+    const expected = { serverId: 42, uuid: 'shared', revision: 3, sessionId: 27, configId: 2, companyId: 1,
+        lines: [{ id: 10, uuid: 'source', productId: 9, qty: 1, priceUnit: 100, discount: 0, taxIds: [138] }] };
+    const installed = new Function('attachDraftGenerationExperiment', 'hydrateSharedDraftExperiment', 'calculateOfflineDiscount', 'accountTaxHelpers', 'persistDraftGraphExperiment', 'stageNativeServerGraphExperiment', 'cancelGraphFingerprint',
+        `${mocks.replace("const cancelGraphFingerprint = () => 'test-graph';", "")}\n${source.replace('const SHARED_DRAFT_FLOW_ENABLED = false;', 'const SHARED_DRAFT_FLOW_ENABLED = true;')}\nreturn extensions;`)(
+        () => ({ get: () => generation }), () => {}, () => {}, {}, async ({ capture }) => {
+            const snap = capture(); saves++; lastState = JSON.parse(snap.records['pos.order'][0].JSONuiState);
+            if (saves === 1) { order.uiState.baseerOfflineDiscount.value = '10'; generation++; }
+            return snap;
+        }, ({ order, response }) => { Object.assign(order, response['pos.order'][0]); order.lines = []; return { rollback() { throw new Error('must not roll back newer edit'); } }; },
+        (order) => JSON.stringify({ header: { ...order.serializeForIndexedDB(), JSONuiState: order.uiState }, lines: [] }));
+    const data = { network: { offline: false }, indexedDB: {}, orm: { call: async () => ({ 'pos.order': [row], 'pos.order.line': [line] }) },
+        missingRecursive: async (raw) => raw };
+    await assert.rejects(() => installed.get('PosStore').baseerRefreshCleanSharedDraftExperiment.call({ data, models: {} }, order, { expected }), /changed while saving/);
+    assert.equal(saves, 2);
+    assert.equal(lastState.baseerOfflineDiscount.value, '10');
+    assert.equal(lastState.baseerSharedDraftNeedsSync, true);
+    assert.match(lastState.baseerSharedDraftRefreshError, /changed while saving/);
+    assert.equal(order.uiState.baseerSharedDraftNeedsSync, true);
+    assert.equal(order.uiState.baseerOfflineDiscount.value, '10');
+});
+test('exact shared draft refresh allows an unrelated order event during IndexedDB save', async () => {
+    let generation = 4, saves = 0;
+    const order = { id: 'local', uuid: 'shared', state: 'draft', lines: [], payment_ids: [],
+        uiState: { baseerSharedDraftServerOrderId: 42, baseerSharedDraftRevision: 3, baseerSharedDraftHydratedOnly: true },
+        serializeForIndexedDB() { return { id: this.id, uuid: this.uuid, JSONuiState: JSON.stringify(this.uiState) }; } };
+    const row = { id: 42, uuid: 'shared', state: 'draft', baseer_offline_draft_revision: 3,
+        session_id: 27, config_id: 2, company_id: 1, lines: [10] };
+    const line = { id: 10, uuid: 'source', order_id: 42, product_id: 9, qty: 1, price_unit: 100,
+        discount: 0, tax_ids: [138], baseer_global_discount_line: false };
+    const expected = { serverId: 42, uuid: 'shared', revision: 3, sessionId: 27, configId: 2, companyId: 1,
+        lines: [{ id: 10, uuid: 'source', productId: 9, qty: 1, priceUnit: 100, discount: 0, taxIds: [138] }] };
+    const installed = new Function('attachDraftGenerationExperiment', 'hydrateSharedDraftExperiment', 'calculateOfflineDiscount', 'accountTaxHelpers', 'persistDraftGraphExperiment', 'stageNativeServerGraphExperiment', 'cancelGraphFingerprint',
+        `${mocks.replace("const cancelGraphFingerprint = () => 'test-graph';", "")}\n${source.replace('const SHARED_DRAFT_FLOW_ENABLED = false;', 'const SHARED_DRAFT_FLOW_ENABLED = true;')}\nreturn extensions;`)(
+        () => ({ get: () => generation }), () => {}, () => {}, {}, async ({ capture }) => {
+            const snap = capture(); if (++saves === 1) generation++; return snap;
+        }, ({ order, response }) => { Object.assign(order, response['pos.order'][0]); order.lines = []; return { rollback() {} }; },
+        (order) => JSON.stringify({ header: { ...order.serializeForIndexedDB(), JSONuiState: order.uiState }, lines: [] }));
+    const data = { network: { offline: false }, indexedDB: {}, orm: { call: async () => ({ 'pos.order': [row], 'pos.order.line': [line] }) }, missingRecursive: async (raw) => raw };
+    assert.equal(await installed.get('PosStore').baseerRefreshCleanSharedDraftExperiment.call({ data, models: {} }, order, { expected }), true);
+    assert.equal(saves, 2);
+    assert.equal(order.uiState.baseerSharedDraftNeedsSync, undefined);
+});
 test('experimental cancellation never removes the local order before protected ACK', async () => {
     const order = { uuid: 'draft', state: 'draft', uiState: { baseerOfflineDiscount: {} } };
     const calls = [];
@@ -442,6 +606,169 @@ test('experimental cancellation never removes the local order before protected A
     pos.baseerCancelSharedDraftExperiment = async () => { calls.push('ack'); };
     assert.equal(await experimentalExtensions.get('PosStore').deleteOrders.call(pos, [order]), true);
     assert.deepEqual(calls, ['warning', 'ack', 'delete', 'dequeue']);
+});
+test('managed kitchen cancellation persists its reason and reuses a legacy pending UUID after a lost response', async () => {
+    const moduleSource = readFileSync(new URL('../static/src/app/draft_snapshot_experiment.js', import.meta.url), 'utf8');
+    const flow = await import(`data:text/javascript;base64,${Buffer.from(moduleSource).toString('base64')}`);
+    let generation = 4, storageError = false;
+    const snapshots = [], requests = [], events = [];
+    const persist = async ({ order, pending, acknowledgement }) => {
+        if (storageError) throw new Error('storage failed');
+        if (!acknowledgement) order.uiState.baseerSharedDraftCancelPending = structuredClone(pending);
+        else { delete order.uiState.baseerSharedDraftCancelPending; order.uiState.baseerSharedDraftCancelAcknowledged = true; }
+        snapshots.push(structuredClone(order.uiState));
+        return { generation, needsReview: false };
+    };
+    const installed = new Function('attachDraftGenerationExperiment', 'kitchenCancelIntent', 'persistDraftCancelExperiment', 'cancelDraftSnapshot', 'singleFlightDraftExperiment',
+        `${mocks}\n${source.replace('const SHARED_DRAFT_FLOW_ENABLED = false;', 'const SHARED_DRAFT_FLOW_ENABLED = true;')}\nreturn extensions;`)(
+        () => ({ get: () => generation }), flow.kitchenCancelIntent, persist, flow.cancelDraftSnapshot, flow.singleFlightDraftExperiment);
+    const methods = installed.get('PosStore');
+    const pending = { order_uuid: 'draft', revision: 3, command_uuid: 'old-cancel', generation: 4 };
+    const order = { id: 42, uuid: 'draft', state: 'draft', baseer_offline_draft_revision: 3,
+        uiState: { baseerSharedDraftRevision: 3, baseerSharedDraftGeneration: 4,
+            baseerSharedDraftCancelPending: pending, baseerKitchenCancellation: { reasonCode: 'wrong_order', reasonNote: '' } } };
+    let fail = true;
+    const pos = { models: { 'pos.order': { get: () => order } }, config: { current_session_id: 27 }, syncingOrders: new Set(),
+        data: { network: { offline: false }, indexedDB: {}, orm: { call: async (_model, _method, args) => {
+            requests.push(structuredClone(args)); assert.ok(snapshots.at(-1).baseerSharedDraftKitchenCancelIntent);
+            if (fail) throw new Error('lost response');
+            return { uuid: 'draft', state: 'cancel', revision: 4 };
+        } }, localDeleteCascade: () => events.push('delete') },
+        _onBeforeDeleteOrder: async () => true, removePendingOrder: () => events.push('dequeue'),
+        notification: { add: () => events.push('warning') } };
+    pos.baseerCancelSharedDraftExperiment = (record) => methods.baseerCancelSharedDraftExperiment.call(pos, record);
+    order.uiState.baseerSharedDraftNeedsSync = true;
+    assert.equal(await methods.deleteOrders.call(pos, [order]), false);
+    assert.equal(requests.length, 0, 'do not cancel an order with unsynchronized local changes');
+    delete order.uiState.baseerSharedDraftNeedsSync;
+    storageError = true;
+    assert.equal(await methods.deleteOrders.call(pos, [order]), false);
+    assert.equal(requests.length, 0, 'do not send before the frozen intent is durable');
+    storageError = false;
+    assert.equal(await methods.deleteOrders.call(pos, [order]), false);
+    assert.deepEqual(events, ['warning', 'warning', 'warning']);
+    assert.deepEqual(requests[0], ['draft', 3, 'old-cancel', { session_id: 27, reason_code: 'wrong_order', reason_note: '' }]);
+    order.uiState.baseerKitchenCancellation.reasonCode = 'staff_error';
+    assert.equal(await methods.deleteOrders.call(pos, [order]), false);
+    assert.equal(requests.length, 1, 'a different reason cannot replace an unknown action');
+    order.uiState.baseerKitchenCancellation.reasonCode = 'wrong_order';
+    fail = false;
+    assert.equal(await methods.deleteOrders.call(pos, [order]), true);
+    assert.deepEqual(requests[1], requests[0]);
+    assert.deepEqual(events.slice(-2), ['delete', 'dequeue']);
+});
+test('changed local draft fences an old cancellation and synchronizes before opening cancellation', async () => {
+    const events = [], snapshots = [];
+    let outcome = 'fenced', failPersist = false, failSync = false;
+    const pending = { order_uuid: 'draft', revision: 3, command_uuid: 'old', generation: 3 };
+    const tracker = { get: () => 4 };
+    const savePending = async ({ order }) => {
+        if (failPersist) throw new Error('storage failed');
+        snapshots.push(structuredClone(order.uiState)); events.push('save-local');
+    };
+    const saveFence = async ({ order, resolution }) => {
+        assert.equal(resolution.outcome, 'fenced');
+        delete order.uiState.baseerSharedDraftCancelPending;
+        order.uiState.baseerSharedDraftRevision = resolution.revision;
+        order.uiState.baseerSharedDraftGeneration = 4;
+        order.uiState.baseerSharedDraftNeedsSync = true;
+        order.uiState.baseerSharedDraftRecoverySync = true;
+        events.push('save-fence');
+    };
+    const installed = new Function('attachDraftGenerationExperiment', 'persistDraftCancelExperiment', 'persistCancelFenceRecovery',
+        `${mocks}\n${source.replace('const SHARED_DRAFT_FLOW_ENABLED = false;', 'const SHARED_DRAFT_FLOW_ENABLED = true;')}\nreturn extensions;`)(
+        () => tracker, savePending, saveFence);
+    const methods = installed.get('PosStore');
+    const order = { id: 42, uuid: 'draft', state: 'draft', baseer_offline_draft_kind: 'fixed', amount_total: 3,
+        uiState: { baseerSharedDraftRevision: 3, baseerSharedDraftCancelPending: pending,
+            baseerSharedDraftNeedsSync: true, baseerSharedDraftRemoveRequested: true } };
+    const pos = { config: { current_session_id: 27 }, models: {}, syncingOrders: new Set(),
+        data: { network: { offline: false }, indexedDB: {}, orm: { call: async (_model, method, args) => {
+            events.push('resolve'); assert.equal(method, 'baseer_resolve_offline_draft_cancel');
+            assert.deepEqual(args, ['draft', 3, 'old', 27]);
+            return { outcome, uuid: 'draft', state: outcome === 'fenced' ? 'draft' : 'cancel', revision: 4 };
+        } } }, notification: { add: () => events.push('warning') },
+        baseerRunSharedDraftExperiment: async (record) => { events.push('sync'); if (failSync) throw new Error('lost sync response'); record.uiState.baseerSharedDraftNeedsSync = false; } };
+    pos.baseerRecoverChangedCancellation = (record) => methods.baseerRecoverChangedCancellation.call(pos, record);
+    pos.baseerFinishCancellationRecovery = (record) => methods.baseerFinishCancellationRecovery.call(pos, record);
+    failPersist = true;
+    assert.equal(await methods.beforeDeleteOrder.call(pos, order), false);
+    assert.deepEqual(events, ['warning']);
+    assert.equal(order.uiState.baseerSharedDraftCancelPending.command_uuid, 'old');
+    failPersist = false; outcome = 'committed'; events.length = 0;
+    assert.equal(await methods.beforeDeleteOrder.call(pos, order), false);
+    assert.deepEqual(events, ['save-local', 'resolve', 'warning']);
+    assert.equal(order.uiState.baseerSharedDraftCancelPending.command_uuid, 'old');
+    assert.equal(order.amount_total, 3);
+    outcome = 'fenced'; failSync = true; events.length = 0;
+    assert.equal(await methods.beforeDeleteOrder.call(pos, order), false);
+    assert.deepEqual(events, ['save-local', 'resolve', 'save-fence', 'sync', 'warning']);
+    assert.equal(order.uiState.baseerSharedDraftRecoverySync, true);
+    assert.equal(order.uiState.baseerSharedDraftCancelPending, undefined);
+    failSync = false; events.length = 0;
+    assert.equal(await methods.beforeDeleteOrder.call(pos, order), true);
+    assert.deepEqual(events, ['sync'], 'retry the frozen synchronization without sending cancellation again');
+    assert.equal(pos.nativeBeforeDelete, true);
+    assert.equal(order.amount_total, 3);
+    assert.equal(order.uiState.baseerSharedDraftRevision, 4);
+    assert.equal(order.uiState.baseerSharedDraftCancelPending, undefined);
+    assert.ok(snapshots.at(-1).baseerSharedDraftRemoveRequested);
+});
+test('local UUID draft verifies its server identity and asks the kitchen reason exactly once', async () => {
+    const order = { id: 'local-uuid', uuid: 'draft-uuid', isSynced: false, state: 'draft',
+        baseer_offline_draft_revision: 3, uiState: { baseerSharedDraftServerOrderId: 42 } };
+    let questions = 0, serverUuid = order.uuid, allow = true;
+    const pos = { models: {}, config: { baseer_direct_print_enabled: true, current_session_id: 27 },
+        data: { network: { offline: false }, orm: { call: async () => ({ 'pos.order': [{ id: 42, uuid: serverUuid, state: 'draft' }] }) } },
+        _baseerCancellationPreview: async (ids, session) => { assert.deepEqual(ids, [42]); assert.equal(session, 27); return { order_ids: [42] }; },
+        _baseerAskCancellationReason: async () => { questions++; return allow && { reasonCode: 'wrong_order', reasonNote: '' }; },
+        notification: { add() {} } };
+    assert.equal(await experimentalExtensions.get('PosStore').beforeDeleteOrder.call(pos, order), true);
+    assert.equal(questions, 1);
+    assert.equal(order.uiState.baseerKitchenCancellation.reasonCode, 'wrong_order');
+    delete order.uiState.baseerKitchenCancellation; serverUuid = 'other-order';
+    assert.equal(await experimentalExtensions.get('PosStore').beforeDeleteOrder.call(pos, order), false);
+    assert.equal(questions, 1);
+    serverUuid = order.uuid; allow = false;
+    assert.equal(await experimentalExtensions.get('PosStore').beforeDeleteOrder.call(pos, order), false);
+    assert.equal(questions, 2);
+    order.id = 42; order.isSynced = true; allow = true;
+    assert.equal(await experimentalExtensions.get('PosStore').beforeDeleteOrder.call(pos, order), true);
+    assert.equal(questions, 2, 'bridge owns the numeric synchronized case');
+});
+test('restored kitchen cancellation with lost ACK retries its frozen intent before server preview', async () => {
+    const moduleSource = readFileSync(new URL('../static/src/app/draft_snapshot_experiment.js', import.meta.url), 'utf8');
+    const flow = await import(`data:text/javascript;base64,${Buffer.from(moduleSource).toString('base64')}`);
+    const failureMocks = mocks.replace('async beforeDeleteOrder() { this.nativeBeforeDelete = true; return true; }',
+        'async beforeDeleteOrder() { throw new Error("already cancelled on server"); }')
+        .replace('const cancelGraphUnchanged = (order, pending, tracker) => tracker.get() === pending.generation;',
+            'const cancelGraphUnchanged = actualGraphCheck;');
+    const installed = new Function('attachDraftGenerationExperiment', 'kitchenCancelIntent', 'actualGraphCheck',
+        `${failureMocks}\n${source.replace('const SHARED_DRAFT_FLOW_ENABLED = false;', 'const SHARED_DRAFT_FLOW_ENABLED = true;')}\nreturn extensions;`)(
+        () => ({ get: () => 5 }), (saved) => saved, flow.cancelGraphUnchanged);
+    const order = { id: 42, uuid: 'draft', isSynced: true, state: 'draft', baseer_offline_draft_revision: 3,
+        lines: [], payment_ids: [], uiState: { baseerOfflineDiscount: { value: 1 } },
+        serializeForIndexedDB() { return { uuid: this.uuid, JSONuiState: JSON.stringify(this.uiState) }; } };
+    const graph_fingerprint = flow.cancelGraphFingerprint(order);
+    order.uiState.baseerSharedDraftCancelPending = { order_uuid: 'draft', revision: 3, command_uuid: 'same', generation: 4, graph_fingerprint };
+    order.uiState.baseerSharedDraftKitchenCancelIntent = { session_id: 27, reason_code: 'wrong_order', reason_note: '' };
+    const pos = { config: { baseer_direct_print_enabled: true, current_session_id: 27 }, models: {}, notification: { add() {} },
+        baseerRecoverChangedCancellation: async () => { throw new Error('needs review'); } };
+    order.uiState.selected_orderline_uuid = 'another-selection';
+    order.uiState.baseerSharedDraftRemoteDeleted = true;
+    order.uiState.baseerSharedDraftRefreshError = 'remote deleted';
+    order.uiState.baseerSharedDraftNeedsSync = true;
+    assert.equal(await installed.get('PosStore').beforeDeleteOrder.call(pos, order), true);
+    assert.equal(order.uiState.baseerSharedDraftCancelPending.command_uuid, 'same');
+    assert.equal(order.uiState.baseerSharedDraftKitchenCancelIntent.reason_code, 'wrong_order');
+    order.uiState.baseerOfflineDiscount.value = 2;
+    assert.equal(await installed.get('PosStore').beforeDeleteOrder.call(pos, order), false, 'own unsynchronized change stays protected');
+    order.uiState.baseerOfflineDiscount.value = 1;
+    delete order.uiState.baseerSharedDraftRemoteDeleted;
+    assert.equal(await installed.get('PosStore').beforeDeleteOrder.call(pos, order), false, 'ordinary unsynchronized edits still need review');
+    order.uiState.baseerSharedDraftRemoteDeleted = true;
+    delete order.uiState.baseerSharedDraftCancelPending.graph_fingerprint;
+    assert.equal(await installed.get('PosStore').beforeDeleteOrder.call(pos, order), false, 'legacy without graph proof stays protected');
 });
 test('experimental print marker verifies the acknowledged revision and current generation', async () => {
     const order = { uuid: 'draft', state: 'draft', uiState: { baseerOfflineDiscount: {} } };

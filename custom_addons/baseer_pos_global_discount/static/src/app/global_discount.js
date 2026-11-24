@@ -17,7 +17,7 @@ import { OrderSummary } from "@point_of_sale/app/screens/product_screen/order_su
 import { discountStorageKey, pendingDiscount, needsDiscountRefund, executeDiscountIntent, submitDiscount } from "./discount_flow";
 import { calculateOfflineDiscount, refreshOfflineDiscount, wireOfflineDiscount } from "./offline_preview";
 import { accountTaxHelpers } from "@account/helpers/account_tax";
-import { attachDraftGenerationExperiment, cancelDraftSnapshot, createDraftSyncAdapterExperiment, hydrateSharedDraftExperiment, persistDraftCancelExperiment, persistDraftGraphExperiment, runDraftSnapshotExperiment, runPaidAfterDraftExperiment, singleFlightDraftExperiment, stageNativeServerGraphExperiment, stagePaidServerGraphExperiment, validatePaidAckGraphExperiment, verifyPaidInvoiceExperiment } from "./draft_snapshot_experiment";
+import { attachDraftGenerationExperiment, cancelDraftSnapshot, cancelGraphFingerprint, cancelGraphUnchanged, createDraftSyncAdapterExperiment, hydrateSharedDraftExperiment, kitchenCancelIntent, persistCancelFenceRecovery, persistDraftCancelExperiment, persistDraftGraphExperiment, runDraftSnapshotExperiment, runPaidAfterDraftExperiment, singleFlightDraftExperiment, stageNativeServerGraphExperiment, stagePaidServerGraphExperiment, validatePaidAckGraphExperiment, verifyPaidInvoiceExperiment } from "./draft_snapshot_experiment";
 import OrderPaymentValidation from "@point_of_sale/app/utils/order_payment_validation";
 import { ConnectionLostError, RPCError, rpc } from "@web/core/network/rpc";
 import { PosData } from "@point_of_sale/app/services/data_service";
@@ -35,6 +35,7 @@ const sharedRemoteDeleteOrders = new WeakSet();
 const restoredSharedDrafts = new WeakSet();
 const sharedRevisionChecks = new WeakMap();
 const sharedRefreshOrders = new WeakSet();
+const sharedStageOrders = new WeakSet();
 function isDiscountFrozen(order) {
     return Boolean(order && (paidReconciliationOrders.has(order) || sharedRemoteDeleteOrders.has(order) || SHARED_DRAFT_FLOW_ENABLED && (order.uiState?.baseerSharedDraftCancelPending || order.uiState?.baseerSharedDraftCancelAcknowledged) || order.baseer_global_discount_locked || (order.config_id && localStorage.getItem(
         discountStorageKey(session.db || "", order.config_id.id, order.uuid)
@@ -92,6 +93,71 @@ function protectedOfflineRecords(models) {
 
 function relationId(value) {
     return Array.isArray(value) ? value[0] : typeof value === "object" && value ? value.id : value;
+}
+
+function cancelRequiresSyncReview(order, pending, tracker) {
+    return Boolean(order.uiState?.baseerSharedDraftNeedsSync && !(pending &&
+        order.uiState.baseerSharedDraftRemoteDeleted === true && order.uiState.baseerSharedDraftKitchenCancelIntent &&
+        cancelGraphUnchanged(order, pending, tracker)));
+}
+
+// A preview line is not a kitchen item. Odoo can recompute its visual
+// hasChange flag while saving; retain the actual flag in IndexedDB while
+// excluding only this derived flag from the in-flight comparison.
+function refreshGraphFingerprint(order) {
+    const graph = JSON.parse(cancelGraphFingerprint(order));
+    if (!graph?.header?.JSONuiState || !Array.isArray(graph.lines)) throw new Error('Incomplete order graph');
+    const preview = graph.header.JSONuiState.baseerOfflineDiscount?.preview_line_uuids || [];
+    if (!Array.isArray(preview) || new Set(preview).size !== preview.length) throw new Error('Invalid discount preview');
+    for (const uuid of preview) {
+        const matches = graph.lines.filter((line) => line.uuid === uuid);
+        if (matches.length !== 1 || typeof matches[0].JSONuiState !== 'string') throw new Error('Incomplete discount preview');
+        const state = JSON.parse(matches[0].JSONuiState);
+        if (!state || typeof state !== 'object' || Array.isArray(state) || typeof state.hasChange !== 'boolean') throw new Error('Invalid preview state');
+        delete state.hasChange;
+        matches[0].JSONuiState = JSON.stringify(state);
+    }
+    graph.lines.sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
+    return JSON.stringify(graph);
+}
+
+function matchesExpectedSharedDraft(row, expected) {
+    return Boolean(row && expected && Number.isSafeInteger(expected.serverId) && expected.serverId > 0 &&
+        Number.isSafeInteger(expected.revision) && expected.revision > 0 && typeof expected.uuid === 'string' && expected.uuid &&
+        ['sessionId', 'configId', 'companyId'].every((key) => Number.isSafeInteger(expected[key]) && expected[key] > 0) &&
+        row.id === expected.serverId && row.uuid === expected.uuid && row.state === 'draft' &&
+        row.baseer_offline_draft_revision === expected.revision && relationId(row.session_id) === expected.sessionId &&
+        relationId(row.config_id) === expected.configId && relationId(row.company_id) === expected.companyId);
+}
+
+function matchesExpectedSharedDraftLines(data, server, expected) {
+    if (!Array.isArray(expected?.lines) || !expected.lines.length || !Array.isArray(server?.lines) ||
+        !Array.isArray(data?.['pos.order.line'])) return false;
+    const expectedIds = new Set(), expectedUuids = new Set();
+    for (const line of expected.lines) {
+        if (!Number.isSafeInteger(line?.id) || line.id < 1 || typeof line.uuid !== 'string' || !line.uuid ||
+            !Number.isSafeInteger(line.productId) || line.productId < 1 ||
+            ![line.qty, line.priceUnit, line.discount].every((value) => typeof value === 'number' && Number.isFinite(value)) ||
+            !Array.isArray(line.taxIds) || line.taxIds.some((id) => !Number.isSafeInteger(id) || id < 1) ||
+            new Set(line.taxIds).size !== line.taxIds.length ||
+            expectedIds.has(line.id) || expectedUuids.has(line.uuid)) return false;
+        expectedIds.add(line.id); expectedUuids.add(line.uuid);
+    }
+    const orderIds = server.lines.map(relationId);
+    if (orderIds.some((id) => !Number.isSafeInteger(id) || id < 1) || new Set(orderIds).size !== orderIds.length) return false;
+    const orderIdSet = new Set(orderIds), rows = data['pos.order.line'].filter((row) => orderIdSet.has(row.id));
+    if (rows.length !== orderIds.length || new Set(rows.map((row) => row.id)).size !== orderIds.length) return false;
+    if (rows.some((row) => relationId(row.order_id) !== expected.serverId || typeof row.baseer_global_discount_line !== 'boolean')) return false;
+    const sourceRows = rows.filter((row) => !row.baseer_global_discount_line);
+    if (sourceRows.length !== expected.lines.length) return false;
+    return expected.lines.every((line) => {
+        const row = sourceRows.find((candidate) => candidate.id === line.id);
+        return Boolean(row && row.uuid === line.uuid && relationId(row.product_id) === line.productId &&
+            row.qty === line.qty && row.price_unit === line.priceUnit && row.discount === line.discount &&
+            Array.isArray(row.tax_ids) && row.tax_ids.every((id) => Number.isSafeInteger(id) && id > 0) &&
+            new Set(row.tax_ids).size === row.tax_ids.length && row.tax_ids.length === line.taxIds.length &&
+            row.tax_ids.every((id) => line.taxIds.includes(id)));
+    });
 }
 
 function touchExperimentalDraftGraph(order) {
@@ -698,52 +764,194 @@ patch(PosStore.prototype, {
         try { return await (order.state === 'paid' ? runPaidAfterDraftExperiment(adapter, order) : runDraftSnapshotExperiment(adapter)); }
         finally { this.syncingOrders.delete(order.uuid); }
     },
+    async baseerRecoverChangedCancellation(order) {
+        const pending = order.uiState?.baseerSharedDraftCancelPending;
+        const tracker = attachDraftGenerationExperiment(this.models);
+        const sessionId = this.config.current_session_id?.id || this.config.current_session_id;
+        if (!pending || !Number.isSafeInteger(sessionId) || sessionId < 1 || this.data.network.offline ||
+            order.uiState.baseerSharedDraftPending || this.syncingOrders.has(order.uuid)) {
+            throw new Error(_t('The previous cancellation needs review. Keep the order open.'));
+        }
+        // A missing preview is not evidence that the cashier removed the
+        // discount. Resume only if the explicit removal intent was retained.
+        if (order.baseer_offline_draft_kind && !order.uiState.baseerOfflineDiscount &&
+            !order.uiState.baseerSharedDraftRemoveRequested) {
+            throw new Error(_t('The local discount change needs review. Keep the order open.'));
+        }
+        order.uiState.baseerSharedDraftNeedsSync = true;
+        await persistDraftCancelExperiment({ data: this.data, order, tracker, pending,
+            protect: (record) => protectOfflineStorage(this.data.indexedDB, record) });
+        const resolution = await this.data.orm.call('pos.order', 'baseer_resolve_offline_draft_cancel',
+            [order.uuid, pending.revision, pending.command_uuid, sessionId]);
+        if (resolution?.outcome !== 'fenced') {
+            throw new Error(_t('The previous cancellation needs manager review. Keep the local order open.'));
+        }
+        await persistCancelFenceRecovery({ data: this.data, order, tracker, pending, resolution,
+            protect: (record) => protectOfflineStorage(this.data.indexedDB, record) });
+        await this.baseerFinishCancellationRecovery(order);
+    },
+    async baseerFinishCancellationRecovery(order) {
+        const tracker = attachDraftGenerationExperiment(this.models);
+        await this.baseerRunSharedDraftExperiment(order);
+        if (order.uiState.baseerSharedDraftPending || order.uiState.baseerSharedDraftNeedsSync ||
+            tracker.get() !== order.uiState.baseerSharedDraftGeneration) {
+            throw new Error(_t('The latest order changes are not yet synchronized. Keep the order open.'));
+        }
+    },
+    async beforeDeleteOrder(order) {
+        const pending = order?.uiState?.baseerSharedDraftCancelPending;
+        if (SHARED_DRAFT_FLOW_ENABLED && pending) {
+            const tracker = attachDraftGenerationExperiment(this.models);
+            if (cancelRequiresSyncReview(order, pending, tracker) || !cancelGraphUnchanged(order, pending, tracker)) {
+                try {
+                    await this.baseerRecoverChangedCancellation(order);
+                } catch (error) {
+                    this.notification.add(error?.data?.message || error?.message || _t('The order needs review before cancellation.'),
+                        { type: 'warning', sticky: true });
+                    return false;
+                }
+            }
+        }
+        if (SHARED_DRAFT_FLOW_ENABLED && order?.uiState?.baseerSharedDraftRecoverySync &&
+            (order.uiState.baseerSharedDraftNeedsSync || order.uiState.baseerSharedDraftPending)) {
+            try {
+                await this.baseerFinishCancellationRecovery(order);
+            } catch (error) {
+                this.notification.add(error?.data?.message || error?.message || _t('The order needs review before cancellation.'),
+                    { type: 'warning', sticky: true });
+                return false;
+            }
+        }
+        // A committed kitchen cancellation may have lost its reply. Its
+        // ordinary preview rejects cancelled server orders, so retry only
+        // the already-persisted command and original reason before preview.
+        if (SHARED_DRAFT_FLOW_ENABLED && order?.uiState?.baseerSharedDraftCancelPending &&
+            order.uiState.baseerSharedDraftKitchenCancelIntent) {
+            try {
+                const tracker = attachDraftGenerationExperiment(this.models);
+                const saved = order.uiState.baseerSharedDraftCancelPending;
+                const sessionId = this.config.current_session_id?.id || this.config.current_session_id;
+                if (order.state !== 'draft' || cancelRequiresSyncReview(order, saved, tracker) ||
+                    order.uiState.baseerSharedDraftPending || !cancelGraphUnchanged(order, saved, tracker) ||
+                    order.uiState.baseerPreparationOutcomeUnknown || order.uiState.baseerSharedDraftPaidAckPending ||
+                    order.uiState.baseerBillSplitPending || order.uiState.baseerRestaurantMergePending || order.payment_ids?.length) {
+                    throw new Error(_t('The previous cancellation needs review. Keep the order open.'));
+                }
+                kitchenCancelIntent(order.uiState.baseerSharedDraftKitchenCancelIntent,
+                    order.uiState.baseerKitchenCancellation, sessionId);
+                return true;
+            } catch (error) {
+                this.notification.add(error?.data?.message || error?.message || _t('The order needs review before cancellation.'),
+                    { type: 'warning', sticky: true });
+                return false;
+            }
+        }
+        const allowed = await super.beforeDeleteOrder(...arguments);
+        if (!allowed || !SHARED_DRAFT_FLOW_ENABLED || !this.config.baseer_direct_print_enabled ||
+            !isManagedSharedDraft(order) || (order.isSynced && Number.isSafeInteger(order.id))) return allowed;
+        try {
+            const serverId = order.uiState?.baseerSharedDraftServerOrderId;
+            const sessionId = this.config.current_session_id?.id || this.config.current_session_id;
+            if (!Number.isSafeInteger(serverId) || serverId < 1 || !Number.isSafeInteger(sessionId) || sessionId < 1 ||
+                this.data.network.offline) throw new Error(_t('The shared order identity needs review before cancellation.'));
+            const raw = await this.data.orm.call('pos.order', 'read_pos_orders', [[['id', '=', serverId]]]);
+            const server = raw?.['pos.order']?.find((row) => row.id === serverId && row.uuid === order.uuid);
+            if (!server || server.state !== 'draft') throw new Error(_t('The shared order changed or is unavailable. Keep it open for review.'));
+            const preview = await this._baseerCancellationPreview([serverId], sessionId);
+            if (!preview?.order_ids?.includes(serverId)) return true;
+            const reason = await this._baseerAskCancellationReason(1);
+            if (!reason) return false;
+            order.uiState.baseerKitchenCancellation = reason;
+            return true;
+        } catch (error) {
+            this.notification.add(error?.data?.message || error?.message || _t('The order needs review before cancellation.'),
+                { type: 'warning', sticky: true });
+            return false;
+        }
+    },
     async baseerCancelSharedDraftExperiment(order) {
         if (!isManagedSharedDraft(order) || order.state !== 'draft') throw new Error('A managed draft is required');
         if (order.uiState.baseerSharedDraftPending || this.syncingOrders.has(order.uuid)) throw new Error('Synchronize the previous draft command before cancelling');
         const tracker = attachDraftGenerationExperiment(this.models);
-        const pending = order.uiState.baseerSharedDraftCancelPending || { order_uuid: order.uuid,
+        const sessionId = this.config.current_session_id?.id || this.config.current_session_id;
+        const kitchen = kitchenCancelIntent(order.uiState.baseerSharedDraftKitchenCancelIntent,
+            order.uiState.baseerKitchenCancellation, sessionId);
+        const previousPending = order.uiState.baseerSharedDraftCancelPending;
+        const pending = previousPending || { order_uuid: order.uuid,
             revision: order.uiState.baseerSharedDraftRevision ?? order.baseer_offline_draft_revision,
-            command_uuid: crypto.randomUUID(), generation: tracker.get() };
-        const bytes = JSON.stringify(pending);
+            command_uuid: crypto.randomUUID(), generation: tracker.get(),
+            graph_fingerprint: cancelGraphFingerprint(order) };
+        if (kitchen && (cancelRequiresSyncReview(order, previousPending, tracker) || !cancelGraphUnchanged(order, pending, tracker) ||
+            (!previousPending && Number.isSafeInteger(order.uiState.baseerSharedDraftGeneration) &&
+             tracker.get() !== order.uiState.baseerSharedDraftGeneration))) {
+            throw new Error(_t('The order has unsynchronized changes. Keep it open and ask a manager to review before cancellation.'));
+        }
+        const bytes = JSON.stringify({ pending, kitchen });
         let committed;
-        await singleFlightDraftExperiment(order.uuid, pending.command_uuid, bytes, () => cancelDraftSnapshot({
+        await singleFlightDraftExperiment(order.uuid, pending.command_uuid, bytes, async () => {
+            if (kitchen) {
+                // Also persist for a legacy pending cancellation. Never infer
+                // that its previous request failed just because no ACK arrived.
+                order.uiState.baseerSharedDraftKitchenCancelIntent = kitchen;
+                await persistDraftCancelExperiment({ data: this.data, order, tracker, pending,
+                    protect: (record) => protectOfflineStorage(this.data.indexedDB, record) });
+            }
+            return cancelDraftSnapshot({
             readPending: () => order.uiState.baseerSharedDraftCancelPending,
             createCancel: () => pending,
             persistPending: (value) => persistDraftCancelExperiment({ data: this.data, order, tracker, pending: value,
                 protect: (record) => protectOfflineStorage(this.data.indexedDB, record) }),
             sendCancel: (uuid, revision, commandUuid) => {
                 if (this.data.network.offline) throw new ConnectionLostError();
-                return this.data.orm.call('pos.order', 'baseer_cancel_offline_draft', [uuid, revision, commandUuid]);
+                return this.data.orm.call('pos.order', 'baseer_cancel_offline_draft',
+                    kitchen ? [uuid, revision, commandUuid, kitchen] : [uuid, revision, commandUuid]);
             },
             commitAck: async ({ pending: value, revision }) => {
                 committed = await persistDraftCancelExperiment({ data: this.data, order, tracker, pending: value,
                     acknowledgement: { uuid: order.uuid, state: 'cancel', revision },
                     protect: (record) => protectOfflineStorage(this.data.indexedDB, record) });
             },
-        }));
+            });
+        });
         if (!committed || committed.needsReview || tracker.get() !== committed.generation) throw new Error('The cancelled draft has newer local changes and needs manager review');
         return true;
     },
-    async baseerRefreshCleanSharedDraftExperiment(order) {
+    async baseerRefreshCleanSharedDraftExperiment(order, { expected } = {}) {
         if (!isCleanHydratedSharedDraft(order) || this.data.network.offline || sharedRefreshOrders.has(order)) return false;
         sharedRefreshOrders.add(order);
         try {
         const tracker = attachDraftGenerationExperiment(this.models);
         const before = tracker.get();
         const serverId = Number.isSafeInteger(order.id) ? order.id : order.uiState.baseerSharedDraftServerOrderId;
+        if (expected && (serverId !== expected.serverId || order.uuid !== expected.uuid ||
+            (order.uiState?.baseerSharedDraftRevision ?? order.baseer_offline_draft_revision) !== expected.revision)) return false;
         const raw = await this.data.orm.call('pos.order', 'read_pos_orders', [[['id', '=', serverId]]]);
         if (tracker.get() !== before || !isCleanHydratedSharedDraft(order)) throw new Error('The shared draft changed while refreshing');
+        if (expected && !matchesExpectedSharedDraft((raw?.['pos.order'] || []).find((item) => item.id === serverId), expected)) return false;
         const expanded = await this.data.missingRecursive(raw);
         const server = (expanded?.['pos.order'] || []).find((item) => item.uuid === order.uuid);
+        if (expected && !matchesExpectedSharedDraft(server, expected)) return false;
+        if (expected && !matchesExpectedSharedDraftLines(expanded, server, expected)) return false;
         const localRevision = order.uiState?.baseerSharedDraftRevision ?? order.baseer_offline_draft_revision ?? 0;
         if (tracker.get() !== before || !isCleanHydratedSharedDraft(order) || !server || server.state !== 'draft' ||
             !Number.isSafeInteger(server.baseer_offline_draft_revision) || !Number.isSafeInteger(localRevision) ||
             server.baseer_offline_draft_revision < Math.max(1, localRevision)) throw new Error('The shared draft response cannot be verified');
+        if (expected) {
+            // Expansion may fetch related records separately. Re-read the
+            // order before replacing the local graph and fail on any change.
+            const confirmed = await this.data.orm.call('pos.order', 'read_pos_orders', [[['id', '=', serverId]]]);
+            if (tracker.get() !== before || !isCleanHydratedSharedDraft(order) ||
+                !matchesExpectedSharedDraft((confirmed?.['pos.order'] || []).find((item) => item.id === serverId), expected)) return false;
+        }
         const oldId = order.id;
         protectOfflineStorage(this.data.indexedDB, order);
         const oldProtection = this.data.indexedDB._baseerOfflineProtection.get(order.uuid);
-        const staged = stageNativeServerGraphExperiment({ order, response: expanded,
+        // Staging builds a fresh preview itself. Invalidate an older queued
+        // rebuild and ignore its synchronous model events, not later cashier edits.
+        this._baseerOfflineScheduled?.delete(order.uuid);
+        sharedStageOrders.add(order);
+        let staged;
+        try { staged = stageNativeServerGraphExperiment({ order, response: expanded,
             beforeLoad: (record) => { delete record.uiState.baseerOfflineDiscount; },
             verify: (record) => {
                 if (record.uuid !== server.uuid || record.state !== 'draft') throw new Error('The shared draft response is invalid');
@@ -752,14 +960,24 @@ patch(PosStore.prototype, {
                 record.uiState.baseerSharedDraftHydratedOnly = true;
                 record.uiState.baseerSharedDraftRevision = server.baseer_offline_draft_revision;
             },
-        });
+        }); } finally { sharedStageOrders.delete(order); }
         const stagedGeneration = tracker.get();
+        // The tracker covers every POS order. Compare this complete order graph
+        // as well, so background events for other orders do not block a send.
+        // An unavailable fingerprint must fail closed.
+        let stagedFingerprint;
+        try { stagedFingerprint = expected ? refreshGraphFingerprint(order) : null; }
+        catch (error) { staged.rollback(); throw error; }
+        const orderChanged = () => {
+            try { return refreshGraphFingerprint(order) !== stagedFingerprint; }
+            catch { return true; }
+        };
         protectOfflineStorage(this.data.indexedDB, order);
         const protection = this.data.indexedDB._baseerOfflineProtection.get(order.uuid);
         for (const [model, keys] of Object.entries(oldProtection || {})) for (const key of keys) protection[model]?.add(key);
         const serialize = (record) => JSON.parse(JSON.stringify(record.serializeForIndexedDB()));
         try {
-            let saved;
+            let saved, capturedRawFingerprint;
             do {
                 saved = await persistDraftGraphExperiment({ data: this.data, currentGeneration: () => tracker.get(), capture: () => {
                     const generation = tracker.get();
@@ -769,18 +987,28 @@ patch(PosStore.prototype, {
                     const state = row.JSONuiState ? JSON.parse(row.JSONuiState) : {};
                     delete state.baseerSharedDraftContaminated;
                     state.baseerSharedDraftGeneration = generation;
+                    if (expected && orderChanged()) {
+                        state.baseerSharedDraftNeedsSync = true;
+                        state.baseerSharedDraftRefreshError = _t('The shared order changed while saving. Keep its local copy for review.');
+                    }
                     row.JSONuiState = JSON.stringify(state);
+                    if (expected) capturedRawFingerprint = cancelGraphFingerprint(order);
                     return { generation, orderIds: [oldId, order.id, order.uuid], records: {
                         'pos.order': [row], 'pos.order.line': lines.map(serialize), 'pos.payment': (order.payment_ids || []).map(serialize),
                         'product.attribute.custom.value': attrs.map(serialize),
                     } };
                 } });
-            } while (tracker.get() !== saved.generation);
+            } while (tracker.get() !== saved.generation || (expected && cancelGraphFingerprint(order) !== capturedRawFingerprint));
+            if (expected && orderChanged()) {
+                order.uiState.baseerSharedDraftNeedsSync = true;
+                order.uiState.baseerSharedDraftRefreshError = _t('The shared order changed while saving. Keep its local copy for review.');
+                throw new Error(order.uiState.baseerSharedDraftRefreshError);
+            }
             order.uiState.baseerSharedDraftGeneration = saved.generation;
             delete order.uiState.baseerSharedDraftContaminated;
             return true;
         } catch (error) {
-            if (tracker.get() === stagedGeneration) staged.rollback();
+            if (tracker.get() === stagedGeneration && (!expected || !orderChanged())) staged.rollback();
             else order.uiState.baseerSharedDraftRefreshError = _t('The shared order could not be saved after local changes. Keep this screen open and ask a manager.');
             throw error;
         }
@@ -1038,11 +1266,13 @@ patch(PosStore.prototype, {
         try { await refreshMissingAccountProofs(this); }
         catch { /* Missing proof remains blocked at payment; do not reset the cache. */ }
         const schedule = (order) => {
-            if (!order?.uiState?.baseerOfflineDiscount || order.state !== "draft" || this._baseerOfflineRebuilding?.has(order.uuid)) return;
-            this._baseerOfflineScheduled ||= new Set();
+            if (!order?.uiState?.baseerOfflineDiscount || order.state !== "draft" || sharedStageOrders.has(order) || this._baseerOfflineRebuilding?.has(order.uuid)) return;
+            this._baseerOfflineScheduled ||= new Map();
             if (this._baseerOfflineScheduled.has(order.uuid)) return;
-            this._baseerOfflineScheduled.add(order.uuid);
+            const ticket = {};
+            this._baseerOfflineScheduled.set(order.uuid, ticket);
             queueMicrotask(() => {
+                if (this._baseerOfflineScheduled.get(order.uuid) !== ticket) return;
                 this._baseerOfflineScheduled.delete(order.uuid);
                 refreshOfflineDiscount(this, order);
             });

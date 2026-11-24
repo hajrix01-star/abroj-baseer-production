@@ -34,6 +34,8 @@ const paidReconciliationOrders = new WeakSet();
 const sharedRemoteDeleteOrders = new WeakSet();
 const restoredSharedDrafts = new WeakSet();
 const sharedRevisionChecks = new WeakMap();
+const sharedRevisionPromises = new WeakMap();
+const sharedRevisionWarningOwners = new WeakMap();
 const sharedRefreshOrders = new WeakSet();
 const sharedStageOrders = new WeakSet();
 function isDiscountFrozen(order) {
@@ -162,6 +164,20 @@ function matchesExpectedSharedDraftLines(data, server, expected) {
 
 function touchExperimentalDraftGraph(order) {
     order?.models?._baseerDraftGenerationTracker?.touch();
+}
+
+function clearProvisionalWarning(order) {
+    if (order.uiState?.baseerSharedDraftRevisionWarningProvisional === true) {
+        delete order.uiState.baseerSharedDraftRevisionWarningProvisional;
+        // uiState writes alone do not emit related-model events. An ACK
+        // transaction in flight must recapture this conflict before it commits.
+        touchExperimentalDraftGraph(order);
+    }
+}
+
+function markProvisionalWarningConflicted(order) {
+    sharedRevisionWarningOwners.delete(order);
+    clearProvisionalWarning(order);
 }
 
 function noteSharedDraftEdit(order) {
@@ -367,6 +383,7 @@ patch(PosData.prototype, {
                 catch { order.uiState.baseerSharedDraftRefreshError ||= _t('The shared order could not be refreshed. Keep its local copy for review.'); }
             } else if (server && Number.isSafeInteger(server.baseer_offline_draft_revision) &&
                 server.baseer_offline_draft_revision > localRevision) {
+                markProvisionalWarningConflicted(order);
                 order.uiState.baseerSharedDraftRefreshError = _t('The shared order changed on another device. Keep your local changes for review.');
             }
         }
@@ -691,20 +708,72 @@ patch(PosStore.prototype, {
         const message = _t('The shared order changed on another device. Keep your local changes for review.');
         const prior = order.uiState.baseerSharedDraftRefreshError;
         if (prior && prior !== message) return false;
+        const initialState = order.state;
+        const initialRevision = order.uiState.baseerSharedDraftRevision ?? order.baseer_offline_draft_revision ?? 0;
         order.uiState.baseerSharedDraftRefreshError = message;
         const check = (sharedRevisionChecks.get(order) || 0) + 1;
         sharedRevisionChecks.set(order, check);
-        const raw = await this.data.orm.call('pos.order', 'read_pos_orders', [[['id', '=', serverId]]]);
-        if (sharedRevisionChecks.get(order) !== check) return false;
-        const server = raw?.['pos.order']?.find((row) => row.id === serverId && row.uuid === order.uuid);
-        if (!server || server.state !== 'draft') {
-            await this.baseerAcceptRemoteSharedDeletionExperiment(order);
-            return false;
+        if (!prior || order.uiState.baseerSharedDraftRevisionWarningProvisional === true) {
+            sharedRevisionWarningOwners.set(order, check);
+            order.uiState.baseerSharedDraftRevisionWarningProvisional = true;
         }
-        const revision = order.uiState.baseerSharedDraftRevision ?? order.baseer_offline_draft_revision ?? 0;
-        if (!Number.isSafeInteger(server.baseer_offline_draft_revision) || server.baseer_offline_draft_revision !== revision) return false;
-        if (order.uiState.baseerSharedDraftRefreshError === message) delete order.uiState.baseerSharedDraftRefreshError;
-        return true;
+        const paidAckArrived = () => {
+            if (sharedRevisionChecks.get(order) !== check || !order.uiState?.baseerSharedDraftPaidAckPending ||
+                !['paid', 'done', 'invoiced'].includes(order.state)) return false;
+            if (sharedRevisionWarningOwners.get(order) === check && order.uiState.baseerSharedDraftRefreshError === message) {
+                delete order.uiState.baseerSharedDraftRefreshError;
+                clearProvisionalWarning(order);
+                sharedRevisionWarningOwners.delete(order);
+            }
+            return true;
+        };
+        const verifying = (async () => {
+            let raw;
+            try { raw = await this.data.orm.call('pos.order', 'read_pos_orders', [[['id', '=', serverId]]]); }
+            catch (error) {
+                if (paidAckArrived()) return false;
+                throw error;
+            }
+            if (sharedRevisionChecks.get(order) !== check) return false;
+            // A paid ACK may have arrived while this draft check was in
+            // flight. Its frozen graph must be reconciled, never replaced by
+            // a stale draft/deletion response or sent as a new payment.
+            if (paidAckArrived()) return false;
+            const currentRevision = order.uiState.baseerSharedDraftRevision ?? order.baseer_offline_draft_revision ?? 0;
+            const server = raw?.['pos.order']?.find((row) => row.id === serverId && row.uuid === order.uuid);
+            const locallyPaidAgainstSameDraft = initialState === 'draft' && order.state === 'paid' &&
+                currentRevision === initialRevision && server?.state === 'draft' &&
+                server.baseer_offline_draft_revision === initialRevision;
+            if ((order.state !== initialState && !locallyPaidAgainstSameDraft) || currentRevision !== initialRevision) {
+                // A local paid transition may precede the ACK from that same
+                // command. Keep our warning's provenance until ACK or a
+                // separately established conflict can settle it.
+                if (!(initialState === 'draft' && order.state === 'paid' && currentRevision === initialRevision) &&
+                    sharedRevisionWarningOwners.get(order) === check) {
+                    markProvisionalWarningConflicted(order);
+                }
+                return false;
+            }
+            if (!server || server.state !== 'draft') {
+                if (sharedRevisionWarningOwners.get(order) === check) markProvisionalWarningConflicted(order);
+                await this.baseerAcceptRemoteSharedDeletionExperiment(order);
+                return false;
+            }
+            const revision = order.uiState.baseerSharedDraftRevision ?? order.baseer_offline_draft_revision ?? 0;
+            if (!Number.isSafeInteger(server.baseer_offline_draft_revision) || server.baseer_offline_draft_revision !== revision) {
+                if (sharedRevisionWarningOwners.get(order) === check) markProvisionalWarningConflicted(order);
+                return false;
+            }
+            if (sharedRevisionWarningOwners.get(order) === check) {
+                if (order.uiState.baseerSharedDraftRefreshError === message) delete order.uiState.baseerSharedDraftRefreshError;
+                clearProvisionalWarning(order);
+                sharedRevisionWarningOwners.delete(order);
+            }
+            return true;
+        })();
+        sharedRevisionPromises.set(order, verifying);
+        try { return await verifying; }
+        finally { if (sharedRevisionPromises.get(order) === verifying) sharedRevisionPromises.delete(order); }
     },
     async baseerCheckRestoredSharedDraftExperiment(order, { allowFrozenRetry = false } = {}) {
         if (!restoredSharedDrafts.has(order) || this.data.network.offline) return true;
@@ -723,6 +792,7 @@ patch(PosStore.prototype, {
         }
         const revision = order.uiState.baseerSharedDraftRevision ?? order.baseer_offline_draft_revision ?? 0;
         if (!Number.isSafeInteger(revision) || !Number.isSafeInteger(server.baseer_offline_draft_revision) || server.baseer_offline_draft_revision !== revision) {
+            markProvisionalWarningConflicted(order);
             order.uiState.baseerSharedDraftRefreshError = _t('The shared order changed on another device. Keep your local changes for review.');
             return Boolean(Number.isSafeInteger(server.baseer_offline_draft_revision) && Number.isSafeInteger(revision) &&
                 server.baseer_offline_draft_revision > revision && allowFrozenRetry && order.uiState.baseerSharedDraftPending);
@@ -800,6 +870,37 @@ patch(PosStore.prototype, {
     },
     async beforeDeleteOrder(order) {
         const pending = order?.uiState?.baseerSharedDraftCancelPending;
+        if (SHARED_DRAFT_FLOW_ENABLED && !pending && order?.state === 'draft' && isManagedSharedDraft(order) &&
+            !order.uiState?.baseerSharedDraftRecoverySync) {
+            const tracker = attachDraftGenerationExperiment(this.models);
+            const state = order.uiState;
+            const generation = state.baseerSharedDraftGeneration;
+            const needsSync = state.baseerSharedDraftNeedsSync || state.baseerSharedDraftPending ||
+                state.baseerSharedDraftRemoveRequested || state.baseerSharedDraftPaymentDeletions?.length ||
+                (Number.isSafeInteger(generation) && generation !== tracker.get());
+            if (needsSync) {
+                try {
+                    let checking;
+                    while ((checking = sharedRevisionPromises.get(order))) await checking;
+                    if (this.data.network.offline || order.payment_ids?.length || state.baseerSharedDraftPaidAckPending ||
+                        state.baseerSharedDraftCancelAcknowledged || state.baseerSharedDraftRefreshError ||
+                        state.baseerSharedDraftContaminated || state.baseerSharedDraftRemoteDeleted || state.baseerSharedDraftHydrationError ||
+                        (state.baseerSharedDraftPending && state.baseerSharedDraftPending.target_state !== 'draft')) {
+                        throw new Error(_t('The order has payment or synchronization activity. Keep it open for review.'));
+                    }
+                    await this.baseerRunSharedDraftExperiment(order);
+                    if (order.state !== 'draft' || order.payment_ids?.length || state.baseerSharedDraftPaidAckPending ||
+                        state.baseerSharedDraftPending || state.baseerSharedDraftNeedsSync ||
+                        tracker.get() !== state.baseerSharedDraftGeneration) {
+                        throw new Error(_t('The latest order changes are not yet synchronized. Keep the order open.'));
+                    }
+                } catch (error) {
+                    this.notification.add(error?.data?.message || error?.message || _t('The order needs review before cancellation.'),
+                        { type: 'warning', sticky: true });
+                    return false;
+                }
+            }
+        }
         if (SHARED_DRAFT_FLOW_ENABLED && pending) {
             const tracker = attachDraftGenerationExperiment(this.models);
             if (cancelRequiresSyncReview(order, pending, tracker) || !cancelGraphUnchanged(order, pending, tracker)) {
@@ -1389,7 +1490,21 @@ patch(PosStore.prototype, {
                 const results = (ordinary.length ? await super.syncAllOrders({ ...options, orders: ordinary }) : []) || [];
                 for (const order of managed) {
                     try {
+                        // A revision check marks the order before its RPC is
+                        // complete. Wait for the latest check, then apply all
+                        // existing guards without changing the payment graph.
+                        let checking;
+                        while ((checking = sharedRevisionPromises.get(order))) await checking;
                         const conflict = _t('The shared order changed on another device. Keep your local changes for review.');
+                        // A failed lookup is not a proven conflict. Once a
+                        // frozen paid ACK exists, reconciliation validates it
+                        // instead of retrying payment or keeping our own warning.
+                        if (order.uiState.baseerSharedDraftPaidAckPending && order.uiState.baseerSharedDraftRevisionWarningProvisional === true &&
+                            order.uiState.baseerSharedDraftRefreshError === conflict) {
+                            delete order.uiState.baseerSharedDraftRefreshError;
+                            clearProvisionalWarning(order);
+                            sharedRevisionWarningOwners.delete(order);
+                        }
                         const hadPending = Boolean(order.uiState.baseerSharedDraftPending);
                         const retryFrozen = order.uiState.baseerSharedDraftRefreshError === conflict && hadPending;
                         if (sharedRefreshOrders.has(order) || order.uiState.baseerSharedDraftContaminated || order.uiState.baseerSharedDraftRemoteDeleted || order.uiState.baseerSharedDraftHydrationError || (order.uiState.baseerSharedDraftRefreshError && !retryFrozen)) throw new Error('Shared draft requires review');

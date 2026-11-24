@@ -183,7 +183,7 @@ test('actual managed save and sync accept a verified ACK without a false failure
         const protect = get('function protectOfflineStorage(', '// Native cleanup');
         const experiment = expSource.replaceAll('export async function', 'async function').replaceAll('export function', 'function');
         await page.addScriptTag({ content: `const crypto = { randomUUID: () => '00000000-0000-4000-8000-000000000001' };\n${nativeBundle()}\n${experiment}\n${protect}
-            const SHARED_DRAFT_FLOW_ENABLED=true, sharedRefreshOrders=new WeakSet();
+            const SHARED_DRAFT_FLOW_ENABLED=true, sharedRefreshOrders=new WeakSet(), sharedRevisionPromises=new WeakMap(), sharedRevisionWarningOwners=new WeakMap();
             const _t=value=>value, isManagedSharedDraft=order=>!!order.uiState?.baseerOfflineDiscount;
             const refreshOfflineDiscount=()=>{}, calculateOfflineDiscount=()=>{}, hydrateSharedDraftExperimentUnused=()=>{};
             const accountTaxHelpers={}; class ConnectionLostError extends Error {};
@@ -576,6 +576,7 @@ test('paid ACK is reconciled after browser reload using native related models', 
         const context = await browser.newContext();
         await context.route('**/*', (route) => route.fulfill({ status: 200, contentType: 'text/html', body: '<html></html>' }));
         const page = await context.newPage(); await page.goto('http://baseer-paid-restart.invalid/');
+        await page.addScriptTag({ content: `${expSource.replaceAll('export async function', 'async function').replaceAll('export function', 'function')}\nwindow.persistPaidAck = persistDraftAckExperiment;` });
         await page.evaluate(async () => {
             const names = ['pos.order', 'pos.order.line', 'pos.payment', 'product.attribute.custom.value'];
             const open = indexedDB.open('paid-restart', 1);
@@ -591,14 +592,16 @@ test('paid ACK is reconciled after browser reload using native related models', 
                 'pos.payment': [{ id: 20, uuid: 'pay', pos_order_id: 42, amount: 90 }],
                 'account.move': [{ id: 77, name: 'INV/77' }], 'product.attribute.custom.value': [] };
             const ui = { baseerOfflineDiscount: { kind: 'fixed', value: '10', preview_line_uuids: ['preview-paid'] },
-                baseerSharedDraftPaidAckPending: true, baseerSharedDraftPaidCommand: command,
-                baseerSharedDraftPaidServerResponse: response, baseerSharedDraftNeedsSync: false, baseerSharedDraftGeneration: 5 };
-            const tx = db.transaction(names, 'readwrite');
-            tx.objectStore('pos.order').put({ id: 42, uuid: 'order', state: 'paid', to_invoice: true, lines: ['B', 'preview-paid'], payment_ids: ['pay'], JSONuiState: JSON.stringify(ui) });
-            tx.objectStore('pos.order.line').put({ uuid: 'B', id: 'B', order_id: 42, qty: 2, price_unit: 50 });
-            tx.objectStore('pos.order.line').put({ uuid: 'preview-paid', id: 'preview-paid', order_id: 42, qty: 1, price_unit: -10 });
-            tx.objectStore('pos.payment').put({ uuid: 'pay', id: 'pay', pos_order_id: 42, amount: 90 });
-            await new Promise((resolve, reject) => { tx.oncomplete = resolve; tx.onabort = () => reject(tx.error); }); db.close();
+                baseerSharedDraftPending: command, baseerSharedDraftRevisionWarningProvisional: true,
+                baseerSharedDraftRefreshError: 'The shared order changed on another device. Keep your local changes for review.' };
+            const line = (uuid, qty, price_unit) => ({ id: uuid, uuid, custom_attribute_value_ids: [],
+                serializeForIndexedDB() { return { uuid, id: uuid, order_id: 42, qty, price_unit }; } });
+            const payment = { id: 'pay', uuid: 'pay', serializeForIndexedDB() { return { uuid: 'pay', id: 'pay', pos_order_id: 42, amount: 90 }; } };
+            const order = { id: 42, uuid: 'order', state: 'paid', lines: [line('B', 2, 50), line('preview-paid', 1, -10)], payment_ids: [payment], uiState: ui,
+                serializeForIndexedDB() { return { id: 42, uuid: 'order', state: 'paid', to_invoice: true, lines: ['B', 'preview-paid'], payment_ids: ['pay'], JSONuiState: JSON.stringify(this.uiState) }; } };
+            await window.persistPaidAck({ data: { indexedDB: { db } }, order, tracker: { get: () => 5 }, pending: command,
+                revision: 2, serverOrderId: 42, lineIds: { B: 12 }, paymentIds: { pay: 20 }, serverResponse: response, protect() {} });
+            db.close();
         });
         await page.reload();
         const posPatch = readFileSync(new URL('../static/src/app/global_discount.js', import.meta.url), 'utf8');
@@ -608,8 +611,17 @@ test('paid ACK is reconciled after browser reload using native related models', 
         const protectionEnd = posPatch.indexOf('// Native cleanup', protectionStart);
         assert.ok(reconcileStart >= 0 && reconcileEnd > reconcileStart && protectionStart >= 0 && protectionEnd > protectionStart);
         const reconcileMethod = posPatch.slice(reconcileStart, reconcileEnd).replace(/},\s*$/, '}\n');
+        const syncStart = posPatch.indexOf('    async syncAllOrders(options = {}) {');
+        const syncEnd = posPatch.indexOf('    async preSyncAllOrders(', syncStart);
+        assert.ok(syncStart >= 0 && syncEnd > syncStart);
+        const syncMethod = posPatch.slice(syncStart, syncEnd).replace(/},\s*$/, '}\n');
+        const warningStart = posPatch.indexOf('function touchExperimentalDraftGraph('), warningEnd = posPatch.indexOf('\nfunction noteSharedDraftEdit(', warningStart);
+        assert.ok(warningStart >= 0 && warningEnd > warningStart);
         const experiment = expSource.replaceAll('export async function', 'async function').replaceAll('export function', 'function');
-        await page.addScriptTag({ content: `${nativeBundle()}\n${experiment}\nconst paidReconciliationOrders = new WeakSet();\n${posPatch.slice(protectionStart, protectionEnd)}\nclass TestStore { ${reconcileMethod} }\nwindow.resumePaid = async () => {
+        await page.addScriptTag({ content: `${nativeBundle()}\n${experiment}\nconst paidReconciliationOrders = new WeakSet(), sharedRefreshOrders = new WeakSet(), sharedRevisionPromises = new WeakMap(), sharedRevisionWarningOwners = new WeakMap();
+            const SHARED_DRAFT_FLOW_ENABLED = true, _t = value => value, isManagedSharedDraft = order => Boolean(order.uiState?.baseerSharedDraftPaidAckPending);
+            class ConnectionLostError extends Error {} class ParentStore { async syncAllOrders() { return []; } }
+            ${posPatch.slice(protectionStart, protectionEnd)}\n${posPatch.slice(warningStart, warningEnd)}\nclass TestStore extends ParentStore { ${reconcileMethod} ${syncMethod} }\nwindow.resumePaid = async () => {
             const defs = {
                 'pos.order': { id: { type: 'integer' }, uuid: { type: 'char' }, state: { type: 'char' }, amount_total: { type: 'float' }, amount_tax: { type: 'float' },
                     baseer_global_discount_locked: { type: 'boolean' }, to_invoice: { type: 'boolean' }, account_move: { type: 'many2one', relation: 'account.move' },
@@ -635,10 +647,14 @@ test('paid ACK is reconciled after browser reload using native related models', 
             const order = models['pos.order'].getBy('uuid', 'order');
             const data = { indexedDB: { db }, missingRecursive: async (value) => value,
                 orm: { read: async () => { throw new Error('access denied'); } }, localUnsyncedPaidOrderUuids: new Set(['order']) };
-            const store = new TestStore(); store.models = models; store.data = data;
+            const store = new TestStore(); store.models = models; store.data = data; store.getPendingOrder = () => ({ orderToCreate: [], orderToUpdate: [] });
+            let reconciliations = 0, sent = 0;
+            const actualReconcile = store.baseerReconcileSharedPaidExperiment.bind(store);
+            store.baseerReconcileSharedPaidExperiment = async (...args) => { reconciliations++; return actualReconcile(...args); };
+            store.baseerRunSharedDraftExperiment = async () => { sent++; throw new Error('must not send another payment'); };
             store.pendingOrder = { create: new Set(), write: new Set([42]), delete: new Set() };
-            const result = await store.baseerReconcileSharedPaidExperiment(order);
-            const final = { invoicePending: result.invoicePending, total: order.priceIncl,
+            const result = await store.syncAllOrders({ orders: [order], throw: true });
+            const final = { invoicePending: order.uiState.baseerSharedDraftInvoicePending, total: order.priceIncl, reconciliations, sent,
                 lines: order.lines.map((line) => line.uuid).sort(), payments: order.payment_ids.map((payment) => payment.uuid),
                 ackPending: !!order.uiState.baseerSharedDraftPaidAckPending };
             db.close(); return final;
@@ -649,6 +665,7 @@ test('paid ACK is reconciled after browser reload using native related models', 
         assert.equal(result.total, 90);
         assert.equal(result.invoicePending, true);
         assert.equal(result.ackPending, false);
+        assert.equal(result.reconciliations, 1); assert.equal(result.sent, 0);
         await context.close();
     } finally { await browser.close(); }
 });

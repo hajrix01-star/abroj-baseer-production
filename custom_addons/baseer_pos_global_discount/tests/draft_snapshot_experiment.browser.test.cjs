@@ -326,6 +326,54 @@ test('experimental ACK commit retains a newer graph and persists UUID deletion m
     } finally { await browser.close(); }
 });
 
+test('paid ACK must not persist provisional warning if a real conflict arrives during IndexedDB transaction', async () => {
+    const browser = await chromium.launch({ headless: true, ...(process.platform === 'win32' ? { executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe' } : {}) });
+    try {
+        const context = await browser.newContext();
+        await context.route('**/*', (route) => route.fulfill({ status: 200, contentType: 'text/html', body: '<html></html>' }));
+        const page = await context.newPage(); await page.goto('http://baseer-paid-ack-conflict.invalid/');
+        const source = readFileSync(join(__dirname, '../static/src/app/draft_snapshot_experiment.js'), 'utf8').replaceAll('export async function', 'async function').replaceAll('export function', 'function');
+        const globalSource = readFileSync(join(__dirname, '../static/src/app/global_discount.js'), 'utf8');
+        const start = globalSource.indexOf('function touchExperimentalDraftGraph('), end = globalSource.indexOf('\nfunction noteSharedDraftEdit(', start);
+        assert.ok(start >= 0 && end > start);
+        await page.addScriptTag({ content: `${source}\nconst sharedRevisionWarningOwners = new WeakMap();\n${globalSource.slice(start, end)}\nwindow.persistPaidAck = persistDraftAckExperiment; window.markProvisionalWarningConflicted = markProvisionalWarningConflicted;` });
+        const result = await page.evaluate(async () => {
+            const names = ['pos.order', 'pos.order.line', 'pos.payment', 'product.attribute.custom.value'];
+            const open = indexedDB.open('paid-ack-conflict', 1);
+            open.onupgradeneeded = () => { for (const name of names) open.result.createObjectStore(name, { keyPath: name === 'product.attribute.custom.value' ? 'id' : 'uuid' }); };
+            const db = await new Promise((resolve, reject) => { open.onsuccess = () => resolve(open.result); open.onerror = () => reject(open.error); });
+            const pending = { order_uuid: 'order', command_uuid: 'paid', revision: 1, target_state: 'paid', generation: 5,
+                source_line_uuids: ['food'], source_payment_uuids: ['bank'], payload_json: '{}' };
+            const order = { id: 42, uuid: 'order', state: 'paid',
+                uiState: { baseerSharedDraftPending: pending, baseerSharedDraftRevisionWarningProvisional: true,
+                    baseerSharedDraftRefreshError: 'The shared order changed on another device. Keep your local changes for review.' },
+                lines: [{ id: 'food', uuid: 'food', custom_attribute_value_ids: [], serializeForIndexedDB() { return { uuid: 'food', id: 'food', order_id: 42 }; } }],
+                payment_ids: [{ id: 'bank', uuid: 'bank', serializeForIndexedDB() { return { uuid: 'bank', id: 'bank', pos_order_id: 42, amount: 3 }; } }],
+                serializeForIndexedDB() { return { id: 42, uuid: 'order', state: 'paid', JSONuiState: JSON.stringify(this.uiState) }; } };
+            let conflictBeforeComplete = false, generation = 5;
+            const tracker = { get: () => generation, touch: () => { generation++; } };
+            order.models = { _baseerDraftGenerationTracker: tracker };
+            const proxyDb = { transaction(...args) {
+                const tx = db.transaction(...args);
+                if (!conflictBeforeComplete) queueMicrotask(() => { window.markProvisionalWarningConflicted(order); conflictBeforeComplete = true; });
+                return tx;
+            } };
+            await window.persistPaidAck({ data: { indexedDB: { db: proxyDb } }, order, tracker, pending,
+                revision: 2, serverOrderId: 42, lineIds: { food: 11 }, paymentIds: { bank: 12 },
+                serverResponse: { 'pos.order': [{ id: 42, uuid: 'order', state: 'paid' }] }, protect() {} });
+            const saved = await new Promise((resolve, reject) => { const tx = db.transaction(['pos.order'], 'readonly');
+                const request = tx.objectStore('pos.order').get('order'); request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error); });
+            db.close(); return { conflictBeforeComplete, live: order.uiState, saved: JSON.parse(saved.JSONuiState) };
+        });
+        assert.equal(result.conflictBeforeComplete, true);
+        assert.equal(result.live.baseerSharedDraftRevisionWarningProvisional, undefined);
+        assert.equal(result.saved.baseerSharedDraftRevisionWarningProvisional, undefined, 'durable ACK must retain the independent conflict');
+        assert.equal(result.saved.baseerSharedDraftNeedsSync, true, 'a later edit requires review');
+        assert.ok(result.saved.baseerSharedDraftRefreshError);
+        await context.close();
+    } finally { await browser.close(); }
+});
+
 test('experimental cancel ACK is durable and retains later edits for review', async () => {
     const browser = await chromium.launch({ headless: true, ...(process.platform === 'win32' ? { executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe' } : {}) });
     try {

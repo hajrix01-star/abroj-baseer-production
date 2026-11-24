@@ -29,7 +29,7 @@ const frozenMessage = () => _t("Remove the invoice discount before changing item
 const pendingMessage = () => _t("The discount needs verification. Reconnect and check its result before payment.");
 // Keep disabled until shared-draft payment, cancellation and printing have
 // passed the full POS acceptance suite. Never enable only part of the contract.
-const SHARED_DRAFT_FLOW_ENABLED = true;
+const SHARED_DRAFT_FLOW_ENABLED = false;
 const paidReconciliationOrders = new WeakSet();
 const sharedRemoteDeleteOrders = new WeakSet();
 const sharedLocalRecoveryOrders = new WeakSet();
@@ -128,8 +128,20 @@ async function loadCurrentPosSession(data) {
     }
     return fresh;
 }
+// Existing drafts and historical discount lines retain their recovery path.
+function isLegacyManagedOrder(order) {
+    if (!order) return false;
+    let state = order.uiState;
+    if (!state && order.JSONuiState) {
+        try { state = JSON.parse(order.JSONuiState); } catch { state = {}; }
+    }
+    return Boolean(order.baseer_global_discount_locked || order.baseer_offline_draft_revision ||
+        order.baseer_offline_draft_kind || (order.lines || []).some((line) => line?.baseer_global_discount_line) ||
+        state?.baseerOfflineDiscount || Object.keys(state || {}).some((key) => key.startsWith('baseerSharedDraft')));
+}
+
 function isDiscountFrozen(order) {
-    return Boolean(order && (paidReconciliationOrders.has(order) || sharedRemoteDeleteOrders.has(order) || SHARED_DRAFT_FLOW_ENABLED && (order.uiState?.baseerSharedDraftCancelPending || order.uiState?.baseerSharedDraftCancelAcknowledged) || order.baseer_global_discount_locked || (order.config_id && localStorage.getItem(
+    return Boolean(order && (paidReconciliationOrders.has(order) || sharedRemoteDeleteOrders.has(order) || (SHARED_DRAFT_FLOW_ENABLED || isLegacyManagedOrder(order)) && (order.uiState?.baseerSharedDraftCancelPending || order.uiState?.baseerSharedDraftCancelAcknowledged) || order.baseer_global_discount_locked || (order.config_id && localStorage.getItem(
         discountStorageKey(session.db || "", order.config_id.id, order.uuid)
     ))));
 }
@@ -138,17 +150,17 @@ function explainFrozen(pos) {
 }
 
 function isPendingOfflineDiscount(order) {
-    if (SHARED_DRAFT_FLOW_ENABLED && order?.uiState?.baseerSharedDraftPaidAckPending && ['paid', 'done', 'invoiced'].includes(order.state)) return true;
+    if ((SHARED_DRAFT_FLOW_ENABLED || isLegacyManagedOrder(order)) && order?.uiState?.baseerSharedDraftPaidAckPending && ['paid', 'done', 'invoiced'].includes(order.state)) return true;
     return Boolean(['draft', 'paid'].includes(order?.state) && !order.baseer_global_discount_locked &&
-        (order.uiState?.baseerOfflineDiscount || SHARED_DRAFT_FLOW_ENABLED &&
+        (order.uiState?.baseerOfflineDiscount || (SHARED_DRAFT_FLOW_ENABLED || isLegacyManagedOrder(order)) &&
             (order.uiState?.baseerSharedDraftPending || order.uiState?.baseerSharedDraftRevision || order.baseer_offline_draft_revision)));
 }
 
 function isManagedSharedDraft(order) {
-    if (SHARED_DRAFT_FLOW_ENABLED && order?.uiState?.baseerSharedDraftPaidAckPending && ['paid', 'done', 'invoiced'].includes(order.state)) return true;
+    if ((SHARED_DRAFT_FLOW_ENABLED || isLegacyManagedOrder(order)) && order?.uiState?.baseerSharedDraftPaidAckPending && ['paid', 'done', 'invoiced'].includes(order.state)) return true;
     return Boolean(order && ['draft', 'paid'].includes(order.state) && !order.baseer_global_discount_locked &&
-        (order.uiState?.baseerOfflineDiscount || order.uiState?.baseerSharedDraftPending ||
-         order.uiState?.baseerSharedDraftRevision || order.baseer_offline_draft_revision));
+        (isLegacyManagedOrder(order) && (order.uiState?.baseerOfflineDiscount || order.baseer_offline_draft_revision ||
+         Object.keys(order.uiState || {}).some((key) => key.startsWith("baseerSharedDraft")))));
 }
 
 function reachedServer(order) {
@@ -163,7 +175,7 @@ function isCleanHydratedSharedDraft(order) {
     const acknowledgedClean = Number.isSafeInteger(order?.uiState?.baseerSharedDraftServerOrderId) && tracker &&
         Number.isSafeInteger(order.uiState?.baseerSharedDraftGeneration) && tracker.get() === order.uiState.baseerSharedDraftGeneration &&
         !order.uiState.baseerSharedDraftNeedsSync;
-    return Boolean(SHARED_DRAFT_FLOW_ENABLED && order?.state === 'draft' &&
+    return Boolean((SHARED_DRAFT_FLOW_ENABLED || isLegacyManagedOrder(order)) && order?.state === 'draft' &&
         (Number.isSafeInteger(order.id) || Number.isSafeInteger(order.uiState?.baseerSharedDraftServerOrderId)) &&
         (order.uiState?.baseerSharedDraftHydratedOnly || acknowledgedClean) && !order.uiState?.baseerSharedDraftPending &&
         !order.uiState?.baseerSharedDraftCancelPending && !order.uiState?.baseerSharedDraftHydrationError &&
@@ -278,7 +290,7 @@ function markProvisionalWarningConflicted(order) {
 }
 
 function noteSharedDraftEdit(order) {
-    if (SHARED_DRAFT_FLOW_ENABLED && order?.uiState?.baseerSharedDraftHydratedOnly) {
+    if ((SHARED_DRAFT_FLOW_ENABLED || isLegacyManagedOrder(order)) && order?.uiState?.baseerSharedDraftHydratedOnly) {
         order.uiState.baseerSharedDraftHydratedOnly = false;
         touchExperimentalDraftGraph(order);
     }
@@ -445,7 +457,7 @@ patch(IndexedDB.prototype, {
 // this locally paid state. Do not overwrite it while recovering native POS.
 patch(PosData.prototype, {
     async loadServerOrders(domain) {
-        if (!SHARED_DRAFT_FLOW_ENABLED || !this.deviceSync?.pos) return super.loadServerOrders(...arguments);
+        if (!this.deviceSync?.pos || !(SHARED_DRAFT_FLOW_ENABLED || this.models['pos.order'].getAll().some(isLegacyManagedOrder))) return super.loadServerOrders(...arguments);
         const raw = await this.execute({ type: 'call', model: 'pos.order', method: 'read_pos_orders', args: [domain], queue: false });
         const expanded = await this.missingRecursive(raw);
         const prepareNativeOrders = (orders) => {
@@ -498,6 +510,9 @@ patch(PosData.prototype, {
         return [...localOrders, ...prepareNativeOrders(connected['pos.order'] || [])];
     },
     async loadInitialData() {
+        const stored = this.indexedDB?.readAll ? await this.indexedDB.readAll(['pos.order', 'pos.order.line']) : {};
+        if (!(stored['pos.order'] || []).some(isLegacyManagedOrder) &&
+            !(stored['pos.order.line'] || []).some((line) => line.baseer_global_discount_line)) return super.loadInitialData(...arguments);
         if (!this.network.offline) {
             try { await rpc('/pos/ping'); }
             catch (error) {
@@ -566,10 +581,12 @@ patch(PosData.prototype, {
     async getLocalDataFromIndexedDB(data = false) {
         this._baseerRestoringLocalData = true;
         try {
-            if (SHARED_DRAFT_FLOW_ENABLED && this.indexedDB?.readAll && !data) data = await this.indexedDB.readAll(Object.keys(this.opts.databaseTable));
-            const result = await super.getLocalDataFromIndexedDB(SHARED_DRAFT_FLOW_ENABLED ? reconnectAcknowledgedDraftRows(data) : data);
+            let local = data;
+            if (!local && this.indexedDB?.readAll && this.opts?.databaseTable) local = await this.indexedDB.readAll(Object.keys(this.opts.databaseTable));
+            const legacy = SHARED_DRAFT_FLOW_ENABLED || (local?.['pos.order'] || []).some(isLegacyManagedOrder);
+            const result = await super.getLocalDataFromIndexedDB(legacy ? reconnectAcknowledgedDraftRows(local) : data);
             for (const order of result?.["pos.order"] || []) {
-                if (SHARED_DRAFT_FLOW_ENABLED && ['draft', 'paid'].includes(order.state) && order.uiState?.baseerOfflineDiscount) {
+                if ((SHARED_DRAFT_FLOW_ENABLED || isLegacyManagedOrder(order)) && ['draft', 'paid'].includes(order.state) && order.uiState?.baseerOfflineDiscount) {
                     const preview = new Set(order.uiState.baseerOfflineDiscount.preview_line_uuids || []);
                     const error = _t('A product line could not be restored. Keep this order and ask a manager to review it.');
                     const source = (order.lines || []).filter((line) => !preview.has(line.uuid) && !line.baseer_global_discount_line);
@@ -589,8 +606,8 @@ patch(PosData.prototype, {
                         delete order.uiState.baseerSharedDraftHydrationError;
                     }
                 }
-                if (SHARED_DRAFT_FLOW_ENABLED && order.state === 'draft' && (Number.isSafeInteger(order.id) || Number.isSafeInteger(order.uiState?.baseerSharedDraftServerOrderId)) && isManagedSharedDraft(order)) restoredSharedDrafts.add(order);
-                if (SHARED_DRAFT_FLOW_ENABLED && order.uiState?.baseerSharedDraftCancelAcknowledged && !order.uiState.baseerSharedDraftCancelAcknowledged.needs_review) {
+                if ((SHARED_DRAFT_FLOW_ENABLED || isLegacyManagedOrder(order)) && order.state === 'draft' && (Number.isSafeInteger(order.id) || Number.isSafeInteger(order.uiState?.baseerSharedDraftServerOrderId)) && isManagedSharedDraft(order)) restoredSharedDrafts.add(order);
+                if ((SHARED_DRAFT_FLOW_ENABLED || isLegacyManagedOrder(order)) && order.uiState?.baseerSharedDraftCancelAcknowledged && !order.uiState.baseerSharedDraftCancelAcknowledged.needs_review) {
                     this.indexedDB?._baseerOfflineProtection?.delete(order.uuid);
                     this.localDeleteCascade(order);
                     continue;
@@ -610,8 +627,8 @@ patch(PosData.prototype, {
         } finally { this._baseerRestoringLocalData = false; }
     },
     async missingRecursive(recordMap, idsMap = {}, acc = {}) {
-        if (SHARED_DRAFT_FLOW_ENABLED && this._baseerRestoringLocalData && Object.keys(idsMap).length === 0) verifyStoredPaidDiscountGraph(recordMap);
-        if (this._baseerRestoringLocalData && this.network.offline) {
+        if ((SHARED_DRAFT_FLOW_ENABLED || (recordMap['pos.order'] || []).some(isLegacyManagedOrder)) && this._baseerRestoringLocalData && Object.keys(idsMap).length === 0) verifyStoredPaidDiscountGraph(recordMap);
+        if (this._baseerRestoringLocalData && this.network.offline && (recordMap['pos.order'] || []).some(isLegacyManagedOrder)) {
             const pending = (recordMap["pos.order"] || []).filter((order) => {
                 if (order.state !== "paid" || order.baseer_global_discount_locked || !order.JSONuiState) return false;
                 try { return Boolean(JSON.parse(order.JSONuiState).baseerOfflineDiscount); }
@@ -637,17 +654,21 @@ patch(PosData.prototype, {
                 return merged;
             }
         }
-        const restoringTopLevel = SHARED_DRAFT_FLOW_ENABLED && this._baseerRestoringLocalData && Object.keys(idsMap).length === 0;
+        const restoringTopLevel = (SHARED_DRAFT_FLOW_ENABLED || (recordMap['pos.order'] || []).some(isLegacyManagedOrder)) && this._baseerRestoringLocalData && Object.keys(idsMap).length === 0;
         let result = await super.missingRecursive(...arguments);
         if (restoringTopLevel) result = preferLocalDraftRows(result, recordMap);
         return result;
     },
     async resetIndexedDB() {
+        const rows = this.indexedDB?.readAll ? await this.indexedDB.readAll(['pos.order', 'pos.order.line']) : {};
+        if (!(rows['pos.order'] || []).some(isLegacyManagedOrder) &&
+            !(rows['pos.order.line'] || []).some((line) => line.baseer_global_discount_line)) return super.resetIndexedDB(...arguments);
         // Other tabs may still be saving orders even when this tab sees none.
         // Automated refreshes must never delete the shared database.
         throw new Error(_t('The local point-of-sale data cannot be verified. Ask a manager before clearing it.'));
     },
     async checkAndDeleteMissingOrders(results) {
+        if (!results?.["pos.order"]?.some(isLegacyManagedOrder)) return super.checkAndDeleteMissingOrders(...arguments);
         if (this.network?.offline) return;
         if (!results?.["pos.order"]) return super.checkAndDeleteMissingOrders(...arguments);
         const safe = { ...results, "pos.order": results["pos.order"].filter((order) => !isPendingOfflineDiscount(order)) };
@@ -663,7 +684,7 @@ patch(PosData.prototype, {
 
 patch(DevicesSynchronisation.prototype, {
     async processDynamicRecords(records) {
-        if (SHARED_DRAFT_FLOW_ENABLED && this.pos?.baseerRefreshCleanSharedDraftExperiment) {
+        if ((SHARED_DRAFT_FLOW_ENABLED || this.models['pos.order'].getAll().some(isLegacyManagedOrder)) && this.pos?.baseerRefreshCleanSharedDraftExperiment) {
             const affected = new Set((records['pos.order'] || []).map((record) => record.id));
             for (const line of records['pos.order.line'] || []) affected.add(relationId(line.order_id));
             for (const payment of records['pos.payment'] || []) affected.add(relationId(payment.pos_order_id));
@@ -699,7 +720,7 @@ patch(DevicesSynchronisation.prototype, {
         return super.processDynamicRecords(safe);
     },
     processDeletedRecords(records) {
-        if (SHARED_DRAFT_FLOW_ENABLED && this.pos?.baseerAcceptRemoteSharedDeletionExperiment) {
+        if ((SHARED_DRAFT_FLOW_ENABLED || this.models['pos.order'].getAll().some(isLegacyManagedOrder)) && this.pos?.baseerAcceptRemoteSharedDeletionExperiment) {
             const deletedOrders = new Set(records['pos.order'] || []);
             const deletedLines = new Set(records['pos.order.line'] || []);
             const deletedPayments = new Set(records['pos.payment'] || []);
@@ -757,7 +778,10 @@ export class BaseerGlobalDiscountDialog extends Component {
 }
 
 patch(PosStore.prototype, {
+    baseerIsDiscountFrozen(order) { return isDiscountFrozen(order); },
+    baseerIsLegacyManagedOrder(order) { return isLegacyManagedOrder(order); },
     async reloadData(fullReload = false) {
+        if (!this.models['pos.order'].getAll().some(isLegacyManagedOrder)) return super.reloadData(...arguments);
         // Let the native autosave finish; its reconciliation also runs on
         // other tabs. A reload never clears or rewrites their order stores.
         let saved = false;
@@ -882,7 +906,7 @@ patch(PosStore.prototype, {
     },
     async clickSaveOrder() {
         const order = this.getOrder();
-        if (!SHARED_DRAFT_FLOW_ENABLED || !isManagedSharedDraft(order)) return super.clickSaveOrder(...arguments);
+        if (!(SHARED_DRAFT_FLOW_ENABLED || isLegacyManagedOrder(order)) || !isManagedSharedDraft(order)) return super.clickSaveOrder(...arguments);
         try {
             const acknowledged = await this.syncAllOrders({ orders: [order], throw: true });
             if (!acknowledged?.includes(order) || order.uiState?.baseerSharedDraftPending || order.uiState?.baseerSharedDraftNeedsSync) {
@@ -904,7 +928,7 @@ patch(PosStore.prototype, {
         }
     },
     async baseerSettleSharedDraftBeforePaymentExperiment(order) {
-        if (!SHARED_DRAFT_FLOW_ENABLED || order?.state !== 'draft' || !order.uiState?.baseerSharedDraftPending || this.data.network.offline) return true;
+        if (!(SHARED_DRAFT_FLOW_ENABLED || isLegacyManagedOrder(order)) || order?.state !== 'draft' || !order.uiState?.baseerSharedDraftPending || this.data.network.offline) return true;
         if (sharedRefreshOrders.has(order) || order.uiState.baseerSharedDraftContaminated || order.uiState.baseerSharedDraftRemoteDeleted || order.uiState.baseerSharedDraftHydrationError) return false;
         const warning = _t('The shared order changed on another device. Keep your local changes for review.');
         if (order.uiState.baseerSharedDraftRefreshError && order.uiState.baseerSharedDraftRefreshError !== warning) return false;
@@ -1084,7 +1108,7 @@ patch(PosStore.prototype, {
     },
     async beforeDeleteOrder(order) {
         const pending = order?.uiState?.baseerSharedDraftCancelPending;
-        if (SHARED_DRAFT_FLOW_ENABLED && order?.state === 'draft' && isManagedSharedDraft(order)) {
+        if ((SHARED_DRAFT_FLOW_ENABLED || isLegacyManagedOrder(order)) && order?.state === 'draft' && isManagedSharedDraft(order)) {
             if (await this.baseerTryRemoteRemoval?.(order)) return false;
             if (this.baseerStuckDraft?.(order)) {
                 if (this.getCashier()?._role === 'manager') await this.baseerDiscardLocalCopy(order);
@@ -1092,7 +1116,7 @@ patch(PosStore.prototype, {
                 return false;
             }
         }
-        if (SHARED_DRAFT_FLOW_ENABLED && !pending && order?.state === 'draft' && isManagedSharedDraft(order) &&
+        if ((SHARED_DRAFT_FLOW_ENABLED || isLegacyManagedOrder(order)) && !pending && order?.state === 'draft' && isManagedSharedDraft(order) &&
             !order.uiState?.baseerSharedDraftRecoverySync) {
             const tracker = attachDraftGenerationExperiment(this.models);
             const state = order.uiState;
@@ -1123,7 +1147,7 @@ patch(PosStore.prototype, {
                 }
             }
         }
-        if (SHARED_DRAFT_FLOW_ENABLED && pending) {
+        if ((SHARED_DRAFT_FLOW_ENABLED || isLegacyManagedOrder(order)) && pending) {
             const tracker = attachDraftGenerationExperiment(this.models);
             if (cancelRequiresSyncReview(order, pending, tracker) || !cancelGraphUnchanged(order, pending, tracker)) {
                 try {
@@ -1135,7 +1159,7 @@ patch(PosStore.prototype, {
                 }
             }
         }
-        if (SHARED_DRAFT_FLOW_ENABLED && order?.uiState?.baseerSharedDraftRecoverySync &&
+        if ((SHARED_DRAFT_FLOW_ENABLED || isLegacyManagedOrder(order)) && order?.uiState?.baseerSharedDraftRecoverySync &&
             (order.uiState.baseerSharedDraftNeedsSync || order.uiState.baseerSharedDraftPending)) {
             try {
                 await this.baseerFinishCancellationRecovery(order);
@@ -1148,7 +1172,7 @@ patch(PosStore.prototype, {
         // A committed kitchen cancellation may have lost its reply. Its
         // ordinary preview rejects cancelled server orders, so retry only
         // the already-persisted command and original reason before preview.
-        if (SHARED_DRAFT_FLOW_ENABLED && order?.uiState?.baseerSharedDraftCancelPending &&
+        if ((SHARED_DRAFT_FLOW_ENABLED || isLegacyManagedOrder(order)) && order?.uiState?.baseerSharedDraftCancelPending &&
             order.uiState.baseerSharedDraftKitchenCancelIntent) {
             try {
                 const tracker = attachDraftGenerationExperiment(this.models);
@@ -1170,7 +1194,7 @@ patch(PosStore.prototype, {
             }
         }
         const allowed = await super.beforeDeleteOrder(...arguments);
-        if (!allowed || !SHARED_DRAFT_FLOW_ENABLED || !this.config.baseer_direct_print_enabled ||
+        if (!allowed || !(SHARED_DRAFT_FLOW_ENABLED || isLegacyManagedOrder(order)) || !this.config.baseer_direct_print_enabled ||
             !isManagedSharedDraft(order) || (order.isSynced && Number.isSafeInteger(order.id))) return allowed;
         try {
             const serverId = order.uiState?.baseerSharedDraftServerOrderId;
@@ -1453,7 +1477,7 @@ patch(PosStore.prototype, {
         }
     },
     async baseerVerifySharedInvoiceExperiment(order) {
-        if (!SHARED_DRAFT_FLOW_ENABLED || !order?.uiState?.baseerSharedDraftInvoicePending) return false;
+        if (!(SHARED_DRAFT_FLOW_ENABLED || isLegacyManagedOrder(order)) || !order?.uiState?.baseerSharedDraftInvoicePending) return false;
         if (paidReconciliationOrders.has(order)) return false;
         const moveId = relationId(order.account_move) || relationId(order.raw?.account_move);
         if (!Number.isSafeInteger(moveId) || moveId <= 0) return false;
@@ -1491,7 +1515,7 @@ patch(PosStore.prototype, {
         }
     },
     async baseerPrepareSharedDraftPrintExperiment(order) {
-        if (!SHARED_DRAFT_FLOW_ENABLED || !isManagedSharedDraft(order)) return null;
+        if (!(SHARED_DRAFT_FLOW_ENABLED || isLegacyManagedOrder(order)) || !isManagedSharedDraft(order)) return null;
         if (order.state !== 'draft' || order.uiState?.baseerSharedDraftHydrationError ||
             order.uiState?.baseerSharedDraftCancelPending || order.uiState?.baseerSharedDraftCancelAcknowledged) return false;
         try {
@@ -1516,14 +1540,14 @@ patch(PosStore.prototype, {
     },
     async printReceipt(options = {}) {
         const order = options.order || this.getOrder();
-        if (SHARED_DRAFT_FLOW_ENABLED && (order?.uiState?.baseerSharedDraftPaidAckPending || order?.uiState?.baseerSharedDraftInvoicePending)) {
+        if ((SHARED_DRAFT_FLOW_ENABLED || isLegacyManagedOrder(order)) && (order?.uiState?.baseerSharedDraftPaidAckPending || order?.uiState?.baseerSharedDraftInvoicePending)) {
             this.notification.add(_t('The paid order is awaiting server confirmation before its final receipt can be printed.'), { type: 'warning' });
             return { successful: false };
         }
         return super.printReceipt(...arguments);
     },
     async deleteOrders(orders, serverIds = [], ignoreChange = false) {
-        if (!SHARED_DRAFT_FLOW_ENABLED) return super.deleteOrders(...arguments);
+        if (!SHARED_DRAFT_FLOW_ENABLED && !(orders || []).some(isLegacyManagedOrder) && !serverIds.some((id) => isLegacyManagedOrder(this.models['pos.order'].get(id)))) return super.deleteOrders(...arguments);
         const managed = (orders || []).filter(isManagedSharedDraft);
         const guardedIds = serverIds.filter((id) => isManagedSharedDraft(this.models['pos.order'].get(id)));
         if (guardedIds.length) throw new Error('A shared draft requires protected cancellation');
@@ -1548,14 +1572,14 @@ patch(PosStore.prototype, {
         return true;
     },
     removeOrder(order, removeFromServer = true) {
-        if (SHARED_DRAFT_FLOW_ENABLED && isManagedSharedDraft(order) && !order.uiState?.baseerSharedDraftCancelAcknowledged) {
+        if ((SHARED_DRAFT_FLOW_ENABLED || isLegacyManagedOrder(order)) && isManagedSharedDraft(order) && !order.uiState?.baseerSharedDraftCancelAcknowledged) {
             throw new Error('A shared draft requires protected cancellation');
         }
         return super.removeOrder(...arguments);
     },
     async afterProcessServerData() {
         const hydratedOnly = new Set();
-        if (SHARED_DRAFT_FLOW_ENABLED) {
+        if (SHARED_DRAFT_FLOW_ENABLED || this.models['pos.order'].getAll().some(isLegacyManagedOrder)) {
             attachDraftGenerationExperiment(this.models);
             for (const order of this.models['pos.order'].getAll()) {
                 if (this.baseerStuckDraft?.(order) && await this.baseerTryRemoteRemoval?.(order)) continue;
@@ -1631,6 +1655,7 @@ patch(PosStore.prototype, {
         }
     },
     async baseerSubmitDiscount(order, request) {
+        if (!request.refund && !isLegacyManagedOrder(order) && !pendingDiscount(this, order)) return false;
         if (this._baseerDiscountRunning) return false;
         this._baseerDiscountRunning = true;
         this.env.services.ui.block();
@@ -1646,14 +1671,14 @@ patch(PosStore.prototype, {
                 noteSharedDraftEdit(order);
                 if (request.kind === "remove") {
                     for (const line of [...order.lines]) if (prior?.preview_line_uuids?.includes(line.uuid)) line.delete();
-                    if (SHARED_DRAFT_FLOW_ENABLED && prior) {
+                    if ((SHARED_DRAFT_FLOW_ENABLED || isLegacyManagedOrder(order)) && prior) {
                         for (const [key, ids] of [['baseerSharedDraftLineDeletions', prior.removed_line_ids], ['baseerSharedDraftPaymentDeletions', prior.removed_payment_ids]]) {
                             const events = order.uiState[key] ||= [];
                             for (const id of ids || []) if (!events.some((event) => event.id === id)) events.push({ id, token: crypto.randomUUID() });
                         }
                     }
                     delete order.uiState.baseerOfflineDiscount;
-                    if (SHARED_DRAFT_FLOW_ENABLED && isManagedSharedDraft(order)) order.uiState.baseerSharedDraftRemoveRequested = true;
+                    if ((SHARED_DRAFT_FLOW_ENABLED || isLegacyManagedOrder(order)) && isManagedSharedDraft(order)) order.uiState.baseerSharedDraftRemoveRequested = true;
                     touchExperimentalDraftGraph(order);
                     order.triggerRecomputeAllPrices();
                     order._markDirty();
@@ -1671,7 +1696,7 @@ patch(PosStore.prototype, {
                         removed_line_ids: [...new Set([...(prior?.removed_line_ids || []), ...pendingDeletedIds(order, "lines")])],
                         removed_payment_ids: [...new Set([...(prior?.removed_payment_ids || []), ...pendingDeletedIds(order, "payment_ids")])],
                     };
-                    if (SHARED_DRAFT_FLOW_ENABLED) delete order.uiState.baseerSharedDraftRemoveRequested;
+                    if (SHARED_DRAFT_FLOW_ENABLED || isLegacyManagedOrder(order)) delete order.uiState.baseerSharedDraftRemoveRequested;
                     touchExperimentalDraftGraph(order);
                     refreshOfflineDiscount(this, order);
                     if (order.uiState.baseerOfflineDiscount.error) throw new Error(order.uiState.baseerOfflineDiscount.error);
@@ -1705,7 +1730,7 @@ patch(PosStore.prototype, {
         return super.applyDiscount(...arguments);
     },
     async syncAllOrders(options = {}) {
-        if (SHARED_DRAFT_FLOW_ENABLED) {
+        if (SHARED_DRAFT_FLOW_ENABLED || (options.orders || [...this.getPendingOrder().orderToCreate, ...this.getPendingOrder().orderToUpdate]).some(isManagedSharedDraft)) {
             const pending = this.getPendingOrder();
             const orders = options.orders || [...pending.orderToCreate, ...pending.orderToUpdate];
             const managed = orders.filter(isManagedSharedDraft);
@@ -1848,7 +1873,7 @@ patch(ControlButtons.prototype, {
     },
     async clickDiscount() {
         const order = this.pos.getOrder();
-        if (this.pos.config.baseer_global_discount_enabled || isDiscountFrozen(order)) return this.clickBaseerGlobalDiscount();
+        if (isLegacyManagedOrder(order) || pendingDiscount(this.pos, order) || isDiscountFrozen(order)) return this.clickBaseerGlobalDiscount();
         return super.clickDiscount(...arguments);
     },
     async clickFiscalPosition() {
@@ -1882,7 +1907,7 @@ patch(PosOrder.prototype, {
     serializeForIndexedDB() {
         const data = super.serializeForIndexedDB(...arguments);
         const tracker = this.models?._baseerDraftGenerationTracker;
-        if (SHARED_DRAFT_FLOW_ENABLED && tracker && isManagedSharedDraft(this)) {
+        if ((SHARED_DRAFT_FLOW_ENABLED || isLegacyManagedOrder(this)) && tracker && isManagedSharedDraft(this)) {
             const state = data.JSONuiState ? JSON.parse(data.JSONuiState) : {};
             state.baseerSharedDraftGeneration = tracker.get();
             data.JSONuiState = JSON.stringify(state);
@@ -1895,7 +1920,7 @@ patch(PosOrder.prototype, {
         const intent = this.uiState?.baseerOfflineDiscount;
         if (intent?.error) throw new Error(intent.error);
         const data = super.serializeForORM(...arguments);
-        if (intent || SHARED_DRAFT_FLOW_ENABLED && this.models?._baseerDraftGenerationTracker && isManagedSharedDraft(this)) {
+        if (intent || (SHARED_DRAFT_FLOW_ENABLED || isLegacyManagedOrder(this)) && this.models?._baseerDraftGenerationTracker && isManagedSharedDraft(this)) {
             if (this.state === "paid" && intent?.retry_payload) return JSON.parse(intent.retry_payload);
             const sent = { lines: [], payment_ids: [] };
             for (const [field, saved, mappedEvents] of [["lines", intent?.removed_line_ids, this.uiState.baseerSharedDraftLineDeletions], ["payment_ids", intent?.removed_payment_ids, this.uiState.baseerSharedDraftPaymentDeletions]]) {
@@ -1919,13 +1944,13 @@ patch(PosOrder.prototype, {
         return data;
     },
     get canBeRemovedFromIndexedDB() {
-        if (SHARED_DRAFT_FLOW_ENABLED && this.uiState?.baseerSharedDraftInvoicePending) return false;
-        if (SHARED_DRAFT_FLOW_ENABLED && this.uiState?.baseerSharedDraftPaidAckPending) return false;
+        if ((SHARED_DRAFT_FLOW_ENABLED || isLegacyManagedOrder(this)) && this.uiState?.baseerSharedDraftInvoicePending) return false;
+        if ((SHARED_DRAFT_FLOW_ENABLED || isLegacyManagedOrder(this)) && this.uiState?.baseerSharedDraftPaidAckPending) return false;
         if (this.state === 'paid' && isPendingOfflineDiscount(this)) return false;
         return super.canBeRemovedFromIndexedDB;
     },
     get isUnsyncedPaid() {
-        if (SHARED_DRAFT_FLOW_ENABLED && this.uiState?.baseerSharedDraftPaidAckPending) return true;
+        if ((SHARED_DRAFT_FLOW_ENABLED || isLegacyManagedOrder(this)) && this.uiState?.baseerSharedDraftPaidAckPending) return true;
         if (this.state === 'paid' && isPendingOfflineDiscount(this)) return true;
         return super.isUnsyncedPaid;
     },
@@ -2098,20 +2123,20 @@ patch(OrderSummary.prototype, {
 patch(PaymentScreen.prototype, {
     async validateOrder() {
         const order = this.currentOrder;
-        if (SHARED_DRAFT_FLOW_ENABLED && sharedRefreshOrders.has(order)) {
+        if (isLegacyManagedOrder(order) && sharedRefreshOrders.has(order)) {
             this.dialog.add(AlertDialog, { title: _t('Invoice discount'), body: _t('The shared order could not be refreshed. Keep its local copy for review.') });
             return;
         }
-        if (SHARED_DRAFT_FLOW_ENABLED && isManagedSharedDraft(order)) {
+        if ((SHARED_DRAFT_FLOW_ENABLED || isLegacyManagedOrder(order)) && isManagedSharedDraft(order)) {
             try { if (!await this.pos.baseerSettleSharedDraftBeforePaymentExperiment(order)) throw new Error('The pending draft was not acknowledged'); }
             catch { this.dialog.add(AlertDialog, { title: _t('Invoice discount'), body: order.uiState?.baseerSharedDraftRefreshError || pendingMessage() }); return; }
             try { if (!await this.pos.baseerCheckRestoredSharedDraftExperiment(order)) throw new Error('Remote deletion requires review'); }
             catch (error) { this.dialog.add(AlertDialog, { title: _t('Invoice discount'), body: order.uiState?.baseerSharedDraftRefreshError || _t('The shared order could not be verified. Keep this copy and ask a manager to review it.') }); return; }
         }
-        if (SHARED_DRAFT_FLOW_ENABLED && sharedRefreshOrders.has(order)) {
+        if (isLegacyManagedOrder(order) && sharedRefreshOrders.has(order)) {
             this.dialog.add(AlertDialog, { title: _t('Invoice discount'), body: _t('The shared order could not be refreshed. Keep its local copy for review.') }); return;
         }
-        if (SHARED_DRAFT_FLOW_ENABLED && (order.uiState?.baseerSharedDraftCancelPending || order.uiState?.baseerSharedDraftCancelAcknowledged)) {
+        if ((SHARED_DRAFT_FLOW_ENABLED || isLegacyManagedOrder(order)) && (order.uiState?.baseerSharedDraftCancelPending || order.uiState?.baseerSharedDraftCancelAcknowledged)) {
             this.dialog.add(AlertDialog, { title: _t('Invoice discount'), body: _t('This draft cancellation needs manager review before payment.') });
             return;
         }
@@ -2137,28 +2162,28 @@ patch(PaymentScreen.prototype, {
 
 patch(OrderPaymentValidation.prototype, {
     shouldDownloadInvoice() {
-        if (SHARED_DRAFT_FLOW_ENABLED && (this.order.uiState?.baseerSharedDraftPaidAckPending || this.order.uiState?.baseerSharedDraftInvoicePending)) return false;
+        if ((SHARED_DRAFT_FLOW_ENABLED || isLegacyManagedOrder(this.order)) && (this.order.uiState?.baseerSharedDraftPaidAckPending || this.order.uiState?.baseerSharedDraftInvoicePending)) return false;
         return super.shouldDownloadInvoice(...arguments);
     },
     get canPrintReceipt() {
-        if (SHARED_DRAFT_FLOW_ENABLED && (this.order.uiState?.baseerSharedDraftPaidAckPending || this.order.uiState?.baseerSharedDraftInvoicePending)) return false;
+        if ((SHARED_DRAFT_FLOW_ENABLED || isLegacyManagedOrder(this.order)) && (this.order.uiState?.baseerSharedDraftPaidAckPending || this.order.uiState?.baseerSharedDraftInvoicePending)) return false;
         return super.canPrintReceipt;
     },
     async validateOrder() {
-        if (SHARED_DRAFT_FLOW_ENABLED && sharedRefreshOrders.has(this.order)) {
+        if (isLegacyManagedOrder(this.order) && sharedRefreshOrders.has(this.order)) {
             this.pos.dialog.add(AlertDialog, { title: _t('Invoice discount'), body: _t('The shared order could not be refreshed. Keep its local copy for review.') });
             return false;
         }
-        if (SHARED_DRAFT_FLOW_ENABLED && isManagedSharedDraft(this.order)) {
+        if ((SHARED_DRAFT_FLOW_ENABLED || isLegacyManagedOrder(this.order)) && isManagedSharedDraft(this.order)) {
             try { if (!await this.pos.baseerSettleSharedDraftBeforePaymentExperiment(this.order)) throw new Error('The pending draft was not acknowledged'); }
             catch { this.pos.dialog.add(AlertDialog, { title: _t('Invoice discount'), body: this.order.uiState?.baseerSharedDraftRefreshError || pendingMessage() }); return false; }
             try { if (!await this.pos.baseerCheckRestoredSharedDraftExperiment(this.order)) throw new Error('Remote deletion requires review'); }
             catch (error) { this.pos.dialog.add(AlertDialog, { title: _t('Invoice discount'), body: this.order.uiState?.baseerSharedDraftRefreshError || _t('The shared order could not be verified. Keep this copy and ask a manager to review it.') }); return false; }
         }
-        if (SHARED_DRAFT_FLOW_ENABLED && sharedRefreshOrders.has(this.order)) {
+        if (isLegacyManagedOrder(this.order) && sharedRefreshOrders.has(this.order)) {
             this.pos.dialog.add(AlertDialog, { title: _t('Invoice discount'), body: _t('The shared order could not be refreshed. Keep its local copy for review.') }); return false;
         }
-        if (SHARED_DRAFT_FLOW_ENABLED && (this.order.uiState?.baseerSharedDraftCancelPending || this.order.uiState?.baseerSharedDraftCancelAcknowledged)) {
+        if ((SHARED_DRAFT_FLOW_ENABLED || isLegacyManagedOrder(this.order)) && (this.order.uiState?.baseerSharedDraftCancelPending || this.order.uiState?.baseerSharedDraftCancelAcknowledged)) {
             this.pos.dialog.add(AlertDialog, { title: _t('Invoice discount'), body: _t('This draft cancellation needs manager review before payment.') });
             return false;
         }

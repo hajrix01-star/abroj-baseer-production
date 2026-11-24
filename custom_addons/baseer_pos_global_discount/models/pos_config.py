@@ -147,6 +147,29 @@ class PosConfig(models.Model):
         self.write(values)
         return True
 
+    def action_baseer_setup_native_discount(self):
+        """Explicitly opt this POS into a company-owned native discount product."""
+        self.ensure_one()
+        self.check_access('write')
+        if not self.env.user.has_group('point_of_sale.group_pos_manager') or self.company_id not in self.env.companies:
+            raise AccessError(_('Only a POS manager in this company can configure invoice discounts.'))
+        product = self.env['product.product'].with_company(self.company_id).search([
+            ('company_id', '=', self.company_id.id), ('default_code', '=', 'BASEER-NATIVE-DISC'),
+            ('id', 'not in', [5253, self.baseer_global_discount_product_id.id or 0]),
+        ], limit=1)
+        if not product:
+            product = self.env['product.product'].with_company(self.company_id).create({
+                'name': 'خصم الفاتورة', 'default_code': 'BASEER-NATIVE-DISC', 'type': 'service', 'sale_ok': True,
+                'purchase_ok': False, 'available_in_pos': True, 'list_price': 0,
+                'company_id': self.company_id.id, 'taxes_id': [(5, 0, 0)],
+            })
+        product.write({'name': 'خصم الفاتورة', 'type': 'service', 'sale_ok': True,
+                       'purchase_ok': False, 'available_in_pos': True, 'taxes_id': [(5, 0, 0)]})
+        if self.baseer_global_discount_account_id:
+            product.property_account_income_id = self.baseer_global_discount_account_id
+        self.write({'discount_product_id': product.id})
+        return True
+
     def _get_special_products(self):
         return super()._get_special_products() | self.search([]).mapped('baseer_global_discount_product_id')
 

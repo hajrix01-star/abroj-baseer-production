@@ -2,7 +2,7 @@
 <templates xml:space="preserve">
     <t t-name="baseer_pos_global_discount.NativeDiscountButton" t-inherit="point_of_sale.ControlButtons" t-inherit-mode="extension">
         <xpath expr="//button[hasclass('js_discount')]" position="attributes">
-            <attribute name="t-if">pos.cashier._role !== 'minimal' and (pos.config.baseer_global_discount_enabled or currentOrder?.baseer_global_discount_locked or (pos.config.module_pos_discount and pos.config.discount_product_id))</attribute>
+            <attribute name="t-if">pos.cashier._role !== 'minimal' and (pos.baseerIsLegacyManagedOrder(currentOrder) or pos.baseerIsDiscountFrozen(currentOrder) or (pos.config.module_pos_discount and pos.config.discount_product_id))</attribute>
         </xpath>
     </t>
     <t t-name="baseer_pos_global_discount.PendingInvoiceNotice" t-inherit="point_of_sale.ReceiptScreen" t-inherit-mode="extension">

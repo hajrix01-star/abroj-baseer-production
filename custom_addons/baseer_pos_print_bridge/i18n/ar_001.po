@@ -2703,7 +2703,7 @@ msgid "Invalid receipt reprint request."
 msgstr "طلب إعادة طباعة الإيصال غير صالح."
 
 #. module: baseer_pos_print_bridge
-#: model.fields.selection, name:baseer_pos_print_bridge.selection__baseer_print_job__ticket_type__draft_bill
+#: model:ir.model.fields.selection,name:baseer_pos_print_bridge.selection__baseer_print_job__ticket_type__draft_bill
 msgid "Unpaid order bill"
 msgstr "حساب طلب غير مدفوع"
 

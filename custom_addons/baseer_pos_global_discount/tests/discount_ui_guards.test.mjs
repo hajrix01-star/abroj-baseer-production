@@ -26,8 +26,8 @@ const useState = (value) => value;
 const useAutofocus = () => {};
 class Component {} class Dialog {} class AlertDialog {} class ConfirmationDialog {};
 const ask = async () => globalThis.baseerTestConfirm;
-class ControlButtons { clickFiscalPosition() { this.nativeCalled = true; } }
-class PosStore { applyDiscount() { this.nativeCalled = true; } async beforeDeleteOrder() { this.nativeBeforeDelete = true; return true; } async deleteOrders() { this.nativeDeleted = true; return true; } async afterProcessServerData() { return this.nativeStartup(); } async syncAllOrders(options) { return this.nativeSync(options); } async preSyncAllOrders(orders) { return orders; } async postSyncAllOrders() {} }
+class ControlButtons { clickDiscount() { this.nativeDiscount = true; } clickFiscalPosition() { this.nativeCalled = true; } }
+class PosStore { async reloadData() { this.nativeReload = true; } applyDiscount() { this.nativeCalled = true; } async beforeDeleteOrder() { this.nativeBeforeDelete = true; return true; } async deleteOrders() { this.nativeDeleted = true; return true; } async afterProcessServerData() { return this.nativeStartup(); } async syncAllOrders(options) { return this.nativeSync(options); } async preSyncAllOrders(orders) { return orders; } async postSyncAllOrders() {} }
 class PosOrder { update(values) { this.nativeValues = values; } addPaymentline() { this.nativeCalled = true; } removePaymentline() { this.nativeCalled = true; } removeOrderline() { this.nativeCalled = true; } serializeForIndexedDB() { return { JSONuiState: JSON.stringify(this.uiState) }; } serializeForORM() {
     const commands = (items) => (items || []).filter((item) => item._dirty || typeof item.id !== 'number')
         .map((item) => [typeof item.id === 'number' ? 1 : 0, typeof item.id === 'number' ? item.id : 0, { uuid: item.uuid, value: item.value }]);
@@ -1157,7 +1157,7 @@ test('invoice verification clears the pending marker only for a matching posted 
     assert.equal(order.uiState.baseerSharedDraftInvoicePending, false);
 });
 test('offline startup uses only matching open cached session and config', async () => {
-    const data = { network: { offline: true }, getCachedServerDataFromIndexedDB: async () => ({
+    const data = { indexedDB: { readAll: async () => ({ 'pos.order': [{ uiState: { baseerOfflineDiscount: {} } }] }) }, network: { offline: true }, getCachedServerDataFromIndexedDB: async () => ({
         'pos.config': [{ id: 2 }], 'pos.session': [{ id: 27, config_id: 2, state: 'opened' }],
     }) };
     const extension = extensions.get('PosData');
@@ -1201,7 +1201,7 @@ test('server lost after ping marks offline; native RPC errors are not hidden', a
     const extension = extensions.get('PosData');
     const cached = { 'pos.config': [{ id: 2 }], 'pos.session': [{ id: 27, config_id: 2, state: 'opened' }] };
     const originalOrm = { async call() { throw new ConnectionLostError(); } };
-    const data = { network: { offline: false }, orm: originalOrm, async loadNative() {
+    const data = { indexedDB: { readAll: async () => ({ 'pos.order': [{ uiState: { baseerOfflineDiscount: {} } }] }) }, network: { offline: false }, orm: originalOrm, async loadNative() {
         try { await this.orm.call('pos.session', 'load_data', []); } catch (error) { this.nativeError = error; }
         return cached;
     } };
@@ -1371,7 +1371,7 @@ test("background RPC failure cannot trigger native server-draft reload over a lo
     const pos = { getPendingOrder: () => ({ orderToCreate: [], orderToUpdate: [paid] }), notification: { add: () => calls.push("manager") },
         nativeSync: async (options) => { calls.push(options.throw ? "throw" : "reload-risk"); throw new RPCError(); } };
     assert.deepEqual(await extensions.get("PosStore").syncAllOrders.call(pos, {}), []);
-    assert.deepEqual(calls, ["throw", "manager"]);
+    assert.deepEqual(calls, ["manager"]);
     assert.equal(paid.state, "paid");
 });
 
@@ -1408,7 +1408,7 @@ test("device updates and deletions cannot overwrite locally paid order or childr
 
 test("native cache reset cannot delete the database shared with other registers", async () => {
     const extension = extensions.get("PosData");
-    const data = {};
+    const data = { indexedDB: { readAll: async () => ({ "pos.order": [{ uiState: { baseerOfflineDiscount: {} } }] }) } };
     await assert.rejects(() => extension.resetIndexedDB.call(data), /local point-of-sale data cannot be verified/);
     assert.equal(data.resetCalled, undefined);
 });
@@ -1431,7 +1431,7 @@ test('POS startup loads the replacement session while preserving an old session 
             network: { offline: false },
             opts: { databaseTable: { 'pos.order': {} } },
             indexedDB: {
-                readAll: async () => previous,
+                readAll: async (tables) => tables.includes('pos.order') ? { 'pos.order': [{ uiState: { baseerOfflineDiscount: {} } }] } : previous,
                 db: {
                     objectStoreNames: { contains: () => true },
                     transaction(models, mode) {
@@ -1471,7 +1471,7 @@ test('POS startup loads the replacement session while preserving an old session 
 
 test('manual refresh waits for the live payment before navigating to a non-destructive reload', async () => {
     const order = {
-        id: 42, uuid: 'sale', state: 'paid', isUnsyncedPaid: true,
+        id: 42, uuid: 'sale', state: 'paid', isUnsyncedPaid: true, uiState: { baseerSharedDraftPaidAckPending: true },
         serializeForIndexedDB: () => ({ uuid: 'sale', JSONuiState: '{"selected_paymentline_uuid":"payment","baseerSharedDraftPaidAckPending":true}' }),
     };
     const payment = { uuid: 'payment', amount: 3, pos_order_id: order.id };
@@ -1488,7 +1488,7 @@ test('manual refresh waits for the live payment before navigating to a non-destr
             },
             indexedDB: { readAll: async () => ({ 'pos.payment': [] }) },
         },
-        models: { 'pos.order': { getAll: () => [] } },
+        models: { 'pos.order': { getAll: () => [order] } },
         device: { saveUnusedNumber() {} },
         notification: { add(message) { this.message = message; } },
         syncingOrders: new Set(),
@@ -1539,14 +1539,13 @@ test("startup offline restores the full local paid graph and rejects missing lin
     assert.deepEqual(await extension.missingRecursive.call(data, records), { native: true });
 });
 
-test('offline startup restores draft graph even without a paid discount', async () => {
+test('ordinary offline draft restoration follows native behavior', async () => {
     const records = { 'pos.order': [{ id: 42, state: 'draft', lines: ['line'], payment_ids: [] }],
         'pos.order.line': [{ id: 'line', product_id: 10 }], 'pos.payment': [] };
     const data = { _baseerRestoringLocalData: true, network: { offline: true }, models: { 'product.product': { getAll: () => [{ id: 10 }] } } };
     const extension = extensions.get('PosData');
-    assert.deepEqual(await extension.missingRecursive.call(data, records), records);
-    await assert.rejects(() => extension.missingRecursive.call(data, { ...records, 'pos.order.line': [] }), /incomplete/);
-    assert.deepEqual(await extension.missingRecursive.call(data, { 'pos.order': [] }), { 'pos.order': [] });
+    assert.deepEqual(await extension.missingRecursive.call(data, records), { native: true });
+    assert.deepEqual(await extension.missingRecursive.call(data, { ...records, 'pos.order.line': [] }), { native: true });
 });
 
 test("restored paid numeric-id order is made dirty before native pending synchronization", async () => {
@@ -1582,7 +1581,7 @@ test('restored discounted draft queues before startup sync and sends changed lin
             assert.deepEqual(this.pending, [42]);
             payload = extensions.get('PosOrder').serializeForORM.call(draft, { keepCommands: true });
         } };
-    await extensions.get('PosStore').afterProcessServerData.call(pos);
+    await experimentalExtensions.get('PosStore').afterProcessServerData.call(pos);
     assert.ok(payload.lines.some((command) => command[0] === 1 && command[1] === 11));
     assert.ok(payload.lines.some((command) => command[0] === 2 && command[1] === 12));
     assert.deepEqual(intent.removed_line_ids, [12]);
@@ -1799,4 +1798,25 @@ test('local cascade can remove protected line and payment records', async () => 
     await pos.baseerRemoveLocalCopy(order);
     assert.equal(line.nativeDeleted, true);
     assert.equal(payment.nativeDeleted, true);
+});
+
+
+test('new order discount button follows native path even with legacy configuration enabled', async () => {
+    const order = { uuid: 'new', uiState: {}, lines: [], config_id: { id: 2 } };
+    const button = { pos: { config: { baseer_global_discount_enabled: true }, getOrder: () => order,
+        baseerDiscountKey: () => 'new-order-key' } };
+    await extensions.get('ControlButtons').clickDiscount.call(button);
+    assert.equal(button.nativeDiscount, true);
+});
+
+test('native server cancellation is forwarded while legacy draft deletion stays guarded', () => {
+    const ordinary = { id: 43, uuid: 'ordinary', state: 'draft', uiState: {}, lines: [], payment_ids: [] };
+    const legacy = { id: 42, uuid: 'legacy', state: 'draft', uiState: { baseerOfflineDiscount: {} }, lines: [], payment_ids: [] };
+    const sync = { models: { 'pos.order': { getAll: () => [ordinary, legacy] } } };
+    extensions.get('DevicesSynchronisation').processDeletedRecords.call(sync, { 'pos.order': [42, 43] });
+    assert.deepEqual(sync.forwarded['pos.order'], [43]);
+    sync.models['pos.order'].getAll = () => [ordinary];
+    const native = { 'pos.order': [43] };
+    extensions.get('DevicesSynchronisation').processDeletedRecords.call(sync, native);
+    assert.equal(sync.forwarded, native);
 });

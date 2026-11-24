@@ -75,14 +75,26 @@ function lineChangedSincePreparation(order, line, oldLine) {
 
 export function buildBaseerPreparationAction(order, actionType = "send", explicitLines = null) {
     let lines = explicitLines;
+    if (lines) {
+        const discountProductId = order.config_id?.discount_product_id?.id;
+        const previewUuids = new Set(order.uiState?.baseerOfflineDiscount?.preview_line_uuids || []);
+        const excluded = new Set(order.getOrderlines().filter((line) =>
+            line.baseer_global_discount_line || line.baseer_discount_kind || previewUuids.has(line.uuid)
+            || (discountProductId && line.product_id?.id === discountProductId)
+        ).map((line) => line.uuid));
+        lines = lines.filter((line) => !excluded.has(line.line_uuid));
+    }
     if (!lines) {
         // The browser reports quantity intent only. Odoo remains the sole
         // authority that decides whether a line has a kitchen route.
         const allLines = order.getOrderlines();
         const currentUuids = new Set(allLines.map((line) => line.uuid));
         const previewUuids = new Set(order.uiState?.baseerOfflineDiscount?.preview_line_uuids || []);
+        const discountProductId = order.config_id?.discount_product_id?.id;
         const currentLines = allLines.filter((line) => !line.refunded_orderline_id
-            && !line.baseer_global_discount_line && !previewUuids.has(line.uuid));
+            && !line.baseer_global_discount_line && !line.baseer_discount_kind
+            && !(discountProductId && line.product_id?.id === discountProductId)
+            && !previewUuids.has(line.uuid));
         lines = currentLines
             .filter((line) => lineChangedSincePreparation(order, line, preparationLine(order, line)))
             .map((line) => ({

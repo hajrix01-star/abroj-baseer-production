@@ -363,3 +363,151 @@ class TestNativeDiscountAcceptance(TestSaEdiCommon):
         self.assertAlmostEqual(sum(refunds.mapped('amount_total')), -sale.amount_total, places=2)
         self.assertAlmostEqual(sum(refunds.mapped('amount_tax')), -sale.amount_tax, places=2)
         self.assertAlmostEqual(sum(refunds.mapped('baseer_global_discount_gross')), .97, places=2)
+
+    def _sync_native_draft(self, order):
+        """Send the same line fields as the POS, including manual tax data."""
+        payload = {
+            'uuid': order.uuid, 'session_id': order.session_id.id,
+            'company_id': order.company_id.id, 'user_id': self.env.uid,
+            'partner_id': self.partner_sa_simplified.id, 'state': 'draft',
+            'is_refund': order.is_refund, 'to_invoice': True,
+            'l10n_sa_reason': order.l10n_sa_reason,
+            'date_order': fields.Datetime.now(),
+            'amount_total': order.amount_total, 'amount_tax': order.amount_tax,
+            'amount_paid': 0, 'amount_return': 0, 'payment_ids': [],
+            'lines': [Command.update(line.id, {
+                'uuid': line.uuid, 'product_id': line.product_id.id, 'qty': line.qty,
+                'price_unit': line.price_unit, 'discount': line.discount,
+                'tax_ids': line.tax_ids.ids, 'price_subtotal': line.price_subtotal,
+                'price_subtotal_incl': line.price_subtotal_incl,
+                'extra_tax_data': line.extra_tax_data,
+                'refunded_orderline_id': line.refunded_orderline_id.id or False,
+                'baseer_discount_kind': line.baseer_discount_kind,
+                'baseer_discount_input': line.baseer_discount_input,
+                'baseer_discount_approved_by_user_id': line.baseer_discount_approved_by_user_id.id or False,
+                'baseer_discount_share_excl': line.baseer_discount_share_excl,
+                'baseer_discount_share_incl': line.baseer_discount_share_incl,
+            }) for line in order.lines],
+        }
+        self.env['pos.order'].with_context(generate_pdf=False).sync_from_ui([payload])
+        return order
+
+    def _native_fixed_mixed_sale(self):
+        self.config.action_baseer_setup_native_discount()
+        self.config.write({'baseer_fixed_discount_enabled': True, 'baseer_fixed_discount_allowed': 'managers'})
+        zero = self.tax.copy({'name': 'Native acceptance zero', 'amount': 0,
+                              'l10n_sa_exemption_reason_code': 'VATEX-SA-32'})
+        sale = self._order(price=100, qty=3)
+        sale.write({'partner_id': self.partner_sa_simplified.id, 'to_invoice': True})
+        self.env['pos.order.line'].create({
+            'order_id': sale.id, 'uuid': str(uuid4()), 'product_id': self.product.id,
+            'qty': 1, 'price_unit': 100, 'price_subtotal': 100,
+            'price_subtotal_incl': 100, 'tax_ids': [Command.set(zero.ids)],
+        })
+        sale._gd_recompute()
+        tax_model = self.env['account.tax']
+        bases = sale._gd_tax_base_lines(sale.lines)
+        for base in tax_model._prepare_global_discount_lines(bases, sale.company_id, 'fixed', 20):
+            detail = base['tax_details']
+            self.env['pos.order.line'].create({
+                'order_id': sale.id, 'uuid': str(uuid4()), 'product_id': self.config.discount_product_id.id,
+                'qty': base['quantity'], 'price_unit': base['price_unit'],
+                'tax_ids': [Command.set(base['tax_ids'].ids)],
+                'price_subtotal': detail['total_excluded_currency'],
+                'price_subtotal_incl': detail['total_included_currency'],
+                'extra_tax_data': tax_model._export_base_line_extra_tax_data(base),
+                'baseer_discount_kind': 'fixed', 'baseer_discount_input': 20,
+                'baseer_discount_approved_by_user_id': self.env.user.id,
+            })
+        sale._gd_recompute()
+        self._sync_native_draft(sale)
+        return sale
+
+    def _native_share_refund(self, sale, quantities):
+        """Mirror refundShare and baseerBuildRefundDiscount for each tax group."""
+        refund = self.env['pos.order'].create({
+            'session_id': sale.session_id.id, 'company_id': sale.company_id.id,
+            'partner_id': sale.partner_id.id, 'to_invoice': True, 'is_refund': True,
+            'l10n_sa_reason': 'BR-KSA-17-reason-4',
+            'amount_total': 0, 'amount_tax': 0, 'amount_paid': 0, 'amount_return': 0,
+        })
+        currency = sale.currency_id
+        tax_model = self.env['account.tax']
+        for source, quantity in quantities:
+            previous = source.refund_orderline_ids.filtered(lambda line: line.order_id.state != 'cancel')
+            final = sum(abs(line.qty) for line in previous) + quantity >= abs(source.qty) - 1e-8
+            shares = {}
+            for field in ('baseer_discount_share_excl', 'baseer_discount_share_incl'):
+                shares[field] = currency.round(
+                    -source[field] - sum(previous.mapped(field)) if final
+                    else -source[field] * quantity / abs(source.qty))
+            self.env['pos.order.line'].create({
+                'order_id': refund.id, 'uuid': str(uuid4()), 'product_id': source.product_id.id,
+                'qty': -quantity, 'price_unit': source.price_unit, 'discount': source.discount,
+                'price_subtotal': 0, 'price_subtotal_incl': 0,
+                'tax_ids': [Command.set(source.tax_ids.ids)], 'refunded_orderline_id': source.id,
+                **shares,
+            })
+            excl, incl = shares['baseer_discount_share_excl'], shares['baseer_discount_share_incl']
+            discount = self.env['pos.order.line'].create({
+                'order_id': refund.id, 'uuid': str(uuid4()), 'product_id': self.config.discount_product_id.id,
+                'qty': -1, 'price_unit': -excl, 'price_subtotal': excl,
+                'price_subtotal_incl': incl, 'tax_ids': [Command.set(source.tax_ids.ids)],
+            })
+            base = refund._gd_tax_base_lines(discount)[0]
+            details = base['tax_details']
+            delta = -excl - details['total_excluded_currency'] - details['delta_total_excluded_currency']
+            details['delta_total_excluded_currency'] += delta
+            details['delta_total_excluded'] += delta
+            if details['taxes_data']:
+                tax_detail = details['taxes_data'][0]
+                adjustment = -incl + excl - tax_detail['tax_amount_currency']
+                tax_detail['tax_amount_currency'] += adjustment
+                tax_detail['tax_amount'] += adjustment
+            tax_model._fix_base_lines_tax_details_on_manual_tax_amounts([base], refund.company_id)
+            discount.extra_tax_data = tax_model._export_base_line_extra_tax_data(base)
+        refund._gd_recompute()
+        self._sync_native_draft(refund)
+        return refund
+
+    def _allowance_total(self, root):
+        return sum(Decimal(value) for value in root.xpath(
+            "/*/*[local-name()='AllowanceCharge']/*[local-name()='Amount']/text()"))
+
+    def test_new_native_fixed_mixed_invoice(self):
+        sale = self._native_fixed_mixed_sale()
+        move = self._pay_actual(sale)
+        root = self._xml(sale, move)
+        discounts = sale.lines.filtered(lambda line: line.product_id == self.config.discount_product_id)
+        self.assertEqual(len(discounts), 2)
+        self.assertEqual(len(root.xpath("/*/*[local-name()='AllowanceCharge']")), 2)
+        self.assertEqual(set(root.xpath("/*/*[local-name()='AllowanceCharge']/*[local-name()='TaxCategory']/*[local-name()='Percent']/text()")), {'15.0', '0.0'})
+        self.assertEqual(self._allowance_total(root), Decimal(str(round(-sum(discounts.mapped('price_subtotal')), 2))).quantize(Decimal('.01')))
+        self.assertAlmostEqual(move.amount_total, sale.amount_total, places=2)
+
+    def test_new_native_fixed_three_partial_credits(self):
+        sale = self._native_fixed_mixed_sale()
+        self._xml(sale, self._pay_actual(sale))
+        source = sale.lines.filtered(lambda line: line.qty == 3).ensure_one()
+        allowances = Decimal('0')
+        for _ in range(3):
+            refund = self._native_share_refund(sale, [(source, 1)])
+            credit = self._pay_actual(refund)
+            root = self._xml(refund, credit)
+            self.assertEqual(root.xpath("/*/*[local-name()='ID']/text()"), [credit.name])
+            self.assertEqual(root.xpath("/*/*[local-name()='BillingReference']/*[local-name()='InvoiceDocumentReference']/*[local-name()='ID']/text()"), [sale.account_move.name])
+            self.assertAlmostEqual(credit.amount_total, -refund.amount_total, places=2)
+            self.assertAlmostEqual(credit.amount_tax, -refund.amount_tax, places=2)
+            allowances += self._allowance_total(root)
+        self.assertEqual(allowances, Decimal(str(-source.baseer_discount_share_excl)).quantize(Decimal('.01')))
+
+    def test_new_native_fixed_full_credit(self):
+        sale = self._native_fixed_mixed_sale()
+        invoice = self._pay_actual(sale)
+        self._xml(sale, invoice)
+        sources = sale.lines.filtered(lambda line: line.product_id != self.config.discount_product_id)
+        refund = self._native_share_refund(sale, [(line, line.qty) for line in sources])
+        credit = self._pay_actual(refund)
+        self._xml(refund, credit)
+        self.assertAlmostEqual(credit.amount_total, invoice.amount_total, places=2)
+        self.assertAlmostEqual(credit.amount_total, -refund.amount_total, places=2)

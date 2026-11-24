@@ -23,3 +23,19 @@ for (const kind of ['fixed', 'percent']) {
         assert.deepEqual(Array.from(result.lines, row => row.line_uuid), ['food']);
     });
 }
+
+test('native discount product and marked lines stay out of kitchen actions', () => {
+    const line = (uuid, product, extra = {}) => ({ uuid, product_id: { id: product }, getQuantity: () => 1, ...extra });
+    const order = {
+        config_id: { discount_product_id: { id: 5253 } },
+        getOrderlines: () => [line('food', 1), line('native', 5253), line('marked', 2, { baseer_discount_kind: 'fixed' })],
+        uiState: {}, last_order_preparation_change: { lines: {} },
+    };
+    const result = context.buildBaseerPreparationAction(order, 'send_before_payment');
+    assert.deepEqual(Array.from(result.lines, row => row.line_uuid), ['food']);
+    const explicit = context.buildBaseerPreparationAction(order, 'line_change', [
+        { line_uuid: 'food' }, { line_uuid: 'native' }, { line_uuid: 'marked' },
+        { line_uuid: 'removed' },
+    ]);
+    assert.deepEqual(Array.from(explicit.lines, row => row.line_uuid), ['food', 'removed']);
+});

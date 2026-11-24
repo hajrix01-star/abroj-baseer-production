@@ -5,6 +5,10 @@ from odoo.exceptions import AccessError
 class ResConfigSettings(models.TransientModel):
     _inherit = 'res.config.settings'
 
+    def action_baseer_setup_native_discount(self):
+        self.ensure_one()
+        return self.pos_config_id.action_baseer_setup_native_discount()
+
     pos_baseer_global_discount_max_percent = fields.Float(
         related='pos_config_id.baseer_global_discount_max_percent', readonly=False,
     )

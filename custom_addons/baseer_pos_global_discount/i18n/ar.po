@@ -281,6 +281,7 @@ msgstr "شركة نقطة البيع لا تطابق شركة الطلب."
 #. module: baseer_pos_global_discount
 #. odoo-python
 #: code:addons/baseer_pos_global_discount/models/pos_order.py:0
+#: code:addons/baseer_pos_global_discount/models/native_discount.py:0
 msgid "You are not a cashier for this point of sale."
 msgstr "لست ضمن مستخدمي نقطة البيع هذه."
 
@@ -343,7 +344,7 @@ msgstr "تحتوي السلة بالفعل توزيعات خاصة للأسعا�
 #. odoo-javascript
 #: code:addons/baseer_pos_global_discount/static/src/app/global_discount.js:0
 #: model:ir.model.fields,field_description:baseer_pos_global_discount.field_pos_config__baseer_global_discount_enabled
-#: model_terms:ir.ui.view,arch_db:baseer_pos_global_discount.pos_config_global_discount
+#: model_terms:ir.ui.view,arch_db:baseer_pos_global_discount.res_config_settings_global_discount
 msgid "Invoice discount"
 msgstr "خصم الفاتورة"
 
@@ -380,6 +381,7 @@ msgstr "يجب أن تكون قيمة الأصناف القابلة للخصم �
 #. module: baseer_pos_global_discount
 #. odoo-python
 #: code:addons/baseer_pos_global_discount/models/pos_order.py:0
+#: code:addons/baseer_pos_global_discount/models/native_discount.py:0
 msgid "The discount exceeds the permitted percentage or invoice total."
 msgstr "الخصم يتجاوز النسبة المسموحة أو إجمالي الفاتورة."
 
@@ -596,12 +598,15 @@ msgstr "لا تزال المسودة قيد الحفظ. انتظر ثم أعد �
 #. module: baseer_pos_global_discount
 #. odoo-javascript
 #: code:addons/baseer_pos_global_discount/static/src/app/global_discount.xml:0
+#: model:ir.model.fields.selection,name:baseer_pos_global_discount.selection__pos_order_line__baseer_discount_kind__percent
 msgid "Percentage"
 msgstr "نسبة مئوية"
 
 #. module: baseer_pos_global_discount
 #. odoo-javascript
 #: code:addons/baseer_pos_global_discount/static/src/app/global_discount.xml:0
+#: model:ir.model.fields.selection,name:baseer_pos_global_discount.selection__pos_order_line__baseer_discount_kind__fixed
+#: code:addons/baseer_pos_global_discount/static/src/app/native_fixed_discount.js:0
 msgid "Fixed amount"
 msgstr "مبلغ ثابت"
 
@@ -675,6 +680,7 @@ msgstr "يخفض المبلغ الثابت المطلوب من العميل شا
 #. module: baseer_pos_global_discount
 #. odoo-javascript
 #: code:addons/baseer_pos_global_discount/static/src/app/global_discount.xml:0
+#: code:addons/baseer_pos_global_discount/static/src/app/native_fixed_discount.js:0
 msgid "Discount type"
 msgstr "نوع الخصم"
 
@@ -1036,3 +1042,176 @@ msgstr "ملخص النسخة المحلية غير صالح."
 #: code:addons/baseer_pos_global_discount/models/pos_order.py:0
 msgid "Manager discarded local POS order copy: %s"
 msgstr "تجاهل المدير نسخة طلب نقطة البيع المحلية: %s"
+
+#. module: baseer_pos_global_discount
+#: model_terms:ir.ui.view,arch_db:baseer_pos_global_discount.res_config_settings_global_discount
+msgid "Set up company discount product"
+msgstr "إعداد منتج خصم خاص بالشركة"
+
+#. module: baseer_pos_global_discount
+#: model:ir.model.fields,field_description:baseer_pos_global_discount.field_pos_config__baseer_fixed_discount_enabled
+#: model:ir.model.fields,field_description:baseer_pos_global_discount.field_res_config_settings__pos_baseer_fixed_discount_enabled
+msgid "Fixed discount enabled"
+msgstr "تفعيل الخصم الثابت"
+
+#. module: baseer_pos_global_discount
+#: model:ir.model.fields,field_description:baseer_pos_global_discount.field_pos_config__baseer_fixed_discount_max_amount
+#: model:ir.model.fields,field_description:baseer_pos_global_discount.field_res_config_settings__pos_baseer_fixed_discount_max_amount
+msgid "Maximum fixed discount"
+msgstr "الحد الأقصى للخصم الثابت"
+
+#. module: baseer_pos_global_discount
+#: model:ir.model.fields,field_description:baseer_pos_global_discount.field_pos_config__baseer_fixed_discount_allowed
+#: model:ir.model.fields,field_description:baseer_pos_global_discount.field_res_config_settings__pos_baseer_fixed_discount_allowed
+msgid "Fixed discount access"
+msgstr "صلاحية الخصم الثابت"
+
+#. module: baseer_pos_global_discount
+#: model:ir.model.fields,field_description:baseer_pos_global_discount.field_pos_order_line__baseer_discount_kind
+msgid "Discount kind"
+msgstr "نوع الخصم"
+
+#. module: baseer_pos_global_discount
+#: model:ir.model.fields,field_description:baseer_pos_global_discount.field_pos_order_line__baseer_discount_input
+msgid "Discount input"
+msgstr "قيمة الخصم المدخلة"
+
+#. module: baseer_pos_global_discount
+#: model:ir.model.fields,field_description:baseer_pos_global_discount.field_pos_order_line__baseer_discount_approved_by_user_id
+msgid "Discount approving user"
+msgstr "المستخدم المعتمد للخصم"
+
+#. module: baseer_pos_global_discount
+#: model:ir.model.fields,field_description:baseer_pos_global_discount.field_pos_order_line__baseer_discount_approved_by_employee
+msgid "Discount approving employee ID"
+msgstr "معرّف الموظف المعتمد للخصم"
+
+#. module: baseer_pos_global_discount
+#: model:ir.model.fields,field_description:baseer_pos_global_discount.field_pos_order_line__baseer_discount_approved_by_employee_name
+msgid "Discount approving employee"
+msgstr "الموظف المعتمد للخصم"
+
+#. module: baseer_pos_global_discount
+#: model:ir.model.fields.selection,name:baseer_pos_global_discount.selection__pos_config__baseer_fixed_discount_allowed__all
+msgid "All cashiers allowed to discount"
+msgstr "كل الكاشيرية المسموح لهم بالخصم"
+
+#. module: baseer_pos_global_discount
+#: model:ir.model.fields.selection,name:baseer_pos_global_discount.selection__pos_config__baseer_fixed_discount_allowed__managers
+msgid "Managers only"
+msgstr "المدراء فقط"
+
+#. module: baseer_pos_global_discount
+#. odoo-javascript
+#: code:addons/baseer_pos_global_discount/static/src/app/native_fixed_discount.js:0
+msgid "نوع الخصم"
+msgstr "نوع الخصم"
+
+#. module: baseer_pos_global_discount
+#. odoo-javascript
+#: code:addons/baseer_pos_global_discount/static/src/app/native_fixed_discount.js:0
+msgid "نسبة %"
+msgstr "نسبة %"
+
+#. module: baseer_pos_global_discount
+#. odoo-javascript
+#: code:addons/baseer_pos_global_discount/static/src/app/native_fixed_discount.js:0
+msgid "مبلغ ثابت"
+msgstr "مبلغ ثابت"
+
+#. module: baseer_pos_global_discount
+#. odoo-javascript
+#: code:addons/baseer_pos_global_discount/static/src/app/native_fixed_discount.js:0
+msgid "مبلغ الخصم"
+msgstr "مبلغ الخصم"
+
+#. module: baseer_pos_global_discount
+#. odoo-javascript
+#: code:addons/baseer_pos_global_discount/static/src/app/native_fixed_discount.js:0
+msgid "لا يمكن إتمام دفع طلب عليه خصم ثابت بدون اتصال. أعد الاتصال ثم حاول مرة أخرى."
+msgstr "لا يمكن إتمام دفع طلب عليه خصم ثابت بدون اتصال. أعد الاتصال ثم حاول مرة أخرى."
+
+#. module: baseer_pos_global_discount
+#. odoo-python
+#: code:addons/baseer_pos_global_discount/models/native_discount.py:0
+msgid "The fixed discount limit cannot be negative."
+msgstr "لا يمكن أن يكون حد الخصم الثابت سالباً."
+
+#. module: baseer_pos_global_discount
+#: model:ir.model.fields,help:baseer_pos_global_discount.field_pos_config__baseer_fixed_discount_max_amount
+msgid "Zero means no additional cap."
+msgstr "الصفر يعني عدم وجود حد إضافي."
+
+#. module: baseer_pos_global_discount
+#. odoo-javascript
+#: code:addons/baseer_pos_global_discount/static/src/app/native_fixed_discount.js:0
+msgid "Percentage %"
+msgstr "نسبة %"
+
+#. module: baseer_pos_global_discount
+#. odoo-javascript
+#: code:addons/baseer_pos_global_discount/static/src/app/native_fixed_discount.js:0
+msgid "Discount amount"
+msgstr "مبلغ الخصم"
+
+#. module: baseer_pos_global_discount
+#. odoo-javascript
+#: code:addons/baseer_pos_global_discount/static/src/app/native_fixed_discount.js:0
+msgid "Connection required"
+msgstr "الاتصال مطلوب"
+
+#. module: baseer_pos_global_discount
+#. odoo-javascript
+#: code:addons/baseer_pos_global_discount/static/src/app/native_fixed_discount.js:0
+msgid "A payment for an order with a fixed discount cannot be completed offline. Reconnect and try again."
+msgstr "لا يمكن إتمام دفع طلب عليه خصم ثابت بدون اتصال. أعد الاتصال ثم حاول مرة أخرى."
+
+#. module: baseer_pos_global_discount
+#. odoo-python
+#: code:addons/baseer_pos_global_discount/models/native_discount.py:0
+msgid "Fixed invoice discount is not enabled for this POS."
+msgstr "خصم الفاتورة الثابت غير مفعّل في نقطة البيع هذه."
+
+#. module: baseer_pos_global_discount
+#. odoo-python
+#: code:addons/baseer_pos_global_discount/models/native_discount.py:0
+msgid "You are not allowed to approve a fixed invoice discount."
+msgstr "لا يُسمح لك باعتماد خصم ثابت للفاتورة."
+
+#. module: baseer_pos_global_discount
+#. odoo-python
+#: code:addons/baseer_pos_global_discount/models/native_discount.py:0
+msgid "The fixed discount exceeds the allowed maximum."
+msgstr "الخصم الثابت يتجاوز الحد المسموح."
+
+#. module: baseer_pos_global_discount
+#. odoo-python
+#: code:addons/baseer_pos_global_discount/models/native_discount.py:0
+msgid "The fixed discount exceeds the order total."
+msgstr "الخصم الثابت يتجاوز إجمالي الطلب."
+
+#. module: baseer_pos_global_discount
+#. odoo-python
+#: code:addons/baseer_pos_global_discount/models/native_discount.py:0
+msgid "The discount lines do not match the approved discount."
+msgstr "بنود الخصم لا تطابق الخصم المعتمد."
+
+#. module: baseer_pos_global_discount
+#: model:ir.model.fields,field_description:baseer_pos_global_discount.field_pos_order__baseer_discount_logged_signature
+msgid "Baseer Discount Logged Signature"
+msgstr "بصمة تسجيل الخصم"
+
+#. module: baseer_pos_global_discount
+#: model:ir.model.fields,field_description:baseer_pos_global_discount.field_pos_order_line__baseer_discount_share_incl
+msgid "Invoice discount share (incl. tax)"
+msgstr "حصة خصم الفاتورة (شاملة الضريبة)"
+
+#. module: baseer_pos_global_discount
+#: model:ir.model.fields,field_description:baseer_pos_global_discount.field_pos_order_line__baseer_discount_share_excl
+msgid "Invoice discount share (excl. tax)"
+msgstr "حصة خصم الفاتورة (غير شاملة الضريبة)"
+
+#. module: baseer_pos_global_discount
+#: model_terms:ir.ui.view,arch_db:baseer_pos_global_discount.res_config_settings_global_discount
+msgid "Legacy invoice discount settings apply to historical orders. New orders use the native discount settings above."
+msgstr "إعدادات خصم الفاتورة القديمة تنطبق على الطلبات السابقة. تستخدم الطلبات الجديدة إعدادات الخصم الأصلية أعلاه."

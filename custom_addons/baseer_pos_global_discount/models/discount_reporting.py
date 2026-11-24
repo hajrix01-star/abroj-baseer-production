@@ -30,10 +30,10 @@ class ReportPosOrder(models.Model):
                 rf'^(?P<indent>[ \t]+)(?P<expression>[^\n]+?) AS {alias}(?P<suffix>,[^\n]*)$',
                 lambda match, field=alias: (
                     f"{match['indent']}({match['expression']} + "
-                    f"COALESCE(baseer_discount_allocations.{field}, 0)) AS {field}{match['suffix']}"
+                    f"COALESCE(baseer_discount_allocations.{field}, 0) + COALESCE(baseer_native_allocations.{field}, 0)) AS {field}{match['suffix']}"
                 ),
             )
-        return query + ', -COALESCE(baseer_discount_allocations.price_subtotal_excl, 0) AS baseer_invoice_discount'
+        return query + ', -(COALESCE(baseer_discount_allocations.price_subtotal_excl, 0) + COALESCE(baseer_native_allocations.price_subtotal_excl, 0)) AS baseer_invoice_discount'
 
     def _from(self):
         query = super()._from()
@@ -59,6 +59,12 @@ class ReportPosOrder(models.Model):
                         )
                     )
                 )
+            ) AND NOT (
+                NOT COALESCE(s.baseer_global_discount_locked, FALSE)
+                AND l.product_id = (SELECT discount_product_id FROM pos_config WHERE id = s.config_id)
+                AND EXISTS (SELECT 1 FROM pos_order_line native_source
+                    WHERE native_source.order_id = s.id
+                    AND (native_source.baseer_discount_share_excl != 0 OR native_source.baseer_discount_share_incl != 0))
             ))""",
         )
         return query + """
@@ -76,6 +82,12 @@ class ReportPosOrder(models.Model):
                     AND a.baseer_global_discount_source_id = l.id
                     AND a.order_id = l.order_id
             ) baseer_discount_allocations ON TRUE
+            LEFT JOIN LATERAL (
+                SELECT ROUND(l.baseer_discount_share_excl / COALESCE(NULLIF(s.currency_rate, 0), 1.0), cu.decimal_places) AS price_subtotal_excl,
+                       ROUND(l.baseer_discount_share_incl / COALESCE(NULLIF(s.currency_rate, 0), 1.0), cu.decimal_places) AS price_total,
+                       l.baseer_discount_share_excl / COALESCE(NULLIF(s.currency_rate, 0), 1.0) AS margin
+                WHERE NOT COALESCE(s.baseer_global_discount_locked, FALSE)
+            ) baseer_native_allocations ON TRUE
         """
 
 
@@ -99,7 +111,7 @@ class PosOrderLine(models.Model):
         return super().write(values)
 
     @api.depends(
-        'price_subtotal', 'qty', 'price_unit', 'total_cost', 'product_id.type', 'order_id.is_refund',
+        'baseer_discount_share_excl', 'order_id.lines.baseer_discount_share_excl', 'order_id.lines.baseer_discount_share_incl', 'price_subtotal', 'qty', 'price_unit', 'total_cost', 'product_id.type', 'order_id.is_refund',
         'order_id.baseer_global_discount_locked', 'baseer_global_discount_line',
         'baseer_global_discount_allocation_ids.price_subtotal',
         'baseer_global_discount_allocation_ids.qty',
@@ -110,6 +122,15 @@ class PosOrderLine(models.Model):
     )
     def _compute_margin(self):
         super()._compute_margin()
+        for line in self.filtered(lambda item: not item.order_id.baseer_global_discount_locked
+                                  and item.product_id == item.order_id.config_id.discount_product_id
+                                  and any(item.order_id.lines.mapped('baseer_discount_share_incl'))):
+            line.margin = 0
+            line.margin_percent = 0
+        for line in self.filtered(lambda item: not item.order_id.baseer_global_discount_locked and item.baseer_discount_share_excl):
+            revenue = line.price_subtotal * (-1 if line.order_id.is_refund else 1) + line.baseer_discount_share_excl
+            line.margin = revenue - line.total_cost
+            line.margin_percent = line.margin / revenue if not float_is_zero(revenue, precision_rounding=line.currency_id.rounding) else 0
         for line in self.filtered(lambda item: item.order_id.baseer_global_discount_locked):
             if line.baseer_global_discount_line or line.product_id.type == 'combo':
                 line.margin = 0

@@ -1709,6 +1709,41 @@ test('remote cancellation and missing order remove an unpaid local graph', async
     }
 });
 
+test('missing never-synced managed draft is retained without calling removal', async () => {
+    const { pos, order, calls } = recoveryFixture({ exists: false, payment_count: 0, amount_paid: 0 });
+    order.id = 'local-id';
+    order.uiState = { baseerOfflineDiscount: {}, baseerSharedDraftServerOrderId: 0, baseerSharedDraftRevision: 0 };
+    let removalCalled = false;
+    pos.baseerRemoveLocalCopy = async () => { removalCalled = true; };
+    assert.equal(await pos.baseerTryRemoteRemoval(order), false);
+    assert.equal(removalCalled, false);
+    assert.ok(!calls.includes('removed'));
+});
+
+test('missing managed draft is removed for each kind of server evidence', async () => {
+    for (const evidence of [
+        { id: 42 },
+        { uiState: { baseerSharedDraftServerOrderId: 42 } },
+        { baseer_offline_draft_revision: 1 },
+        { uiState: { baseerSharedDraftRevision: 1 } },
+    ]) {
+        const { pos, order, calls } = recoveryFixture({ exists: false, payment_count: 0, amount_paid: 0 });
+        order.id = evidence.id ?? 'local-id';
+        order.baseer_offline_draft_revision = evidence.baseer_offline_draft_revision;
+        order.uiState = { baseerOfflineDiscount: {}, ...evidence.uiState };
+        assert.equal(await pos.baseerTryRemoteRemoval(order), true);
+        assert.ok(calls.includes('removed'));
+    }
+});
+
+test('server cancellation removes a managed draft even without local server evidence', async () => {
+    const { pos, order, calls } = recoveryFixture({ exists: true, state: 'cancel', payment_count: 0, amount_paid: 0 });
+    order.id = 'local-id';
+    order.uiState = { baseerOfflineDiscount: {} };
+    assert.equal(await pos.baseerTryRemoteRemoval(order), true);
+    assert.ok(calls.includes('removed'));
+});
+
 test('unknown status and existing paid draft retain the local copy', async () => {
     for (const status of [new Error('offline'), { exists: true, state: 'draft', payment_count: 1, amount_paid: 3 }]) {
         const { pos, order, calls } = recoveryFixture(status);

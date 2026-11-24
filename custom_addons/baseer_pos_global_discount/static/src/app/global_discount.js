@@ -151,6 +151,13 @@ function isManagedSharedDraft(order) {
          order.uiState?.baseerSharedDraftRevision || order.baseer_offline_draft_revision));
 }
 
+function reachedServer(order) {
+    return (Number.isSafeInteger(order.id) && order.id > 0) ||
+        (Number.isSafeInteger(order.uiState?.baseerSharedDraftServerOrderId) && order.uiState.baseerSharedDraftServerOrderId > 0) ||
+        order.baseer_offline_draft_revision > 0 ||
+        (Number.isSafeInteger(order.uiState?.baseerSharedDraftRevision) && order.uiState.baseerSharedDraftRevision > 0);
+}
+
 function isCleanHydratedSharedDraft(order) {
     const tracker = order?.models?._baseerDraftGenerationTracker;
     const acknowledgedClean = Number.isSafeInteger(order?.uiState?.baseerSharedDraftServerOrderId) && tracker &&
@@ -837,7 +844,8 @@ patch(PosStore.prototype, {
         sharedLocalRecoveryOrders.add(order);
         try {
         const status = await this.baseerRemoteStatus(order);
-        if (!status || (status.exists && status.state !== 'cancel') || status.payment_count !== 0 || status.amount_paid !== 0) return false;
+        if (!status || (status.exists && status.state !== 'cancel') || (!status.exists && !reachedServer(order)) ||
+            status.payment_count !== 0 || status.amount_paid !== 0) return false;
         if (order.payment_ids?.length) {
             order.uiState.baseerSharedDraftRemoteDeleted = true;
             return false;

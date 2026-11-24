@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="baseer_pos_print_bridge.TicketScreenLayout"
+       t-inherit="point_of_sale.TicketScreen" t-inherit-mode="extension">
+        <xpath expr="//td[hasclass('address-cell')]" position="attributes">
+            <attribute name="class" add="d-none d-xl-table-cell" separator=" "/>
+        </xpath>
+        <xpath expr="//td[t[@t-if='order.presetTime']]" position="attributes">
+            <attribute name="class" add="d-none d-xl-table-cell" separator=" "/>
+        </xpath>
+        <xpath expr="//td[t[@t-esc='getCashier(order)']]" position="attributes">
+            <attribute name="class" add="d-none d-xl-table-cell" separator=" "/>
+        </xpath>
+    </t>
+</templates>

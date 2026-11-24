@@ -27,16 +27,16 @@ patch(ControlButtons.prototype, {
             return super.clickDiscount(...arguments);
         }
         const choice = await makeAwaitable(this.dialog, SelectionPopup, {
-            title: _t("نوع الخصم"),
+            title: _t("Discount type"),
             list: [
-                { id: 1, label: _t("نسبة %"), item: "percent" },
-                { id: 2, label: _t("مبلغ ثابت"), item: "fixed" },
+                { id: 1, label: _t("Percentage %"), item: "percent" },
+                { id: 2, label: _t("Fixed amount"), item: "fixed" },
             ],
         });
         if (choice === "percent") return super.clickDiscount(...arguments);
         if (choice === "fixed") {
             this.dialog.add(NumberPopup, {
-                title: _t("مبلغ الخصم"),
+                title: _t("Discount amount"),
                 startingValue: fixedLine(order)?.baseer_discount_input || 0,
                 getPayload: (value) => this.pos.baseerApplyFixedDiscount(
                     Math.max(0, this.env.utils.parseValidFloat(value.toString()) || 0), order
@@ -125,7 +125,7 @@ patch(PosStore.prototype, {
 patch(PaymentScreen.prototype, {
     async validateOrder() {
         if (this.pos.data.network.offline && fixedLine(this.currentOrder)) {
-            this.dialog.add(AlertDialog, { title: _t("مبلغ الخصم"), body: _t("لا يمكن إتمام دفع طلب عليه خصم ثابت بدون اتصال. أعد الاتصال ثم حاول مرة أخرى.") });
+            this.dialog.add(AlertDialog, { title: _t("Connection required"), body: _t("A payment for an order with a fixed discount cannot be completed offline. Reconnect and try again.") });
             return;
         }
         return super.validateOrder(...arguments);

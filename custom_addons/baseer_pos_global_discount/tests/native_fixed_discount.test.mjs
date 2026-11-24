@@ -80,7 +80,7 @@ test('offline fixed payment is blocked', async () => {
     const h = harness(), { pos, order } = fixture(h); await pos.baseerApplyFixedDiscount(10, order);
     pos.data = { network: { offline: true } }; const screen = new h.PaymentScreen(); screen.pos = pos; screen.currentOrder = order;
     let notice; screen.dialog = { add: (_, props) => notice = props.body };
-    await screen.validateOrder(); assert.ok(notice.includes('بدون اتصال')); assert.equal(screen.validated, undefined);
+    await screen.validateOrder(); assert.ok(notice.includes('cannot be completed offline')); assert.equal(screen.validated, undefined);
     pos.data.network.offline = false; await screen.validateOrder(); assert.equal(screen.validated, true);
 });
 test('line and order accounting events schedule fixed reapplication', async () => {

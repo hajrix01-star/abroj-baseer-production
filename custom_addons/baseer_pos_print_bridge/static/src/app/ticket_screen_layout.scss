@@ -1,0 +1,50 @@
+.ticket-screen .pos-search-bar .filter {
+    position: relative;
+}
+
+.ticket-screen .pos-search-bar .filter .options {
+    left: auto;
+    right: auto;
+    inset-inline-end: 0;
+    text-align: start;
+    min-width: 10rem;
+    max-width: min(18rem, calc(100vw - 1.5rem));
+    max-height: min(20rem, calc(100vh - 1.5rem));
+    overflow: auto;
+    z-index: 25;
+}
+
+.ticket-screen .orders {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+@media (min-width: 768px) and (max-width: 1199.98px) {
+    .ticket-screen .rightpane {
+        min-width: 0;
+    }
+
+    .ticket-screen .leftpane {
+        max-width: 30%;
+    }
+
+    .ticket-screen .controls {
+        flex-wrap: wrap;
+    }
+
+    .ticket-screen .controls .pos-search-bar {
+        flex: 1 1 100%;
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .ticket-screen .controls .buttons {
+        flex: 1 1 100%;
+        min-width: 0;
+        flex-wrap: wrap;
+    }
+
+    .ticket-screen .orders td {
+        padding: 0.35rem;
+    }
+}

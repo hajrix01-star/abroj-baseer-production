@@ -1210,3 +1210,8 @@ msgstr "حصة خصم الفاتورة (شاملة الضريبة)"
 #: model:ir.model.fields,field_description:baseer_pos_global_discount.field_pos_order_line__baseer_discount_share_excl
 msgid "Invoice discount share (excl. tax)"
 msgstr "حصة خصم الفاتورة (غير شاملة الضريبة)"
+
+#. module: baseer_pos_global_discount
+#: model_terms:ir.ui.view,arch_db:baseer_pos_global_discount.res_config_settings_global_discount
+msgid "Legacy invoice discount settings apply to historical orders. New orders use the native discount settings above."
+msgstr "إعدادات خصم الفاتورة القديمة تنطبق على الطلبات السابقة. تستخدم الطلبات الجديدة إعدادات الخصم الأصلية أعلاه."

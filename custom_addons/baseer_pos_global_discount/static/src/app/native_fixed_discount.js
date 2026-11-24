@@ -22,7 +22,7 @@ patch(ControlButtons.prototype, {
         const config = this.pos.config;
         const manager = cashier?._role === "manager" ||
             await user.hasGroup("point_of_sale.group_pos_manager");
-        if (config.baseer_global_discount_enabled || this.pos.baseerIsDiscountFrozen(order) || !config.baseer_fixed_discount_enabled ||
+        if (this.pos.baseerIsLegacyManagedOrder(order) || this.pos.baseerIsDiscountFrozen(order) || !config.baseer_fixed_discount_enabled ||
             (config.baseer_fixed_discount_allowed !== "all" && !manager)) {
             return super.clickDiscount(...arguments);
         }

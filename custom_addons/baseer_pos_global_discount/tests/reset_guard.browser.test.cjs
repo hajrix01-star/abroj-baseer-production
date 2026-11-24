@@ -35,7 +35,12 @@ test('real IndexedDB reset guard preserves a locally paid order across reload', 
             const order = { uuid: 'paid-order', id: 42, state: 'paid', baseer_global_discount_locked: false,
                 JSONuiState: JSON.stringify({ baseerOfflineDiscount: { kind: 'fixed', value: '10' } }) };
             await put(order);
-            const data = { indexedDB: { db } };
+            const data = { indexedDB: { db, readAll: async () => {
+                const tx = db.transaction(['pos.order'], 'readonly');
+                const request = tx.objectStore('pos.order').getAll();
+                const orders = await new Promise((resolve, reject) => { request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error); });
+                return { 'pos.order': orders, 'pos.order.line': [] };
+            } } };
             let blocked = false;
             try { await window.resetExtension.resetIndexedDB.call(data); } catch { blocked = true; }
             const resetBeforeAcknowledgement = !!data.resetCalled;

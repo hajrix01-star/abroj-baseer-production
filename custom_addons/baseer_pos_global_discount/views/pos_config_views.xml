@@ -14,12 +14,6 @@
         <field name="model">res.config.settings</field>
         <field name="inherit_id" ref="pos_discount.res_config_settings_view_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//field[@name='pos_discount_product_id']/parent::div" position="attributes">
-                <attribute name="invisible">pos_baseer_global_discount_enabled</attribute>
-            </xpath>
-            <xpath expr="//field[@name='pos_discount_pc']/parent::div" position="attributes">
-                <attribute name="invisible">pos_baseer_global_discount_enabled</attribute>
-            </xpath>
             <xpath expr="//setting[@id='pos_global_discount']/div[hasclass('content-group')]" position="inside">
                 <field name="pos_baseer_global_discount_enabled" invisible="1"/>
                 <div groups="point_of_sale.group_pos_manager">
@@ -29,6 +23,7 @@
                     <div class="row mt16"><label for="pos_baseer_fixed_discount_enabled" class="col-lg-3 o_light_label"/><field name="pos_baseer_fixed_discount_enabled"/></div>
                     <div class="row" invisible="not pos_baseer_fixed_discount_enabled"><label for="pos_baseer_fixed_discount_max_amount" class="col-lg-3 o_light_label"/><field name="pos_baseer_fixed_discount_max_amount"/></div>
                     <div class="row" invisible="not pos_baseer_fixed_discount_enabled"><label for="pos_baseer_fixed_discount_allowed" class="col-lg-3 o_light_label"/><field name="pos_baseer_fixed_discount_allowed"/></div>
+                    <div class="text-muted mt16">Legacy invoice discount settings apply to historical orders. New orders use the native discount settings above.</div>
                     <div class="row" invisible="not pos_baseer_global_discount_enabled">
                         <label for="pos_baseer_global_discount_product_id" string="Discount Product" class="col-lg-3 o_light_label"/>
                         <field name="pos_baseer_global_discount_product_id" readonly="1" options="{'no_create': True, 'no_open': True}"/>
@@ -43,7 +38,7 @@
                     </div>
                     <div class="row">
                         <label for="pos_baseer_global_discount_max_amount" class="col-lg-3 o_light_label"/>
-                        <field name="pos_baseer_global_discount_max_amount"/>
+                        <field name="pos_baseer_global_discount_max_amount" readonly="1"/>
                     </div>
                     <div class="text-muted mt8">Cashiers can choose a percentage or fixed amount. A fixed amount includes VAT. Zero amount limit means no additional amount cap.</div>
                 </div>

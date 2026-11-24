@@ -37,7 +37,7 @@ function harness() {
 }
 function fixture(h) {
     const pos = new h.PosStore();
-    pos.baseerIsDiscountFrozen = () => false; pos.user = { id: 1 }; pos.getCashier = () => pos.user;
+    pos.baseerIsDiscountFrozen = () => false; pos.baseerIsLegacyManagedOrder = () => false; pos.user = { id: 1 }; pos.getCashier = () => pos.user;
     pos.config = { discount_product_id: { id: 9, product_tmpl_id: {} }, baseer_fixed_discount_enabled: true, baseer_fixed_discount_allowed: 'all' };
     const order = { state: 'draft', company_id: {}, discountLines: [], lines: [], getOrderlines() { return this.lines; } };
     pos.getOrder = () => order;
@@ -97,4 +97,28 @@ test('line and order accounting events schedule fixed reapplication', async () =
     order.lines = []; callbacks.order({ id: 1, fields: ['lines'] });
     await new Promise(resolve => setImmediate(resolve));
     assert.equal(order.discountLines.length, 0);
+});
+
+
+test('legacy configuration does not hide the fixed choice on a new order', async () => {
+    const h = harness(), { pos } = fixture(h);
+    pos.config.baseer_global_discount_enabled = true;
+    const button = new h.ControlButtons(); button.pos = pos; button.dialog = {};
+    let prompted = false;
+    h.setChoice('fixed');
+    button.env = { utils: { parseValidFloat: Number } };
+    button.dialog.add = () => { prompted = true; };
+    await button.clickDiscount();
+    assert.equal(prompted, true);
+    assert.equal(button.native, undefined);
+});
+
+
+test('legacy orders continue to the legacy handler before choosing fixed discount', async () => {
+    const h = harness(), { pos } = fixture(h);
+    pos.baseerIsLegacyManagedOrder = () => true;
+    const button = new h.ControlButtons(); button.pos = pos; button.dialog = {};
+    h.setChoice('fixed');
+    await button.clickDiscount();
+    assert.equal(button.native, true);
 });

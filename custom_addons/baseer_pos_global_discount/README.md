@@ -1,65 +1,17 @@
 # Baseer POS invoice discount
 
-Owned Odoo 19 addon. Uses the native **server** `account.tax` global discount
-helper and native invoice / Saudi EDI conversion. No third-party ZIP or core
-patch is required. This source is a QA candidate, not a ZATCA certification.
+New orders use Odoo 19's native `pos_discount` button, discount lines, tax computation, synchronization, invoices and Saudi EDI. The button offers a fixed tax-inclusive amount alongside the native percentage when fixed discounts are enabled and the cashier is authorized. Fixed discounts recalculate as the basket changes; the configured amount cap is tax-inclusive, and zero means no extra cap. Percentage discounts retain the existing percentage limit.
 
-## Operation
+A POS manager can enable fixed discounts and allow all cashiers or only POS managers. The server checks the configuration, cashier identity, cap, eligible total and computed amounts when an order synchronizes; it records the approval in the order chatter. The client cannot grant itself manager access.
 
-1. A POS manager uses the existing **Global Discounts** card in native POS
-   settings. Set the maximum percentage and optionally a maximum amount; amount
-   limit `0` means the percentage limit and basket total still apply. Enabling
-   the feature prepares a company-local discount product automatically.
-2. Choose the original **Actions → Discount** button. The dialog opens with a
-   fixed amount selected and its input focused. Enter the amount and apply, or
-   switch to a percentage. No reason is requested. A fixed amount is the
-   reduction in the customer's total **including VAT**. The server returns the
-   complete calculated order; user, time and command are audited automatically.
-3. Remove the discount before changing the basket, customer, preset, pricelist
-   or taxes. Repeat commands are idempotent. A lost reply blocks payment until
-   the exact command is reconciled; do not clear browser storage to bypass it.
-4. To refund, select original products in the native ticket screen. The server
-   restores their proportional share of the original discount and tax. The last
-   refund consumes remaining rounded cents. Finish or cancel another draft
-   refund of the same source product before preparing the next one.
+Use **Set up company discount product** in POS settings to create or reuse a dedicated company-owned product and assign it as the native discount product. Set the legacy discount income account first if needed. The action is manager-only; installation and upgrade do not automatically create products. The print bridge excludes native and legacy discount lines from kitchen/preparation tickets.
 
-Apply/remove/refund preparation requires an online connection. Original native
-payment, receipt, invoice, credit-note and Saudi EDI ownership is preserved.
-Arabic/English native OWL controls support desktop and touch screens.
+Discounts may be applied offline, but payment of an order containing a fixed discount requires a connection. The server is the authority and this prevents two devices from paying different snapshots of a shared order. Native synchronization handles ordinary shared drafts, including removal of server-cancelled orders on other devices.
 
-The POS settings also have an explicit manager-only action to assign
-a company-owned product to the native discount setting. This prepares the
-product only; it does not change the current managed discount workflow.
+The server stores exact, rounded per-product discount shares for reporting and native refunds. Partial refunds use those shares, with the final refund consuming the remaining rounded amount. Historical legacy discounts and refunds retain their original lineage and reporting allocation. Legacy RPCs and fields remain available for existing orders, including the manager's stuck-draft recovery and remote-status checks.
 
-## Candidate boundaries
-
-- Company currency with `0.01` rounding; no cash rounding.
-- Explicit percentage taxes, including explicit zero/exempt categories.
-- Baskets containing unclassified taxes, formula/fixed taxes (including tobacco
-  rules), tips, combos or protected substitution items are rejected explicitly.
-- Historical refunds require unchanged relevant tax configuration. The addon
-  never silently applies current tax settings to a changed historical sale.
-- Existing records are not migrated and discount configuration is not enabled
-  globally on installation.
+Legacy retirement is staged: phase 1 (now) disables the legacy flow for new orders while preserving existing state; phase 2 removes legacy JavaScript only after QA proof and an owner decision; phase 3 considers dropping legacy fields after a data retention review. The legacy maximum percentage and income account remain relevant to native configuration and enforcement; the old amount limit and product are retained for historical operations.
 
 ## Verification
 
-`node --test custom_addons/baseer_pos_global_discount/tests/*.test.mjs`
-
-Run Odoo with `--test-tags=/baseer_pos_global_discount` on an isolated database.
-See `docs/build-governance/POS-GLOBAL-DISCOUNT-QA.md` for exact source, independent
-review, actual accounting/XML evidence, QA deployment and outstanding release
-gates. A successful XML export alone does not establish ZATCA acceptance.
-
-Managed shared drafts cancelled or removed on the server are removed locally when neither copy has payments. A POS manager can audit and discard a stuck local copy after checking local payments against the terminal. An unavailable server leaves the copy protected.
-
-### Native fixed discount option
-
-When the legacy invoice-discount flow is not active, managers can enable fixed
-amounts on the native discount button and choose who may use them. The optional
-maximum is tax-inclusive; zero adds no cap beyond the eligible total. Use the
-company product setup button to assign a dedicated native discount product.
-The amount can be applied offline, but payment requires a connection to avoid
-two devices paying different snapshots of a shared order. Fixed discounts are
-recalculated when the order changes. The legacy flow remains in charge when its
-existing setting is enabled.
+Run the module's Node tests and Odoo tests on an isolated database. See `docs/build-governance/POS-GLOBAL-DISCOUNT-QA.md` for accounting and Saudi EDI acceptance evidence and outstanding QA gates. A successful XML export alone does not establish ZATCA acceptance.

@@ -137,8 +137,8 @@ class TestGlobalDiscountSettings(TransactionCase):
                      'pos_baseer_global_discount_product_id', 'pos_baseer_global_discount_account_id'):
             self.assertEqual(len(card.xpath(f".//field[@name='{name}']")), 1)
         for name in ('pos_discount_product_id', 'pos_discount_pc'):
-            self.assertEqual(card.xpath(f".//field[@name='{name}']/parent::div")[0].get('invisible'),
-                             'pos_baseer_global_discount_enabled')
+            self.assertNotEqual(card.xpath(f".//field[@name='{name}']/parent::div")[0].get('invisible'),
+                                'pos_baseer_global_discount_enabled')
         old = self.env.ref('baseer_pos_global_discount.pos_config_global_discount')
         self.assertNotIn('<group', old.arch_db)
 

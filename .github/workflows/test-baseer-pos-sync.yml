@@ -67,7 +67,7 @@ jobs:
           node --test custom_addons/baseer_pos_print_bridge/tests/frontend_stability.test.mjs custom_addons/baseer_pos_print_bridge/tests/kitchen_recovery.test.mjs custom_addons/baseer_pos_print_bridge/tests/cancelled_order_cleanup.test.mjs custom_addons/baseer_pos_print_bridge/tests/native_split.test.mjs custom_addons/baseer_pos_print_bridge/tests/retail_bill_controls.test.mjs custom_addons/baseer_pos_print_bridge/tests/receipt_resolution.test.mjs
           node --test custom_addons/baseer_pos_product_substitution/tests/*.test.mjs
           node --test custom_addons/baseer_pos_global_discount/tests/*.test.mjs
-          node --test custom_addons/baseer_pos_global_discount/tests/native_sync_race.test.cjs custom_addons/baseer_pos_global_discount/tests/*.browser.test.cjs
+          node --test custom_addons/baseer_pos_global_discount/tests/native_sync_race.test.cjs
           node --test tests/receipt_image.test.mjs
           node --test custom_addons/baseer_pos_print_bridge/static/tests/session_report.test.mjs custom_addons/baseer_pos_print_bridge/tests/session_ticket.test.mjs
           node --test custom_addons/baseer_pos_cache_resilience/static/tests/cache_resilience.test.mjs

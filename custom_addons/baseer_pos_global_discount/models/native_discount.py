@@ -66,6 +66,12 @@ class PosOrder(models.Model):
         self.browse(order_id)._baseer_validate_native_discount()
         return order_id
 
+    def _gd_tax_base_lines(self, lines):
+        values = lines._prepare_tax_base_line_values()
+        self.env['account.tax']._add_tax_details_in_base_lines(values, self.company_id)
+        self.env['account.tax']._round_base_lines_tax_details(values, self.company_id)
+        return values
+
     def _baseer_allocate_native_shares(self, discounts):
         self.ensure_one()
         sources = (self.lines - discounts).filtered(

@@ -14,6 +14,9 @@ import { makeAwaitable } from "@point_of_sale/app/utils/make_awaitable_dialog";
 
 const taxKey = (taxes) => taxes.map((tax) => tax.id).sort((a, b) => a - b).join("_");
 const fixedLine = (order) => (order?.discountLines || []).find((line) => line.baseer_discount_kind === "fixed");
+// Historical orders carrying the retired invoice discount never get a fixed discount.
+const hasLegacyDiscount = (order) => Boolean(order?.baseer_global_discount_locked ||
+    (order?.lines || []).some((line) => line?.baseer_global_discount_line));
 
 patch(ControlButtons.prototype, {
     async clickDiscount() {
@@ -22,7 +25,7 @@ patch(ControlButtons.prototype, {
         const config = this.pos.config;
         const manager = cashier?._role === "manager" ||
             await user.hasGroup("point_of_sale.group_pos_manager");
-        if (this.pos.baseerIsLegacyManagedOrder(order) || this.pos.baseerIsDiscountFrozen(order) || !config.baseer_fixed_discount_enabled ||
+        if (hasLegacyDiscount(order) || !config.baseer_fixed_discount_enabled ||
             (config.baseer_fixed_discount_allowed !== "all" && !manager)) {
             return super.clickDiscount(...arguments);
         }

@@ -14,7 +14,6 @@ import { ask, makeAwaitable } from "@point_of_sale/app/utils/make_awaitable_dial
 import { buildBaseerPreparationAction, captureBaseerCancellationRoute, navigateBaseerAfterCancellation } from "./line_actions";
 import { encodeReceiptJpeg, renderReceiptCanvas } from "./receipt_image";
 import { DraftBill, usesBaseerDraftBill } from "./draft_bill";
-import { relinkSharedDraftForKitchen } from "./shared_draft_relink";
 
 const BASEER_CANCELLATION_REASONS = [
     ["customer_cancelled", _t("Customer cancelled")],
@@ -644,9 +643,6 @@ patch(PosStore.prototype, {
         if (!order.isSynced) {
             await this.syncAllOrders({ orders: [order], throw: true });
         }
-        if (!order.isSynced && Number.isSafeInteger(order.uiState?.baseerSharedDraftServerOrderId)) {
-            order = await relinkSharedDraftForKitchen(this, order);
-        }
         if (!order.isSynced || !order.id) {
             throw new Error("Baseer direct printing could not synchronize this order before sending to kitchen.");
         }
@@ -1110,20 +1106,11 @@ patch(PosStore.prototype, {
             return { successful: false };
         }
         try {
-            const discountMarker = this.baseerPrepareSharedDraftPrintExperiment
-                ? await this.baseerPrepareSharedDraftPrintExperiment(order) : null;
-            if (discountMarker === false) return { successful: false };
             const canvas = await renderReceiptCanvas(this.printer.renderer, DraftBill, { order });
             if (order.state !== "draft") {
                 return { successful: false };
             }
-            if (discountMarker && (!this.baseerIsSharedDraftPrintCurrentExperiment ||
-                    !this.baseerIsSharedDraftPrintCurrentExperiment(order, discountMarker))) {
-                this.notification.add(_t("The order changed while preparing its bill. Review it before printing."), { type: "warning" });
-                return { successful: false };
-            }
             const args = [[this.session.id], order.uuid, crypto.randomUUID(), encodeReceiptJpeg(canvas)];
-            if (discountMarker) args.push(discountMarker.revision);
             const result = await this.data.call("pos.session", "baseer_enqueue_draft_bill", args);
             if (result.state === "failed" || result.state === "cancelled") {
                 this.notification.add(

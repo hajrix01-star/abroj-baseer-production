@@ -80,6 +80,7 @@ class PosSession(models.Model):
             if order.session_id != self or order.state != 'draft':
                 raise ValidationError(_('This order is no longer open in the current session.'))
             order.with_user(self.env.user).check_access('read')
+        # Historical draft revisions remain part of print-job identity.
         revision = getattr(order, 'baseer_offline_draft_revision', 0) if order else 0
         if (revision and expected_discount_revision != revision) or (not revision and expected_discount_revision not in (None, 0)):
             raise ValidationError(_('The order changed on another device. Refresh it before printing the bill.'))

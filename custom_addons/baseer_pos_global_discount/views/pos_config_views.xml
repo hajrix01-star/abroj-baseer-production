@@ -23,11 +23,6 @@
                     <div class="row mt16"><label for="pos_baseer_fixed_discount_enabled" class="col-lg-3 o_light_label"/><field name="pos_baseer_fixed_discount_enabled"/></div>
                     <div class="row" invisible="not pos_baseer_fixed_discount_enabled"><label for="pos_baseer_fixed_discount_max_amount" class="col-lg-3 o_light_label"/><field name="pos_baseer_fixed_discount_max_amount"/></div>
                     <div class="row" invisible="not pos_baseer_fixed_discount_enabled"><label for="pos_baseer_fixed_discount_allowed" class="col-lg-3 o_light_label"/><field name="pos_baseer_fixed_discount_allowed"/></div>
-                    <div class="text-muted mt16">Legacy invoice discount settings apply to historical orders. New orders use the native discount settings above.</div>
-                    <div class="row" invisible="not pos_baseer_global_discount_enabled">
-                        <label for="pos_baseer_global_discount_product_id" string="Discount Product" class="col-lg-3 o_light_label"/>
-                        <field name="pos_baseer_global_discount_product_id" readonly="1" options="{'no_create': True, 'no_open': True}"/>
-                    </div>
                     <div class="row mt16">
                         <label for="pos_baseer_global_discount_account_id" class="col-lg-3 o_light_label"/>
                         <field name="pos_baseer_global_discount_account_id" options="{'no_create': True}"/>
@@ -36,11 +31,6 @@
                         <label for="pos_baseer_global_discount_max_percent" class="col-lg-3 o_light_label"/>
                         <field name="pos_baseer_global_discount_max_percent"/>
                     </div>
-                    <div class="row">
-                        <label for="pos_baseer_global_discount_max_amount" class="col-lg-3 o_light_label"/>
-                        <field name="pos_baseer_global_discount_max_amount" readonly="1"/>
-                    </div>
-                    <div class="text-muted mt8">Cashiers can choose a percentage or fixed amount. A fixed amount includes VAT. Zero amount limit means no additional amount cap.</div>
                 </div>
             </xpath>
         </field>

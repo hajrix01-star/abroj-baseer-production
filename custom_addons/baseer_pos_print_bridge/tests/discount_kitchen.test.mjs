@@ -9,20 +9,13 @@ const section = source.slice(source.indexOf('function preparationLine('), source
 const context = vm.createContext({ crypto: { randomUUID: () => 'test-action' } });
 vm.runInContext(section, context);
 
-for (const kind of ['fixed', 'percent']) {
-    test(`${kind} discount and offline preview stay out of kitchen actions`, () => {
-        const line = (uuid, extra = {}) => ({ uuid, getQuantity: () => 1, ...extra });
-        const normal = line('food');
-        const discount = line('server-discount', { baseer_global_discount_line: true });
-        const preview = line('preview-discount');
-        const refund = line('refund', { refunded_orderline_id: { id: 1 }, getQuantity: () => -1 });
-        const order = { getOrderlines: () => [normal, discount, preview, refund],
-            uiState: { baseerOfflineDiscount: { preview_line_uuids: ['preview-discount'], kind } },
-            last_order_preparation_change: { lines: {} } };
-        const result = context.buildBaseerPreparationAction(order, 'send_before_payment');
-        assert.deepEqual(Array.from(result.lines, row => row.line_uuid), ['food']);
-    });
-}
+test('historical discount lines stay out of kitchen actions', () => {
+    const line = (uuid, extra = {}) => ({ uuid, getQuantity: () => 1, ...extra });
+    const order = { getOrderlines: () => [line('food'), line('legacy', { baseer_global_discount_line: true })],
+        last_order_preparation_change: { lines: {} } };
+    const result = context.buildBaseerPreparationAction(order, 'send_before_payment');
+    assert.deepEqual(Array.from(result.lines, row => row.line_uuid), ['food']);
+});
 
 test('native discount product and marked lines stay out of kitchen actions', () => {
     const line = (uuid, product, extra = {}) => ({ uuid, product_id: { id: product }, getQuantity: () => 1, ...extra });

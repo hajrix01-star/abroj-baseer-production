@@ -355,6 +355,7 @@ class BaseerPrintJob(models.Model):
               [(value.custom_product_template_attribute_value_id.id, value.custom_value)
                for value in line.custom_attribute_value_ids.sorted('id')])
              for line in order.lines.sorted('id')],
+            # Historical draft revisions remain part of print-job identity.
             *([order.baseer_offline_draft_revision]
               if getattr(order, 'baseer_offline_draft_revision', 0) else []),
         )

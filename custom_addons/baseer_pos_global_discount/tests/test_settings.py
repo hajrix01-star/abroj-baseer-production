@@ -53,12 +53,8 @@ class TestGlobalDiscountSettings(TransactionCase):
         self.assertEqual(self.config.baseer_global_discount_max_percent, 25)
         self.assertEqual(self.config.baseer_global_discount_max_amount, 50)
         product = self.config.baseer_global_discount_product_id
-        self.assertEqual(product.company_id, self.config.company_id)
-        self.assertEqual(product.type, 'service')
-        self.assertEqual(product.property_account_income_id, self.account)
-        self.assertEqual(product.standard_price, 0)
+        self.assertFalse(product)
         self.assertEqual(self.config.discount_product_id, self.native_product)
-        self.assertNotEqual(product, self.native_product)
         settings.write({'pos_baseer_global_discount_max_percent': 12.5,
                         'pos_baseer_global_discount_max_amount': 35})
         self.assertEqual(self.config.baseer_global_discount_max_percent, 12.5)
@@ -133,35 +129,10 @@ class TestGlobalDiscountSettings(TransactionCase):
         cards = combined.xpath("//setting[@id='pos_global_discount']")
         self.assertEqual(len(cards), 1)
         card = cards[0]
-        for name in ('pos_baseer_global_discount_max_percent', 'pos_baseer_global_discount_max_amount',
-                     'pos_baseer_global_discount_product_id', 'pos_baseer_global_discount_account_id'):
+        for name in ('pos_baseer_global_discount_max_percent', 'pos_baseer_global_discount_account_id'):
             self.assertEqual(len(card.xpath(f".//field[@name='{name}']")), 1)
         for name in ('pos_discount_product_id', 'pos_discount_pc'):
             self.assertNotEqual(card.xpath(f".//field[@name='{name}']/parent::div")[0].get('invisible'),
                                 'pos_baseer_global_discount_enabled')
         old = self.env.ref('baseer_pos_global_discount.pos_config_global_discount')
         self.assertNotIn('<group', old.arch_db)
-
-    def test_account_is_explicit_and_expense_or_nonzero_cost_is_rejected(self):
-        self.config.action_baseer_setup_global_discount()
-        product = self.config.baseer_global_discount_product_id
-        self.assertEqual(product.property_account_income_id, self.account)
-        product.standard_price = 1
-        with self.assertRaises(ValidationError):
-            self.config._gd_check_account_setup()
-        product.standard_price = 0
-        expense = self.account.copy({'code': 'GDSET002', 'account_type': 'expense'})
-        self.config.baseer_global_discount_account_id = expense
-        with self.assertRaises(ValidationError):
-            self.config._gd_check_account_setup()
-        self.config.baseer_global_discount_account_id = self.account
-        self.config._gd_check_account_setup()
-
-    def test_account_change_in_native_settings_pins_service_account(self):
-        settings = self.env['res.config.settings'].create({
-            'pos_config_id': self.config.id, 'pos_module_pos_discount': True,
-        })
-        account = self.account.copy({'code': 'GDSET003'})
-        settings.write({'pos_baseer_global_discount_account_id': account.id})
-        self.assertEqual(self.config.baseer_global_discount_account_id, account)
-        self.assertEqual(self.config.baseer_global_discount_product_id.property_account_income_id, account)

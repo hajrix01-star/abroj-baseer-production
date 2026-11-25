@@ -1,7 +1,7 @@
 {
     'name': 'Baseer POS Direct Print Bridge',
     'summary': 'Receipt and kitchen printing through the print agent',
-    'version': '19.0.7.8.66',
+    'version': '19.0.7.8.68',
     'category': 'Baseer/POS',
     'author': 'Baseer',
     'license': 'LGPL-3',
@@ -25,7 +25,6 @@
             'baseer_pos_print_bridge/static/src/app/draft_bill.js',
             'baseer_pos_print_bridge/static/src/app/draft_bill.xml',
             'baseer_pos_print_bridge/static/src/app/restaurant_course_button.xml',
-            'baseer_pos_print_bridge/static/src/app/shared_draft_relink.js',
             'baseer_pos_print_bridge/static/src/app/preparation_bridge.js',
             'baseer_pos_print_bridge/static/src/app/native_split.js',
             'baseer_pos_print_bridge/static/src/app/session_ticket.js',

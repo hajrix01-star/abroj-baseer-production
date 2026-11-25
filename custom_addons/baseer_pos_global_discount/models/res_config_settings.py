@@ -39,7 +39,7 @@ class ResConfigSettings(models.TransientModel):
             if config.company_id not in self.env.companies:
                 raise AccessError(_('This point of sale does not belong to an allowed company.'))
             if enabled:
-                config.action_baseer_setup_global_discount()
+                config.write({'baseer_global_discount_enabled': True})
             else:
                 config.write({'baseer_global_discount_enabled': False})
 

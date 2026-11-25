@@ -45,7 +45,7 @@ payment, company, print transport or production change.
 
 ## POS-GD1 — خصم الفاتورة العام (مرشح QA، 2026-11-19)
 
-`baseer_pos_global_discount`19.0.1.0.2 مرشح التجربة، والمنشور19.0.1.0.1؛ أثر مالي
+`baseer_pos_global_discount` 19.0.3.0.0: native POS discount with fixed-amount extension and historical data guard; financial impact
 ARCHITECTURAL محدود بنقاط البيع. أمر خلفي للنسبة أو المبلغ شامل الضريبة يستخدم
 محرك أودو الأصلي، ويحفظ حصة المصدر والضريبة للمرتجع الجزئي والتراكمي. تجميد السلة
 ومعرّف الإعادة وسجل الشركة يمنعان تغيير الحساب بصمت؛ الإشعار الدائن يخص المرتجع

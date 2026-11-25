@@ -1,3 +1,5 @@
+> **SUPERSEDED 2026-11-25** — See the [POS invoice discounts README](../../custom_addons/baseer_pos_global_discount/README.md) for the current flow.
+
 # POS-GD-OFFLINE — عقد خصم الفاتورة عند انقطاع الاتصال
 
 ## G0 — النطاق ومسار المستند

@@ -1,2 +1,2 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_global_discount_event,Invoice discount audit,model_baseer_pos_global_discount_event,point_of_sale.group_pos_user,1,0,1,0
+access_global_discount_event,Invoice discount audit,model_baseer_pos_global_discount_event,point_of_sale.group_pos_user,1,0,0,0

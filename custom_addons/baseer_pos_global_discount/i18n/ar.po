@@ -8,247 +8,6 @@ msgstr ""
 "Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
 
 #. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/offline_preview.js:0
-msgid "Add products before applying an invoice discount."
-msgstr "أضف أصنافًا قبل تطبيق خصم الفاتورة."
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/offline_preview.js:0
-msgid "This basket contains protected items or unsupported taxes."
-msgstr "يحتوي الطلب على أصناف محمية أو ضرائب لا يدعمها خصم الفاتورة."
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/offline_preview.js:0
-msgid "The discount exceeds the permitted amount or invoice total."
-msgstr "الخصم يتجاوز الحد المسموح أو إجمالي الفاتورة."
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/offline_preview.js:0
-msgid "The discount could not be calculated for this order."
-msgstr "تعذّر حساب الخصم لهذا الطلب."
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.js:0
-msgid "A paid offline order needs manager review. Do not collect payment again."
-msgstr "يوجد طلب دُفع أثناء انقطاع الاتصال ويحتاج مراجعة المدير. لا تحصّل المبلغ مرة أخرى."
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.js:0
-msgid "Offline order needs review"
-msgstr "طلب غير متزامن يحتاج مراجعة"
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.js:0
-msgid "Payment is recorded locally. Do not collect it again. Ask a manager to review the synchronization error."
-msgstr "سُجّل الدفع على الجهاز. لا تحصّل المبلغ مرة أخرى، واطلب من المدير مراجعة خطأ المزامنة."
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.js:0
-msgid "The local point-of-sale data cannot be verified. Ask a manager before clearing it."
-msgstr "تعذّر التحقق من بيانات نقطة البيع على الجهاز. اطلب من المدير مراجعتها قبل مسحها."
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.js:0
-msgid "The current point-of-sale session could not be verified. Keep the local orders for review."
-msgstr "تعذّر التحقق من جلسة نقطة البيع الحالية. احتفظ بالطلبات على الجهاز للمراجعة."
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.js:0
-msgid "A saved order needs review before it can synchronize. Its local data was kept."
-msgstr "يوجد طلب محفوظ يحتاج مراجعة قبل المزامنة. بقيت بياناته على الجهاز."
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.js:0
-msgid "The register could not be refreshed safely. Check the connection and wait for orders to finish saving."
-msgstr "تعذّر تحديث نقطة البيع. تحقّق من الاتصال وانتظر اكتمال حفظ الطلبات."
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.js:0
-msgid "The current session is available online. Its offline catalog could not be saved."
-msgstr "الجلسة الحالية تعمل عبر الإنترنت. تعذّر حفظ الكتالوج لاستخدامه دون اتصال."
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.js:0
-msgid "A paid offline order is waiting to synchronize. Reconnect or ask a manager before refreshing point-of-sale data."
-msgstr "يوجد طلب مدفوع دون اتصال ينتظر المزامنة. أعد الاتصال أو اطلب من المدير المراجعة قبل تحديث بيانات نقطة البيع."
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.js:0
-msgid "The paid offline order is incomplete on this device. Ask a manager to restore it before continuing."
-msgstr "بيانات الطلب المدفوع دون اتصال غير مكتملة على هذا الجهاز. اطلب من المدير استعادتها قبل المتابعة."
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.js:0
-msgid "The payment could not be saved on this device. Do not collect it again. Keep this screen open and ask a manager for help."
-msgstr "تعذّر حفظ الدفع على هذا الجهاز. لا تحصّل المبلغ مرة أخرى، وأبقِ الشاشة مفتوحة واطلب مساعدة المدير."
-
-#. module: baseer_pos_global_discount
-#: model_terms:ir.ui.view,arch_db:baseer_pos_global_discount.Dialog
-msgid "The fixed amount includes VAT. The invoice is issued after synchronization."
-msgstr "المبلغ الثابت شامل الضريبة. تُصدر الفاتورة بعد المزامنة."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "The offline discount needs review before synchronization."
-msgstr "يحتاج الخصم المسجل دون اتصال إلى مراجعة قبل المزامنة."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "The offline discount identifier is invalid."
-msgstr "معرّف الخصم المسجل دون اتصال غير صحيح."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "The offline discount does not match this order."
-msgstr "الخصم المسجل دون اتصال لا يطابق هذا الطلب."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "The offline discount preview is invalid."
-msgstr "معاينة الخصم المسجل دون اتصال غير صحيحة."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "The offline discount tax evidence is missing."
-msgstr "بيانات ضريبة الخصم المسجل دون اتصال غير موجودة."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "The offline discount tax evidence is invalid."
-msgstr "بيانات ضريبة الخصم المسجل دون اتصال غير صحيحة."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "The offline discount amount evidence is missing."
-msgstr "بيانات مبلغ الخصم المسجل دون اتصال غير موجودة."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "The offline discount amount evidence is invalid."
-msgstr "بيانات مبلغ الخصم المسجل دون اتصال غير صحيحة."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "The offline discount preview is incomplete."
-msgstr "معاينة الخصم المسجل دون اتصال غير مكتملة."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "The same offline order cannot be synchronized twice in one request."
-msgstr "لا يمكن مزامنة الطلب المسجل دون اتصال مرتين في العملية نفسها."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "The offline discount belongs to another company."
-msgstr "الخصم المسجل دون اتصال تابع لشركة أخرى."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "The offline discount retry differs from the paid order. Keep it for manager review."
-msgstr "إعادة مزامنة الخصم تختلف عن الطلب المدفوع. احتفظ بالطلب لمراجعة المدير."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "The offline discount session is not available in this company."
-msgstr "جلسة الخصم المسجل دون اتصال غير متاحة في هذه الشركة."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "Remove the existing invoice discount while connected before using offline discount."
-msgstr "أزل خصم الفاتورة الحالي أثناء الاتصال قبل استخدام الخصم دون اتصال."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "The offline discount must be synchronized through the point of sale."
-msgstr "يجب مزامنة الخصم المسجل دون اتصال من خلال نقطة البيع."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "The offline order fingerprint is missing."
-msgstr "بصمة الطلب المسجل دون اتصال غير موجودة."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "The offline discount cannot be synchronized in this order state."
-msgstr "لا يمكن مزامنة الخصم المسجل دون اتصال في حالة الطلب الحالية."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "This offline discount command was already processed. Refresh the order."
-msgstr "تمت معالجة هذا الخصم المسجل دون اتصال مسبقًا. حدّث الطلب."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "The offline discount tax categories differ from the server calculation. Keep the paid order for manager review."
-msgstr "فئات ضريبة الخصم تختلف عن حساب الخادم. احتفظ بالطلب المدفوع لمراجعة المدير."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "The paid amount or tax differs from the server calculation. Keep the paid order for manager review."
-msgstr "المبلغ المدفوع أو الضريبة يختلف عن حساب الخادم. احتفظ بالطلب المدفوع لمراجعة المدير."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.js:0
-msgid "Enter a positive number using 0-9 and at most two decimal places."
-msgstr "أدخل عددًا موجبًا بالأرقام 0-9 وبحد أقصى منزلتين عشريتين."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "Enter a valid discount."
-msgstr "أدخل قيمة خصم صحيحة."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "The discount amount is too large."
-msgstr "مبلغ الخصم أكبر من الحد المسموح."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "Discount audit records are created by the invoice discount command only."
-msgstr "يُنشئ إجراء خصم الفاتورة سجلات التدقيق فقط."
-
-#. module: baseer_pos_global_discount
 #. odoo-python
 #: code:addons/baseer_pos_global_discount/models/pos_order.py:0
 msgid "Discount audit records cannot be changed."
@@ -269,80 +28,12 @@ msgstr "هذا الخصم يخص شركة أخرى."
 #. module: baseer_pos_global_discount
 #. odoo-python
 #: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "This order does not belong to an allowed company."
-msgstr "هذا الطلب لا يخص شركة مسموحًا لك بالوصول إليها."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "The point of sale company does not match the order."
-msgstr "شركة نقطة البيع لا تطابق شركة الطلب."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
 #: code:addons/baseer_pos_global_discount/models/native_discount.py:0
 msgid "You are not a cashier for this point of sale."
 msgstr "لست ضمن مستخدمي نقطة البيع هذه."
 
 #. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "An invoice discount requires an unpaid draft in an open, enabled point of sale."
-msgstr "يتطلب الخصم طلبًا مسودة دون دفعات وجلسة مفتوحة في نقطة بيع مفعّل فيها الخصم."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "Invoice discounts currently require the company currency with two decimal places."
-msgstr "يتطلب خصم الفاتورة حاليًا عملة الشركة بمنزلتين عشريتين."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "Invoice discounts do not support cash rounding in this candidate."
-msgstr "خصم الفاتورة في هذه النسخة لا يدعم تقريب الدفع النقدي."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "Remove the invoice discount before changing products, quantities, prices, customer or taxes."
-msgstr "أزل خصم الفاتورة قبل تغيير الأصناف أو الكميات أو الأسعار أو العميل أو الضرائب."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "The discount command identifier is invalid."
-msgstr "معرّف إجراء الخصم غير صحيح."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "This discount command belongs to a different operation."
-msgstr "معرّف الخصم مرتبط بإجراء آخر."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "The order changed on another device. Refresh it before trying again."
-msgstr "تغيّر الطلب على جهاز آخر. حدّثه قبل إعادة المحاولة."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "Add between 1 and 200 products before applying an invoice discount."
-msgstr "أضف من 1 إلى 200 صنف قبل تطبيق خصم الفاتورة."
-
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "This basket already contains special price or tax allocations."
-msgstr "تحتوي السلة بالفعل توزيعات خاصة للأسعار أو الضرائب."
-
-#. module: baseer_pos_global_discount
 #. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.js:0
 #: model:ir.model.fields,field_description:baseer_pos_global_discount.field_pos_config__baseer_global_discount_enabled
 #: model_terms:ir.ui.view,arch_db:baseer_pos_global_discount.res_config_settings_global_discount
 msgid "Invoice discount"
@@ -351,159 +42,9 @@ msgstr "خصم الفاتورة"
 #. module: baseer_pos_global_discount
 #. odoo-python
 #: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "Choose a discount type and enter a short reason."
-msgstr "اختر نوع الخصم وأدخل سببًا مختصرًا."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "Enter a positive discount and its reason."
-msgstr "أدخل قيمة خصم موجبة وسبب الخصم."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "A new discount cannot be applied to a refund."
-msgstr "لا يمكن تطبيق خصم جديد على المرتجع."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "Ask a POS manager to set up the invoice discount product."
-msgstr "اطلب من مدير نقطة البيع إعداد صنف خصم الفاتورة."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "The eligible total must be positive."
-msgstr "يجب أن تكون قيمة الأصناف القابلة للخصم أكبر من 0."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
 #: code:addons/baseer_pos_global_discount/models/native_discount.py:0
 msgid "The discount exceeds the permitted percentage or invoice total."
 msgstr "الخصم يتجاوز النسبة المسموحة أو إجمالي الفاتورة."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "The discount exceeds the permitted amount."
-msgstr "الخصم يتجاوز المبلغ المسموح."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "The tax engine could not preserve the requested discount amount."
-msgstr "تعذّرت مطابقة مبلغ الخصم المطلوب بعد احتساب الضريبة."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "The refund exceeds the remaining sold quantity."
-msgstr "كمية المرتجع تتجاوز الكمية المتبقية من البيع الأصلي."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "Select products from one discounted sale in this company."
-msgstr "اختر أصنافًا من فاتورة بيع واحدة بها خصم في هذه الشركة."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "The original sale has not been paid."
-msgstr "فاتورة البيع الأصلية لم تُدفع بعد."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "Refund products only; discount lines cannot be refunded separately."
-msgstr "اختر الأصناف للمرتجع؛ لا يمكن إرجاع أسطر الخصم وحدها."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "Refund each original product on one line only."
-msgstr "اجمع مرتجع كل سطر أصلي في سطر واحد فقط."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "The refund must preserve the original product, price and tax identity."
-msgstr "يجب أن يحافظ المرتجع على الصنف والسعر والضريبة في البيع الأصلي."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "Finish or cancel the other draft refund of this product first."
-msgstr "أكمل أو ألغِ مسودة المرتجع الأخرى لهذا الصنف أولًا."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "Original sale discount allocation"
-msgstr "حصة المرتجع من خصم البيع الأصلي"
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "Prepare the original invoice discount allocation before paying this refund."
-msgstr "جهّز حصة المرتجع من خصم الفاتورة الأصلية قبل دفعه."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "The payment total does not match the server tax calculation. Refresh the order."
-msgstr "إجمالي الدفع لا يطابق حساب الضريبة المعتمد. حدّث الطلب."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "Invoice discount data is created by the discount command only."
-msgstr "يُنشئ إجراء الخصم بيانات خصم الفاتورة فقط."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "Invoice discount data is managed by the discount command only."
-msgstr "تُدار بيانات خصم الفاتورة من خلال إجراء الخصم فقط."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "Remove the invoice discount before changing this order."
-msgstr "أزل خصم الفاتورة قبل تعديل هذا الطلب."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "Cancel the discounted order instead of deleting its audit history."
-msgstr "ألغِ الطلب الذي يحتوي خصمًا للمحافظة على سجل التدقيق."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "Invoice discount lines are created by the discount command only."
-msgstr "يُنشئ إجراء الخصم أسطر خصم الفاتورة فقط."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "Remove the invoice discount before adding products."
-msgstr "أزل خصم الفاتورة قبل إضافة أصناف."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "Remove the invoice discount before changing products, prices or taxes."
-msgstr "أزل خصم الفاتورة قبل تغيير الأصناف أو الأسعار أو الضرائب."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "Remove the invoice discount before deleting products."
-msgstr "أزل خصم الفاتورة قبل حذف أصناف."
 
 #. module: baseer_pos_global_discount
 #. odoo-python
@@ -543,68 +84,12 @@ msgstr "مدير نقطة البيع في هذه الشركة وحده يمكن�
 
 #. module: baseer_pos_global_discount
 #. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.js:0
-msgid "Remove the invoice discount before changing items, prices or customer details."
-msgstr "أزل خصم الفاتورة قبل تغيير الأصناف أو الأسعار أو بيانات العميل."
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.js:0
-msgid "The discount needs verification. Reconnect and check its result before payment."
-msgstr "يلزم التحقق من الخصم. اتصل بالشبكة وتحقّق من نتيجته قبل الدفع."
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.js:0
-msgid "Select the original item to refund. Its discount is included automatically."
-msgstr "اختر الصنف الأصلي للمرتجع. تُحتسب حصته من الخصم تلقائيًا."
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/discount_flow.js:0
-msgid "The discount needs verification. Reconnect and reload this order."
-msgstr "يلزم التحقق من الخصم. اتصل بالشبكة وأعد تحميل الطلب."
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/discount_flow.js:0
-msgid "The server did not confirm the discount. Check its result before payment."
-msgstr "لم يؤكد الخادم الخصم. تحقّق من نتيجته قبل الدفع."
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/discount_flow.js:0
-msgid "Reconnect before applying, removing or refunding a discount."
-msgstr "اتصل بالشبكة قبل تطبيق الخصم أو إزالته أو تجهيز المرتجع."
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/discount_flow.js:0
-msgid "Remove payment lines before changing the discount."
-msgstr "أزل أسطر الدفع قبل تعديل الخصم."
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/discount_flow.js:0
-msgid "Confirm pending item or kitchen changes first."
-msgstr "أكّد تغييرات الأصناف أو المطبخ المعلّقة أولًا."
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/discount_flow.js:0
-msgid "The draft is still saving. Wait, then try again."
-msgstr "لا تزال المسودة قيد الحفظ. انتظر ثم أعد المحاولة."
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.xml:0
 #: model:ir.model.fields.selection,name:baseer_pos_global_discount.selection__pos_order_line__baseer_discount_kind__percent
 msgid "Percentage"
 msgstr "نسبة مئوية"
 
 #. module: baseer_pos_global_discount
 #. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.xml:0
 #: model:ir.model.fields.selection,name:baseer_pos_global_discount.selection__pos_order_line__baseer_discount_kind__fixed
 #: code:addons/baseer_pos_global_discount/static/src/app/native_fixed_discount.js:0
 msgid "Fixed amount"
@@ -612,13 +97,11 @@ msgstr "مبلغ ثابت"
 
 #. module: baseer_pos_global_discount
 #. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.xml:0
 msgid "Refund allocation"
 msgstr "توزيع خصم المرتجع"
 
 #. module: baseer_pos_global_discount
 #. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.xml:0
 #: model:ir.model.fields,field_description:baseer_pos_global_discount.field_pos_config__baseer_global_discount_max_percent
 #: model:ir.model.fields,field_description:baseer_pos_global_discount.field_res_config_settings__pos_baseer_global_discount_max_percent
 msgid "Maximum invoice discount (%)"
@@ -626,7 +109,6 @@ msgstr "الحد الأقصى لخصم الفاتورة (%)"
 
 #. module: baseer_pos_global_discount
 #. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.xml:0
 #: model:ir.model.fields,field_description:baseer_pos_global_discount.field_pos_config__baseer_global_discount_max_amount
 #: model:ir.model.fields,field_description:baseer_pos_global_discount.field_res_config_settings__pos_baseer_global_discount_max_amount
 msgid "Maximum invoice discount amount"
@@ -634,122 +116,25 @@ msgstr "الحد الأقصى لمبلغ خصم الفاتورة"
 
 #. module: baseer_pos_global_discount
 #. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.xml:0
 #: model:ir.model.fields,field_description:baseer_pos_global_discount.field_pos_config__baseer_global_discount_product_id
 msgid "Invoice discount product"
 msgstr "صنف خصم الفاتورة"
 
 #. module: baseer_pos_global_discount
 #. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.xml:0
-#: model_terms:ir.ui.view,arch_db:baseer_pos_global_discount.pos_config_global_discount
-msgid "Set up invoice discount"
-msgstr "إعداد خصم الفاتورة"
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.xml:0
 msgid "Immutable invoice discount command"
 msgstr "سجل إجراء خصم الفاتورة"
 
 #. module: baseer_pos_global_discount
 #. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.xml:0
-#: model_terms:ir.ui.view,arch_db:baseer_pos_global_discount.pos_config_global_discount
-msgid "A fixed discount reduces the total including VAT. Zero amount limit means no additional amount cap. Unsupported protected items and special taxes are rejected."
-msgstr "يخفض الخصم الثابت الإجمالي شامل الضريبة. حد المبلغ 0 يعني عدم وضع سقف إضافي للمبلغ. لا يشمل الدعم الأصناف المحمية والضرائب الخاصة."
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.xml:0
 msgid "This discount command already exists."
 msgstr "سبق تسجيل إجراء الخصم هذا."
 
 #. module: baseer_pos_global_discount
 #. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.xml:0
-msgid "Refunds use the original invoice discount automatically."
-msgstr "يستخدم المرتجع حصته من خصم الفاتورة الأصلية تلقائيًا."
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.xml:0
-msgid "The fixed amount reduces the amount payable, including VAT. Remove the discount before changing the basket."
-msgstr "يخفض المبلغ الثابت المطلوب من العميل شامل الضريبة. أزل الخصم قبل تعديل السلة."
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.xml:0
 #: code:addons/baseer_pos_global_discount/static/src/app/native_fixed_discount.js:0
 msgid "Discount type"
 msgstr "نوع الخصم"
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.xml:0
-msgid "Percentage (%)"
-msgstr "نسبة مئوية (%)"
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.xml:0
-msgid "Discount value"
-msgstr "قيمة الخصم"
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.xml:0
-msgid "Reason"
-msgstr "السبب"
-
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.xml:0
-msgid "Apply discount"
-msgstr "تطبيق الخصم"
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.xml:0
-msgid "Remove discount"
-msgstr "إزالة الخصم"
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.xml:0
-msgid "Close"
-msgstr "إغلاق"
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "Every product needs an explicit tax category, including zero-rated or exempt products, before an invoice discount."
-msgstr "يلزم تصنيف ضريبي صريح لكل صنف، بما فيه الصفري أو المعفى، قبل تطبيق خصم الفاتورة."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "Choose the customer before applying an invoice discount for ZATCA invoicing."
-msgstr "اختر العميل قبل تطبيق خصم الفاتورة لإصدار فاتورة زاتكا."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "Use the invoice discount command instead of adding its product manually."
-msgstr "استخدم إجراء خصم الفاتورة بدل إضافة صنف الخصم يدويًا."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "A cancelled prepared refund cannot be reopened. Create a new refund from the original sale."
-msgstr "لا يمكن إعادة فتح المرتجع الملغى بعد تجهيز خصمه. أنشئ مرتجعًا جديدًا من فاتورة البيع الأصلية."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "Enter a positive discount."
-msgstr "أدخل قيمة خصم أكبر من 0."
 
 #. module: baseer_pos_global_discount
 #: model_terms:ir.ui.view,arch_db:baseer_pos_global_discount.res_config_settings_global_discount
@@ -758,88 +143,10 @@ msgid "This point of sale does not belong to an allowed company."
 msgstr "نقطة البيع هذه لا تخص شركة مسموحًا لك بالوصول إليها."
 
 #. module: baseer_pos_global_discount
-#: model_terms:ir.ui.view,arch_db:baseer_pos_global_discount.res_config_settings_global_discount
-#: code:addons/baseer_pos_global_discount/models/res_config_settings.py:0
-msgid "Discount Product"
-msgstr "صنف الخصم"
-
-#. module: baseer_pos_global_discount
-#: model_terms:ir.ui.view,arch_db:baseer_pos_global_discount.res_config_settings_global_discount
-#: code:addons/baseer_pos_global_discount/models/res_config_settings.py:0
-msgid "Cashiers can choose a percentage or fixed amount. A fixed amount includes VAT. Zero amount limit means no additional amount cap."
-msgstr "يمكن للكاشير اختيار مبلغ ثابت أو نسبة. المبلغ الثابت شامل الضريبة، وحد المبلغ 0 يعني عدم وضع سقف إضافي للمبلغ."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "This basket contains protected items, tips or unsupported taxes. Invoice discount cannot be applied."
-msgstr "تحتوي الفاتورة أصنافًا محمية أو إكراميات أو ضرائب غير مدعومة؛ لا يمكن تطبيق الخصم العام."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "A combo header must have zero price, discount and tax value."
-msgstr "يجب أن تكون قيمة عنوان العرض المركب وخصمه وضريبته صفرًا."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "A combo header must be zero-valued and contain its own order components."
-msgstr "يجب أن يكون عنوان العرض المركب بلا قيمة وأن ترتبط به مكوناته من الطلب نفسه."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "The combo components do not match their parent and original product choices."
-msgstr "مكونات العرض المركب لا تطابق العرض أو الأصناف المختارة."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "A combo component must belong to one valid header in this order."
-msgstr "يجب أن يرتبط كل مكون بعرض مركب صحيح داخل الطلب نفسه."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "Refund the combo header and all of its original components together."
-msgstr "أعد العرض المركب مع جميع مكوناته الأصلية معًا."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "Combo refund quantities must preserve the original component ratios."
-msgstr "يجب أن تحافظ كميات مرتجع العرض المركب على نسب مكوناته الأصلية."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "The refund combo structure does not match the original sale."
-msgstr "مكونات العرض المركب المرتجع لا تطابق فاتورة البيع الأصلية."
-
-#. module: baseer_pos_global_discount
 #: model:ir.model.fields,field_description:baseer_pos_global_discount.field_pos_config__baseer_global_discount_account_id
 #: model:ir.model.fields,field_description:baseer_pos_global_discount.field_res_config_settings__pos_baseer_global_discount_account_id
 msgid "Invoice discount income account"
 msgstr "حساب إيراد خصم الفاتورة"
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "Set an active income account in this company for the zero-cost invoice discount service."
-msgstr "حدد حساب إيراد نشطًا في الشركة لخدمة خصم الفاتورة، ويجب أن تكون تكلفتها صفرًا."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "Choose the invoice discount income account before enabling discounts."
-msgstr "حدد حساب إيراد خصم الفاتورة قبل تفعيل الخصومات."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "The fiscal position must map the invoice discount to an active income account in this company."
-msgstr "يجب أن يربط الوضع المالي خصم الفاتورة بحساب إيراد نشط في الشركة نفسها."
 
 #. module: baseer_pos_global_discount
 #: model:ir.model.fields,field_description:baseer_pos_global_discount.field_report_pos_order__total_discount
@@ -867,181 +174,6 @@ msgstr "توزيع خصم الفاتورة للقراءة فقط."
 #: code:addons/baseer_pos_global_discount/models/pos_order.py:0
 msgid "The native POS report query changed. Review the invoice discount report integration before upgrading."
 msgstr "تغير استعلام تقرير نقاط البيع الأصلي. يلزم مراجعة دمج خصم الفاتورة قبل الترقية."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "Combo quantities must be finite and respect the original choice limits."
-msgstr "يجب أن تكون كميات العرض المركب صحيحة وضمن حدود الاختيارات الأصلية."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "The combo must include every required choice within its minimum and maximum quantities."
-msgstr "أكمل اختيارات العرض المركب المطلوبة ضمن الحد الأدنى والأقصى للكميات."
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.js:0
-msgid "The local order is incomplete on this device. Ask a manager to restore it before continuing."
-msgstr "الطلب المحفوظ على هذا الجهاز غير مكتمل. اطلب من المدير استعادته قبل المتابعة."
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.js:0
-msgid "A locally saved draft is waiting. Synchronize or remove it before refreshing point-of-sale data."
-msgstr "توجد مسودة محفوظة على الجهاز. زامنها أو احذفها قبل تحديث بيانات نقطة البيع."
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.js:0
-msgid "Waiting for invoice confirmation."
-msgstr "بانتظار تأكيد الفاتورة."
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.js:0
-msgid "The paid order is awaiting server confirmation before its final receipt can be printed."
-msgstr "الطلب المدفوع بانتظار تأكيد الخادم قبل طباعة الإيصال النهائي."
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/offline_preview.js:0
-msgid "Tracked products are not supported with this invoice discount. Remove the discount or tracked items before payment."
-msgstr "الخصم على الفاتورة لا يدعم الأصناف المتتبعة. أزل الخصم أو الأصناف المتتبعة قبل الدفع."
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.js:0
-msgid "Check again"
-msgstr "تحقق مجددًا"
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.js:0
-msgid "Invoice confirmation is not yet available. Ask a manager if this continues."
-msgstr "لم يتوفر تأكيد الفاتورة بعد. اطلب مساعدة المدير إذا استمرت المشكلة."
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.js:0
-msgid "This shared order was removed on another device. Keep this copy and ask a manager to review it."
-msgstr "أُلغي هذا الطلب المشترك من جهاز آخر. احتفظ بهذه النسخة واطلب من المدير مراجعتها."
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.js:0
-msgid "The shared order could not be saved. Keep this screen open and ask a manager to repair the local storage."
-msgstr "تعذر حفظ الطلب المشترك. أبقِ هذه الشاشة مفتوحة واطلب من المدير إصلاح التخزين المحلي."
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.js:0
-msgid "The shared order could not be verified. Keep this copy and ask a manager to review it."
-msgstr "تعذر التحقق من الطلب المشترك. احتفظ بهذه النسخة واطلب من المدير مراجعتها."
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.js:0
-msgid "A payment line could not be restored. Keep this order and ask a manager to review it."
-msgstr "تعذرت استعادة أحد أسطر الدفع. احتفظ بهذا الطلب واطلب من المدير مراجعته."
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.js:0
-msgid "A product line could not be restored. Keep this order and ask a manager to review it."
-msgstr "تعذرت استعادة أحد أسطر المنتجات. احتفظ بهذا الطلب واطلب من المدير مراجعته."
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.js:0
-msgid "Order saved locally; it will sync when the connection returns."
-msgstr "حُفظ الطلب على هذا الجهاز، وستتم مزامنته عند عودة الاتصال."
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.js:0
-msgid "The order could not be synchronized. Keep it for manager review."
-msgstr "تعذرت مزامنة الطلب. احتفظ به لمراجعة المدير."
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.js:0
-msgid "The order has payment or synchronization activity. Keep it open for review."
-msgstr "على هذا الطلب دفعات أو مزامنة غير مكتملة. اتركه مفتوحاً للمراجعة."
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.js:0
-msgid "This order was cancelled on the server. Its local copy was removed from this device."
-msgstr "تم إلغاء هذا الطلب في النظام، وحُذفت نسخته من هذا الجهاز."
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.js:0
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.xml:0
-msgid "Discard local copy"
-msgstr "تجاهل النسخة المحلية"
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.js:0
-msgid "Local payments listed below will be discarded from this device. Check them against the bank terminal before continuing."
-msgstr "ستُحذف الدفعات المحلية المدرجة أدناه من هذا الجهاز. تحقق منها مقابل جهاز البنك قبل المتابعة."
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.js:0
-msgid "Ask a manager to use Discard local copy."
-msgstr "اطلب من المدير استخدام «تجاهل النسخة المحلية»."
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.js:0
-msgid "The local copy could not be discarded. Keep it for review."
-msgstr "تعذر تجاهل النسخة المحلية. اتركها للمراجعة."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "Invalid point of sale session."
-msgstr "جلسة نقطة البيع غير صالحة."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "The point of sale session is unavailable."
-msgstr "جلسة نقطة البيع غير متاحة."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "Invalid order identifier."
-msgstr "معرّف الطلب غير صالح."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "Invalid order identifiers."
-msgstr "معرّفات الطلبات غير صالحة."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "Only a POS manager can discard a local copy."
-msgstr "يمكن لمدير نقطة البيع فقط تجاهل النسخة المحلية."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "Invalid local copy summary."
-msgstr "ملخص النسخة المحلية غير صالح."
-
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "Manager discarded local POS order copy: %s"
-msgstr "تجاهل المدير نسخة طلب نقطة البيع المحلية: %s"
 
 #. module: baseer_pos_global_discount
 #: model_terms:ir.ui.view,arch_db:baseer_pos_global_discount.res_config_settings_global_discount
@@ -1100,36 +232,6 @@ msgstr "كل الكاشيرية المسموح لهم بالخصم"
 #: model:ir.model.fields.selection,name:baseer_pos_global_discount.selection__pos_config__baseer_fixed_discount_allowed__managers
 msgid "Managers only"
 msgstr "المدراء فقط"
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/native_fixed_discount.js:0
-msgid "نوع الخصم"
-msgstr "نوع الخصم"
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/native_fixed_discount.js:0
-msgid "نسبة %"
-msgstr "نسبة %"
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/native_fixed_discount.js:0
-msgid "مبلغ ثابت"
-msgstr "مبلغ ثابت"
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/native_fixed_discount.js:0
-msgid "مبلغ الخصم"
-msgstr "مبلغ الخصم"
-
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/native_fixed_discount.js:0
-msgid "لا يمكن إتمام دفع طلب عليه خصم ثابت بدون اتصال. أعد الاتصال ثم حاول مرة أخرى."
-msgstr "لا يمكن إتمام دفع طلب عليه خصم ثابت بدون اتصال. أعد الاتصال ثم حاول مرة أخرى."
 
 #. module: baseer_pos_global_discount
 #. odoo-python
@@ -1212,6 +314,14 @@ msgid "Invoice discount share (excl. tax)"
 msgstr "حصة خصم الفاتورة (غير شاملة الضريبة)"
 
 #. module: baseer_pos_global_discount
-#: model_terms:ir.ui.view,arch_db:baseer_pos_global_discount.res_config_settings_global_discount
-msgid "Legacy invoice discount settings apply to historical orders. New orders use the native discount settings above."
-msgstr "إعدادات خصم الفاتورة القديمة تنطبق على الطلبات السابقة. تستخدم الطلبات الجديدة إعدادات الخصم الأصلية أعلاه."
+#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
+msgid "This order contains an old invoice discount. Keep it for manager review."
+msgstr "يحتوي هذا الطلب على الخصم القديم. احتفظ به لمراجعة المدير."
+
+
+#. module: baseer_pos_global_discount
+#. odoo-python
+#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
+#: code:addons/baseer_pos_global_discount/static/src/app/legacy_history_guard.js:0
+msgid "This order used the old invoice discount and cannot be refunded in the POS. Ask accounting to issue a credit note on its invoice."
+msgstr "هذا الطلب عليه الخصم القديم ولا يمكن استرجاعه من نقطة البيع. اطلب من المحاسبة إصدار إشعار دائن على فاتورته."

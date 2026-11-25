@@ -59,8 +59,7 @@ class TestNativeDiscountSync(TransactionCase):
         self.config = self.env['pos.config'].create({
             'name': 'GD QA register', 'baseer_global_discount_account_id': self.account.id,
         })
-        self.config.action_baseer_setup_global_discount()
-        self.config.baseer_global_discount_product_id.property_account_income_id = self.account
+        self.config.write({'baseer_global_discount_enabled': True})
         self.config.open_ui()
         self.config.current_session_id.state = 'opened'
         self.config.action_baseer_setup_native_discount()

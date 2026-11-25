@@ -812,8 +812,8 @@ patch(PosStore.prototype, {
             const sessionId = this.config.current_session_id?.id || this.config.current_session_id;
             const result = await this.data.orm.call('pos.order', 'baseer_shared_draft_remote_status', [[order.uuid], sessionId]);
             const status = result?.[order.uuid];
-            if (!status || typeof status.exists !== 'boolean' || !Number.isInteger(status.payment_count) ||
-                typeof status.amount_paid !== 'number') return null;
+            if (!status || typeof status.exists !== 'boolean' || !Number.isInteger(status.payment_count) || status.payment_count < 0 ||
+                typeof status.amount_paid !== 'number' || !Number.isFinite(status.amount_paid)) return null;
             return status;
         } catch { return null; }
     },
@@ -863,8 +863,7 @@ patch(PosStore.prototype, {
         } finally { sharedRemoteDeleteOrders.delete(order); }
     },
     async baseerTryRemoteRemoval(order) {
-        if (order?.state !== 'draft' || !isManagedSharedDraft(order) || order.uiState?.baseerSharedDraftPaidAckPending ||
-            order.uiState?.baseerSharedDraftCancelPending || order.uiState?.baseerSharedDraftCancelAcknowledged || sharedLocalRecoveryOrders.has(order)) return false;
+        if (order?.state !== 'draft' || !isManagedSharedDraft(order) || sharedLocalRecoveryOrders.has(order)) return false;
         sharedLocalRecoveryOrders.add(order);
         try {
         const status = await this.baseerRemoteStatus(order);
@@ -881,22 +880,37 @@ patch(PosStore.prototype, {
         } finally { sharedLocalRecoveryOrders.delete(order); }
     },
     async baseerDiscardLocalCopy(order) {
-        if (this.getCashier()?._role !== 'manager' || !this.baseerStuckDraft(order) ||
-            order.uiState?.baseerSharedDraftPaidAckPending || order.uiState?.baseerSharedDraftCancelPending || order.uiState?.baseerSharedDraftCancelAcknowledged) return false;
+        if (this.getCashier()?._role !== 'manager' || !this.baseerStuckDraft(order)) return false;
         const payments = (order.payment_ids || []).map((p) => ({ method: p.payment_method_id?.name || '', amount: p.amount }));
-        const paymentSnapshot = JSON.stringify(payments);
+        const paymentSnapshot = (order.payment_ids || []).map((p) => [p, p.uuid, p.id, p.payment_method_id, p.payment_method_id?.name, p.amount]);
+        const paymentsChanged = () => (order.payment_ids || []).length !== paymentSnapshot.length || paymentSnapshot.some((saved, index) => {
+            const p = order.payment_ids[index];
+            return p !== saved[0] || p.uuid !== saved[1] || p.id !== saved[2] || p.payment_method_id !== saved[3] || p.payment_method_id?.name !== saved[4] || p.amount !== saved[5];
+        });
         const details = payments.map((p) => `${p.method}: ${p.amount}`).join('\n');
-        const confirmed = await ask(this.dialog, { title: _t('Discard local copy'),
-            body: _t('Local payments listed below will be discarded from this device. Check them against the bank terminal before continuing.') + '\n' + details,
-            confirmLabel: _t('Discard local copy'), confirmClass: 'btn-danger' }, undefined, ConfirmationDialog);
+        let confirmed;
+        try {
+            confirmed = await ask(this.dialog, { title: _t('Discard local copy'),
+                body: _t('Local payments listed below will be discarded from this device. Check them against the bank terminal before continuing.') + '\n' + details,
+                confirmLabel: _t('Discard local copy'), confirmClass: 'btn-danger' }, undefined, ConfirmationDialog);
+        } catch {
+            this.notification.add(_t('The local copy could not be discarded. Keep it for review.'), { type: 'warning', sticky: true });
+            return false;
+        }
         if (!confirmed || sharedLocalRecoveryOrders.has(order)) return false;
         sharedLocalRecoveryOrders.add(order);
         const flags = ['RemoteDeleted', 'RefreshError', 'HydrationError', 'Contaminated'].filter((flag) => order.uiState?.['baseerSharedDraft' + flag]);
         const summary = { line_count: (order.lines || []).length, total: Number(order.priceIncl ?? order.amount_total ?? 0), payments, flags };
         try {
+            const status = await this.baseerRemoteStatus(order);
+            if (!status || (status.exists ? !['cancel', 'done', 'invoiced'].includes(status.state) : !reachedServer(order))) {
+                this.notification.add(_t('The server order is not confirmed closed. Keep the local copy for review and check the connection.'), { type: 'warning', sticky: true });
+                return false;
+            }
+            if (paymentsChanged()) throw new Error('Payments changed');
             const sessionId = this.config.current_session_id?.id || this.config.current_session_id;
             await this.data.orm.call('pos.order', 'baseer_log_discarded_local_copy', [order.uuid, summary, sessionId]);
-            if (JSON.stringify((order.payment_ids || []).map((p) => ({ method: p.payment_method_id?.name || '', amount: p.amount }))) !== paymentSnapshot) throw new Error('Payments changed');
+            if (paymentsChanged()) throw new Error('Payments changed');
             await this.baseerRemoveLocalCopy(order);
             return true;
         } catch {

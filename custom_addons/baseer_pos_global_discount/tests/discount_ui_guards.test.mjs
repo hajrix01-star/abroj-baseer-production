@@ -25,7 +25,7 @@ const cancelGraphFingerprint = () => 'test-graph';
 const useState = (value) => value;
 const useAutofocus = () => {};
 class Component {} class Dialog {} class AlertDialog {} class ConfirmationDialog {};
-const ask = async () => globalThis.baseerTestConfirm;
+const ask = async () => { if (globalThis.baseerTestDialogError) throw new Error('dialog failed'); return globalThis.baseerTestConfirm; };
 class ControlButtons { clickDiscount() { this.nativeDiscount = true; } clickFiscalPosition() { this.nativeCalled = true; } }
 class PosStore { async reloadData() { this.nativeReload = true; } applyDiscount() { this.nativeCalled = true; } async beforeDeleteOrder() { this.nativeBeforeDelete = true; return true; } async deleteOrders() { this.nativeDeleted = true; return true; } async afterProcessServerData() { return this.nativeStartup(); } async syncAllOrders(options) { return this.nativeSync(options); } async preSyncAllOrders(orders) { return orders; } async postSyncAllOrders() {} }
 class PosOrder { update(values) { this.nativeValues = values; } addPaymentline() { this.nativeCalled = true; } removePaymentline() { this.nativeCalled = true; } removeOrderline() { this.nativeCalled = true; } serializeForIndexedDB() { return { JSONuiState: JSON.stringify(this.uiState) }; } serializeForORM() {
@@ -1758,9 +1758,77 @@ test('manager discard audits before removal and retains copy on failure', async 
     const fixture = recoveryFixture({ exists: false, payment_count: 0, amount_paid: 0 }, [{ amount: 3, payment_method_id: { name: 'Bank' } }]);
     assert.equal(await fixture.pos.baseerDiscardLocalCopy(fixture.order), true);
     assert.ok(fixture.calls.indexOf('baseer_log_discarded_local_copy') < fixture.calls.indexOf('removed'));
-    const failed = recoveryFixture(new Error('RPC failed'));
+    const failed = recoveryFixture({ exists: true, state: 'cancel', payment_count: 0, amount_paid: 0 });
+    const call = failed.pos.data.orm.call;
+    failed.pos.data.orm.call = async (...args) => {
+        if (args[1] === 'baseer_log_discarded_local_copy') throw new Error('RPC failed');
+        return call(...args);
+    };
     assert.equal(await failed.pos.baseerDiscardLocalCopy(failed.order), false);
     assert.ok(!failed.calls.includes('removed'));
+});
+
+test('pending acknowledgements do not prevent safe cancellation cleanup', async () => {
+    for (const flag of ['CancelPending', 'CancelAcknowledged', 'PaidAckPending']) {
+        const { pos, order, calls } = recoveryFixture({ exists: true, state: 'cancel', payment_count: 0, amount_paid: 0 });
+        order.uiState['baseerSharedDraft' + flag] = true;
+        assert.equal(await pos.baseerTryRemoteRemoval(order), true);
+        assert.ok(calls.includes('removed'));
+    }
+});
+
+test('cancelled order with local bank payment requires confirmation and audit without navigation', async () => {
+    globalThis.baseerTestConfirm = true;
+    const { pos, order, calls } = recoveryFixture({ exists: true, state: 'cancel', payment_count: 0, amount_paid: 0 },
+        [{ amount: 3, payment_method_id: { name: 'Bank' } }]);
+    order.uiState.baseerSharedDraftCancelPending = true;
+    pos.setOrder = () => calls.push('setOrder');
+    pos.showScreen = () => calls.push('showScreen');
+    assert.equal(await pos.baseerTryRemoteRemoval(order), false);
+    assert.equal(order.uiState.baseerSharedDraftRemoteDeleted, true);
+    assert.equal(await pos.baseerDiscardLocalCopy(order), true);
+    assert.ok(calls.indexOf('baseer_log_discarded_local_copy') < calls.indexOf('removed'));
+    assert.ok(!calls.includes('setOrder') && !calls.includes('showScreen'));
+});
+
+test('discard retains pending payments when server closure is not confirmed', async () => {
+    globalThis.baseerTestConfirm = true;
+    for (const status of [{ exists: true, state: 'draft', payment_count: 0, amount_paid: 0 }, new Error('offline'),
+        { exists: false, payment_count: 0, amount_paid: 0 }]) {
+        const { pos, order, calls } = recoveryFixture(status, [{ amount: 3, payment_method_id: { name: 'Bank' } }]);
+        order.uiState.baseerSharedDraftPaidAckPending = true;
+        if (!(status instanceof Error) && !status.exists) {
+            order.id = 'local-id'; order.uiState.baseerSharedDraftRevision = 0;
+        }
+        assert.equal(await pos.baseerDiscardLocalCopy(order), false);
+        assert.ok(calls.some((item) => typeof item === 'string' && item.includes('not confirmed closed')));
+        assert.ok(!calls.includes('baseer_log_discarded_local_copy') && !calls.includes('removed'));
+    }
+});
+
+test('refresh error on a completed order can be discarded and dialog failures warn', async () => {
+    globalThis.baseerTestConfirm = true;
+    const { pos, order, calls } = recoveryFixture({ exists: true, state: 'done', payment_count: 1, amount_paid: 132 });
+    globalThis.baseerTestDialogError = true;
+    try { assert.equal(await pos.baseerDiscardLocalCopy(order), false); }
+    finally { globalThis.baseerTestDialogError = false; }
+    assert.ok(calls.some((item) => typeof item === 'string' && item.includes('could not be discarded')));
+    assert.ok(!calls.includes('baseer_shared_draft_remote_status'));
+    assert.equal(await pos.baseerDiscardLocalCopy(order), true);
+    assert.ok(calls.indexOf('baseer_log_discarded_local_copy') < calls.indexOf('removed'));
+});
+
+test('discard retains the copy when payments change during the audit', async () => {
+    globalThis.baseerTestConfirm = true;
+    const { pos, order, calls } = recoveryFixture({ exists: true, state: 'cancel', payment_count: 0, amount_paid: 0 });
+    const call = pos.data.orm.call;
+    pos.data.orm.call = async (...args) => {
+        const result = await call(...args);
+        if (args[1] === 'baseer_log_discarded_local_copy') order.payment_ids.push({ amount: 3 });
+        return result;
+    };
+    assert.equal(await pos.baseerDiscardLocalCopy(order), false);
+    assert.ok(!calls.includes('removed'));
 });
 
 test('non-manager is directed to a manager', async () => {

@@ -1001,6 +1001,9 @@ msgstr "اطلب من المدير استخدام «تجاهل النسخة ال
 msgid "The local copy could not be discarded. Keep it for review."
 msgstr "تعذر تجاهل النسخة المحلية. اتركها للمراجعة."
 
+msgid "The server order is not confirmed closed. Keep the local copy for review and check the connection."
+msgstr "لم يتم تأكيد إغلاق الطلب على الخادم. احتفظ بالنسخة المحلية للمراجعة وتحقق من الاتصال."
+
 #. module: baseer_pos_global_discount
 #. odoo-python
 #: code:addons/baseer_pos_global_discount/models/pos_order.py:0

@@ -61,12 +61,6 @@ export function rangeForPreset(preset, now = new Date()) {
         const yesterday = addDays(today.year, today.month, today.day, -1);
         return { from: yesterday.iso, to: yesterday.iso, period: "day", day: yesterday.iso, month: monthValue(yesterday.year, yesterday.month) };
     }
-    if (preset === "this_week") {
-        // Saudi business week starts Sunday and ends Saturday.
-        const weekday = new Date(Date.UTC(today.year, today.month - 1, today.day)).getUTCDay();
-        const start = addDays(today.year, today.month, today.day, -weekday);
-        return { from: start.iso, to: today.iso, period: "range", day: today.iso, month: monthValue(today.year, today.month) };
-    }
     if (preset === "this_month") {
         return {
             from: isoDate(today.year, today.month, 1),
@@ -92,7 +86,7 @@ export function rangeForPreset(preset, now = new Date()) {
 }
 
 export function detectPreset(from, to, now = new Date()) {
-    for (const preset of ["today", "yesterday", "this_week", "this_month", "last_month"]) {
+    for (const preset of ["today", "yesterday", "this_month", "last_month"]) {
         const range = rangeForPreset(preset, now);
         if (range.from === from && range.to === to) {
             return preset;

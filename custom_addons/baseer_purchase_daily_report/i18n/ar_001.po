@@ -480,12 +480,6 @@ msgstr "أمس"
 #. module: baseer_purchase_daily_report
 #. odoo-javascript
 #: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
-msgid "This week"
-msgstr "هذا الأسبوع"
-
-#. module: baseer_purchase_daily_report
-#. odoo-javascript
-#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
 msgid "This month"
 msgstr "هذا الشهر"
 

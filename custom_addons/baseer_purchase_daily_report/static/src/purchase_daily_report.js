@@ -9,7 +9,7 @@ import { detectPreset, monthValue, rangeForDay, rangeForMonth, rangeForPreset, r
 
 const MODEL = "baseer.purchase.daily.report";
 const PAGE_SIZE = 50;
-const PRESETS = ["today", "yesterday", "this_week", "this_month", "last_month"];
+const PRESETS = ["today", "yesterday", "this_month", "last_month"];
 
 export class PurchaseDailyReport extends Component {
     static template = "baseer_purchase_daily_report.Report";
@@ -73,7 +73,7 @@ export class PurchaseDailyReport extends Component {
             paidNote: _t("Confirmed payments allocated to these invoices are shown. Other settlements can reduce the outstanding amount."),
             paidUnavailableNote: _t("An amount is unavailable when the cash payment cannot be verified, including some foreign currency payments."),
             liveNote: _t("Posted supplier bills and credit notes only."),
-            today: _t("Today"), yesterday: _t("Yesterday"), thisWeek: _t("This week"),
+            today: _t("Today"), yesterday: _t("Yesterday"),
             thisMonth: _t("This month"), lastMonth: _t("Last month"),
             pickDay: _t("Day"), pickMonth: _t("Month"),
             paymentMethods: _t("Payment methods"), statusFilters: _t("Status filters"),
@@ -85,7 +85,6 @@ export class PurchaseDailyReport extends Component {
         return {
             today: this.labels.today,
             yesterday: this.labels.yesterday,
-            this_week: this.labels.thisWeek,
             this_month: this.labels.thisMonth,
             last_month: this.labels.lastMonth,
         };

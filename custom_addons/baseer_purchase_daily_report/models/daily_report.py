@@ -76,13 +76,9 @@ class PurchaseDailyReport(models.AbstractModel):
             ('invoice_date', '>=', first),
             ('invoice_date', '<=', last),
         ]
-        if status == 'draft':
+        if status in ('draft', 'unapproved'):
+            # «لم تُعتمد» uses the same rule as «المسودات»: vendor bills still in draft.
             domain.append(('state', '=', 'draft'))
-        elif status == 'unapproved':
-            # Distinct definition from drafts: not reviewed, and not cancelled.
-            # In production restaurants this currently matches state=draft,
-            # because every draft has checked=False and every posted bill is reviewed.
-            domain.extend([('checked', '=', False), ('state', '!=', 'cancel')])
         else:
             domain.append(('state', '=', 'posted'))
             if status != 'all':

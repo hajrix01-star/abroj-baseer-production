@@ -436,8 +436,13 @@ class DailyPurchaseReportCase(TransactionCase):
         draft = self._bill(3, post=False)
         report = self._report('cashier')
         self.assertEqual(report.get_invoice(bill.id)['id'], bill.id)
-        with self.assertRaises(AccessError):
-            report.get_invoice(draft.id)
+        # Authorized roles may open a draft from the drafts / unapproved filter.
+        self.assertEqual(report.get_invoice(draft.id)['id'], draft.id)
+        self.assertEqual(report.get_invoice(draft.id)['status'], 'draft')
+        # The default posted view includes the posted bill only, not the draft.
+        payload = report.get_days('2099-09-15', '2099-09-15', 'all')
+        self.assertEqual(payload['days'][0]['count'], 1)
+        self.assertNotIn(draft.id, [row['id'] for row in report.get_day('2099-09-15', 'all', 0)['rows']])
         # Altering a context's active company cannot bypass the user company guard.
         forged = report.with_context(allowed_company_ids=[self.company_b.id])
         with self.assertRaises(AccessError):
@@ -449,6 +454,7 @@ class DailyPurchaseReportCase(TransactionCase):
             lambda: unauthorized.get_days('2099-09-15', '2099-09-15', 'all'),
             lambda: unauthorized.get_day('2099-09-15', 'all', 0),
             lambda: unauthorized.get_invoice(bill.id),
+            lambda: unauthorized.get_invoice(draft.id),
         ):
             with self.assertRaises(AccessError):
                 operation()
@@ -471,3 +477,167 @@ class DailyPurchaseReportCase(TransactionCase):
         self.assertEqual((len(first['rows']), first['count'], first['has_more']), (50, 51, True))
         self.assertEqual((len(second['rows']), second['has_more']), (1, False))
         self.assertFalse(set(row['id'] for row in first['rows']) & set(row['id'] for row in second['rows']))
+
+
+    def _pay(self, bill, journal, amount=None):
+        wizard = self.env['account.payment.register'].with_context(
+            active_model='account.move', active_ids=bill.ids,
+        ).create({
+            'journal_id': journal.id,
+            'amount': amount if amount is not None else bill.amount_residual,
+            'payment_date': bill.invoice_date,
+        })
+        payment = wizard._create_payments()
+        self.assertEqual(payment.state, 'paid')
+        return payment
+
+    def _osama_journal(self):
+        account = self.env['account.account'].create({
+            'name': 'Representative Petty Cash | عهدة مندوبي المشتريات',
+            'code': 'DPR199', 'account_type': 'asset_current',
+            'company_ids': [Command.set(self.company.ids)],
+        })
+        journal = self.env['account.journal'].create({
+            'name': 'عهدة أسامة', 'code': 'OSMC', 'type': 'cash',
+            'company_id': self.company.id, 'default_account_id': account.id,
+        })
+        (journal.outbound_payment_method_line_ids | journal.inbound_payment_method_line_ids).write({
+            'payment_account_id': account.id,
+        })
+        return journal
+
+    def _bank_journal(self, name='Test bank', code='DPRB', acc_number=None):
+        account = self.env['account.account'].create({
+            'name': name + ' account', 'code': 'DPR' + code, 'account_type': 'asset_cash',
+            'company_ids': [Command.set(self.company.ids)],
+        })
+        journal = self.env['account.journal'].create({
+            'name': name, 'code': code, 'type': 'bank',
+            'company_id': self.company.id, 'default_account_id': account.id,
+        })
+        if acc_number:
+            journal.bank_account_id = self.env['res.partner.bank'].create({
+                'acc_number': acc_number,
+                'partner_id': self.company.partner_id.id,
+                'company_id': self.company.id,
+            })
+        (journal.outbound_payment_method_line_ids | journal.inbound_payment_method_line_ids).write({
+            'payment_account_id': account.id,
+        })
+        return journal
+
+    def test_payment_method_cards_and_filters(self):
+        cash = self._cash_journal()
+        osama = self._osama_journal()
+        bank = self._bank_journal('الراجحي ••2029', 'DPR1')
+        cash_bill = self._bill(40, day='2099-09-15')
+        osama_bill = self._bill(50, day='2099-09-15')
+        bank_bill = self._bill(60, day='2099-09-15')
+        self._pay(cash_bill, cash)
+        self._pay(osama_bill, osama)
+        self._pay(bank_bill, bank)
+        report = self._report('cashier')
+        payload = report.get_days('2099-09-15', '2099-09-15', 'all')
+        methods = {card['key']: card for card in payload['methods']}
+        self.assertEqual(methods['osama']['count'], 1)
+        self.assertEqual(methods['osama']['total'], '50.00')
+        self.assertEqual(methods['cash']['count'], 1)
+        self.assertEqual(methods['cash']['total'], '40.00')
+        bank_key = f'journal:{bank.id}'
+        self.assertEqual(methods[bank_key]['count'], 1)
+        self.assertEqual(methods[bank_key]['total'], '60.00')
+        self.assertEqual(payload['days'][0]['count'], 3)
+        osama_only = report.get_days('2099-09-15', '2099-09-15', 'all', 'osama')
+        self.assertEqual(osama_only['days'][0]['count'], 1)
+        self.assertEqual(osama_only['days'][0]['total'], '50.00')
+        self.assertEqual({card['key'] for card in osama_only['methods']}, set(methods))
+        rows = report.get_day('2099-09-15', 'all', 0, 'osama')['rows']
+        self.assertEqual([row['id'] for row in rows], [osama_bill.id])
+        self.assertEqual(rows[0]['payment_methods'][0]['key'], 'osama')
+        with self.assertRaises(ValidationError):
+            report.get_days('2099-09-15', '2099-09-15', 'all', 'made_up')
+
+    def test_osama_settlement_entry_and_1994_account(self):
+        bill = self._bill(25, day='2099-09-16')
+        custody = self.env['account.account'].create({
+            'name': 'Custody 1994', 'code': 'DPR194', 'account_type': 'asset_current',
+            'company_ids': [Command.set(self.company.ids)],
+        })
+        entry = self.env['account.move'].create({
+            'move_type': 'entry', 'company_id': self.company.id,
+            'journal_id': self.settlement_journal.id, 'date': bill.invoice_date,
+            'ref': 'تسوية عهدة أسامة',
+            'line_ids': [
+                Command.create({'name': 'Supplier payable', 'account_id': self.payable.id,
+                                'partner_id': self.partner.id, 'debit': 25, 'credit': 0}),
+                Command.create({'name': 'عهدة أسامة', 'account_id': custody.id,
+                                'debit': 0, 'credit': 25}),
+            ],
+        })
+        entry.action_post()
+        (bill.line_ids | entry.line_ids).filtered(
+            lambda line: line.account_id == self.payable and not line.reconciled
+        ).reconcile()
+        report = self._report('cashier')
+        payload = report.get_days('2099-09-16', '2099-09-16', 'all')
+        self.assertEqual(payload['methods'][0]['key'], 'osama')
+        self.assertEqual(payload['methods'][0]['count'], 1)
+
+        numbered = self._bill(15, day='2099-09-17')
+        journal = self._bank_journal('Personal custody', 'PERS', acc_number='SA0000000000000000001994')
+        self._pay(numbered, journal)
+        card = report.get_days('2099-09-17', '2099-09-17', 'all')['methods'][0]
+        self.assertEqual(card['key'], 'osama')
+        self.assertEqual(card['total'], '15.00')
+
+    def test_draft_and_unapproved_match_and_exclude_unpaid(self):
+        draft = self._bill(80, day='2099-09-18', post=False)
+        unpaid = self._bill(90, day='2099-09-18')
+        cancelled = self._bill(10, day='2099-09-18')
+        cancelled.button_draft()
+        cancelled.button_cancel()
+        report = self._report('cashier')
+        all_days = report.get_days('2099-09-18', '2099-09-18', 'all')
+        self.assertEqual(all_days['days'][0]['count'], 1)
+        self.assertEqual(all_days['days'][0]['total'], '90.00')
+        statuses = {card['key']: card for card in all_days['statuses']}
+        self.assertEqual(statuses['not_paid']['count'], 1)
+        self.assertEqual(statuses['not_paid']['total'], '90.00')
+        self.assertEqual(statuses['draft']['count'], 1)
+        self.assertEqual(statuses['draft']['total'], '80.00')
+        self.assertEqual(statuses['unapproved']['count'], 1)
+        self.assertEqual(statuses['unapproved']['total'], '80.00')
+        drafts = report.get_days('2099-09-18', '2099-09-18', 'draft')
+        unapproved = report.get_days('2099-09-18', '2099-09-18', 'unapproved')
+        self.assertEqual(drafts['days'][0]['count'], 1)
+        self.assertEqual(drafts['days'][0]['total'], '80.00')
+        self.assertEqual(unapproved['days'][0]['count'], drafts['days'][0]['count'])
+        self.assertEqual(unapproved['days'][0]['total'], drafts['days'][0]['total'])
+        self.assertEqual(report.get_day('2099-09-18', 'draft', 0)['rows'][0]['id'], draft.id)
+        self.assertEqual(report.get_day('2099-09-18', 'unapproved', 0)['rows'][0]['id'], draft.id)
+        self.assertEqual(report.get_invoice(draft.id)['status'], 'draft')
+        self.assertNotIn(cancelled.id, [row['id'] for row in report.get_day('2099-09-18', 'unapproved', 0)['rows']])
+        self.assertNotIn(unpaid.id, [row['id'] for row in report.get_day('2099-09-18', 'unapproved', 0)['rows']])
+        # «لم تُعتمد» must stay identical to drafts even if a posted bill is unmarked as reviewed.
+        unpaid.checked = False
+        statuses = {card['key']: card for card in report.get_days('2099-09-18', '2099-09-18', 'all')['statuses']}
+        self.assertEqual(statuses['draft']['count'], 1)
+        self.assertEqual(statuses['unapproved']['count'], 1)
+        self.assertEqual(statuses['not_paid']['count'], 1)
+        self.assertEqual(
+            {row['id'] for row in report.get_day('2099-09-18', 'unapproved', 0)['rows']},
+            {row['id'] for row in report.get_day('2099-09-18', 'draft', 0)['rows']},
+        )
+        self.assertEqual({row['id'] for row in report.get_day('2099-09-18', 'draft', 0)['rows']}, {draft.id})
+
+    def test_mixed_methods_appear_on_each_card(self):
+        cash = self._cash_journal()
+        bank = self._bank_journal('Mixed bank', 'MXB')
+        bill = self._bill(100, day='2099-09-19')
+        self._pay(bill, cash, 40)
+        self._pay(bill, bank, 60)
+        report = self._report('cashier')
+        methods = {card['key']: card for card in report.get_days('2099-09-19', '2099-09-19', 'all')['methods']}
+        self.assertEqual(methods['cash']['count'], 1)
+        self.assertEqual(methods[f'journal:{bank.id}']['count'], 1)
+        self.assertEqual(report.get_days('2099-09-19', '2099-09-19', 'all', 'cash')['days'][0]['count'], 1)

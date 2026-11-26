@@ -1,14 +1,19 @@
 .bpr-shell {
-    --bpr-ink: #192332;
-    --bpr-muted: #758090;
-    --bpr-border: #e6eaf0;
-    --bpr-purple: #6435ad;
-    --bpr-purple-dark: #4e278f;
-    --bpr-soft: #f3effa;
+    color-scheme: light;
+    --bpr-ink: light-dark(#192332, #e8eef6);
+    --bpr-muted: light-dark(#758090, #9aa6b4);
+    --bpr-border: light-dark(#e6eaf0, #2c3542);
+    --bpr-purple: light-dark(#6435ad, #c4a4f0);
+    --bpr-purple-dark: light-dark(#4e278f, #d4c0f6);
+    --bpr-soft: light-dark(#f3effa, #2a2340);
+    --bpr-surface: light-dark(#ffffff, #1b212b);
+    --bpr-page: light-dark(#f6f7fa, #12161c);
+    --bpr-input: light-dark(#fbfcfd, #151a21);
+    --bpr-input-border: light-dark(#dfe4eb, #3a4554);
     height: 100%;
     min-height: 100%;
     overflow-y: auto;
-    background: #f6f7fa;
+    background: var(--bpr-page);
     color: var(--bpr-ink);
     font-family: inherit;
     line-height: 1.45;
@@ -27,27 +32,41 @@
     .bpr-heading p { color: var(--bpr-muted); font-size: 15px; }
     .bpr-eyebrow { color: var(--bpr-purple); font-size: 11px; font-weight: 750; letter-spacing: .09em; }
     .bpr-eyebrow-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #8956c8; vertical-align: 1px; margin-inline-end: 4px; }
-    .bpr-company { display: flex; align-items: center; gap: 11px; padding: 10px 14px; border: 1px solid var(--bpr-border); border-radius: 13px; background: #fff; }
+    .bpr-company { display: flex; align-items: center; gap: 11px; padding: 10px 14px; border: 1px solid var(--bpr-border); border-radius: 13px; background: var(--bpr-surface); }
     .bpr-company-icon, .bpr-calendar, .bpr-transaction-icon { display: grid; place-items: center; flex: 0 0 auto; color: var(--bpr-purple); background: var(--bpr-soft); border-radius: 11px; }
     .bpr-company-icon { width: 37px; height: 37px; font-size: 16px; }
     .bpr-company small, .bpr-company strong { display: block; }
     .bpr-company small { font-size: 10px; color: var(--bpr-muted); }
     .bpr-company strong { font-size: 13px; max-width: 240px; overflow-wrap: anywhere; }
-    .bpr-filter { display: grid; grid-template-columns: 1fr 1fr 1.2fr auto; align-items: end; gap: 16px; background: #fff; border: 1px solid var(--bpr-border); border-radius: 16px; padding: 20px; box-shadow: 0 8px 30px rgba(30, 36, 50, .025); }
+    .bpr-filter { display: grid; grid-template-columns: repeat(2, minmax(130px, 1fr)) repeat(2, minmax(130px, 1fr)) minmax(160px, 1.2fr) auto; align-items: end; gap: 16px; background: var(--bpr-surface); border: 1px solid var(--bpr-border); border-radius: 16px; padding: 20px; box-shadow: 0 8px 30px rgba(30, 36, 50, .025); }
     .bpr-filter label { display: flex; flex-direction: column; gap: 7px; min-width: 0; margin: 0; }
     .bpr-filter label > span { font-size: 12px; color: #586272; font-weight: 700; }
-    .bpr-filter input, .bpr-filter select { background: #fbfcfd; border: 1px solid #dfe4eb; border-radius: 9px; color: var(--bpr-ink); height: 44px; min-width: 0; padding: 0 12px; width: 100%; }
-    .bpr-filter input[type="date"] { direction: ltr; text-align: start; }
+    .bpr-filter input, .bpr-filter select { background: var(--bpr-input); border: 1px solid var(--bpr-input-border); border-radius: 9px; color: var(--bpr-ink); height: 44px; min-width: 0; padding: 0 12px; width: 100%; }
+    .bpr-filter input[type="date"], .bpr-filter input[type="month"] { direction: ltr; text-align: start; color-scheme: inherit; }
     .bpr-apply { background: var(--bpr-purple); border: 0; border-radius: 9px; color: #fff; font-weight: 700; height: 44px; padding: 0 22px; white-space: nowrap; }
     .bpr-apply:hover { background: var(--bpr-purple-dark); }
     .bpr-apply i { margin-inline-end: 6px; }
     .bpr-context { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px 20px; margin: 19px 2px 13px; color: var(--bpr-muted); font-size: 12px; }
     .bpr-context i { color: #9a86bb; margin-inline-end: 5px; }
+    .bpr-presets { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 14px; }
+    .bpr-preset { border: 1px solid var(--bpr-border); background: var(--bpr-surface); color: var(--bpr-ink); border-radius: 999px; padding: 8px 14px; font-size: 13px; font-weight: 700; }
+    .bpr-preset:hover { border-color: #d4c8e7; background: var(--bpr-soft); }
+    .bpr-preset--active { background: var(--bpr-purple); border-color: var(--bpr-purple); color: #fff; }
+    .bpr-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin: 16px 0 0; }
+    .bpr-card { display: flex; flex-direction: column; gap: 4px; text-align: start; border: 1px solid var(--bpr-border); background: var(--bpr-surface); border-radius: 14px; padding: 14px 16px; color: inherit; box-shadow: 0 6px 20px rgba(30, 36, 50, .03); }
+    .bpr-card:hover { border-color: #d4c8e7; }
+    .bpr-card--active { border-color: var(--bpr-purple); background: var(--bpr-soft); box-shadow: inset 0 0 0 1px var(--bpr-purple); }
+    .bpr-card small { color: var(--bpr-muted); font-size: 12px; font-weight: 700; }
+    .bpr-card strong { font-size: 18px; font-weight: 750; }
+    .bpr-card strong em { font-size: 10px; font-style: normal; font-weight: 500; color: var(--bpr-muted); }
+    .bpr-card span { color: var(--bpr-muted); font-size: 11px; }
+    .bpr-cards--status { margin-top: 10px; }
+    .bpr-status--draft, .bpr-status--unapproved { color: #6b4ea3; background: light-dark(#f3edfb, #2f2544); }
     .bpr-days { display: flex; flex-direction: column; gap: 10px; }
-    .bpr-day { border: 1px solid var(--bpr-border); border-radius: 14px; background: #fff; overflow: hidden; }
+    .bpr-day { border: 1px solid var(--bpr-border); border-radius: 14px; background: var(--bpr-surface); overflow: hidden; }
     .bpr-day--open { border-color: #d4c8e7; box-shadow: 0 8px 28px rgba(53, 38, 83, .045); }
-    .bpr-day-button { display: grid; grid-template-columns: minmax(155px, 1.3fr) repeat(3, minmax(110px, 1fr)) 28px; align-items: center; width: 100%; gap: 16px; padding: 19px 20px; text-align: start; color: inherit; border: 0; background: #fff; }
-    .bpr-day-button:hover { background: #fcfbfe; }
+    .bpr-day-button { display: grid; grid-template-columns: minmax(155px, 1.3fr) repeat(3, minmax(110px, 1fr)) 28px; align-items: center; width: 100%; gap: 16px; padding: 19px 20px; text-align: start; color: inherit; border: 0; background: var(--bpr-surface); }
+    .bpr-day-button:hover { background: var(--bpr-soft); }
     .bpr-day-title { display: flex; align-items: center; min-width: 0; gap: 12px; }
     .bpr-calendar { height: 43px; width: 43px; font-size: 17px; }
     .bpr-day-title strong, .bpr-day-title small, .bpr-day-metric strong, .bpr-day-metric small { display: block; }
@@ -58,7 +77,7 @@
     .bpr-day-metric--paid strong { color: #28745f; }
     .bpr-day-metric--due strong { color: #a66a22; }
     .bpr-chevron { display: grid; place-items: center; width: 28px; height: 28px; border: 1px solid var(--bpr-border); border-radius: 8px; color: #7d718d; }
-    .bpr-day-content { background: #fafafd; border-top: 1px solid #efedf4; padding: 4px 20px 15px; }
+    .bpr-day-content { background: light-dark(#fafafd, #161b24); border-top: 1px solid var(--bpr-border); padding: 4px 20px 15px; }
     .bpr-transaction { display: grid; grid-template-columns: 38px minmax(140px, 1fr) minmax(120px, auto) auto 18px; width: 100%; align-items: center; gap: 12px; text-align: start; background: transparent; border: 0; border-bottom: 1px solid #ececf1; color: inherit; padding: 15px 0; }
     .bpr-transaction:hover .bpr-transaction-main strong { color: var(--bpr-purple); }
     .bpr-transaction-icon { width: 38px; height: 38px; background: #fff; border: 1px solid #e9e5f0; }
@@ -67,20 +86,20 @@
     .bpr-transaction-main small, .bpr-transaction-amount > small { font-size: 11px; color: var(--bpr-muted); overflow-wrap: anywhere; }
     .bpr-transaction-amount strong { font-size: 14px; white-space: nowrap; }
     .bpr-transaction-amount strong small { font-size: 10px; font-weight: 500; color: var(--bpr-muted); }
-    .bpr-status { display: inline-block; width: fit-content; background: #f0f2f4; color: #5b6674; border-radius: 999px; padding: 5px 10px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+    .bpr-status { display: inline-block; width: fit-content; background: light-dark(#f0f2f4, #2a3140); color: light-dark(#5b6674, #c5ced8); border-radius: 999px; padding: 5px 10px; font-size: 11px; font-weight: 700; white-space: nowrap; }
     .bpr-status--paid { color: #216e57; background: #e6f5ed; }
     .bpr-status--not_paid, .bpr-status--blocked { color: #a45a26; background: #fff1df; }
     .bpr-status--partial, .bpr-status--in_payment { color: #5a5f9c; background: #edeeff; }
     .bpr-status--reversed { color: #916179; background: #f8edf3; }
     .bpr-open { color: #aa9fbb; font-size: 18px; }
     .bpr-pagination { display: flex; align-items: center; justify-content: flex-end; gap: 12px; padding-top: 16px; color: var(--bpr-muted); font-size: 12px; }
-    .bpr-pagination button, .bpr-feedback button { border: 1px solid #e1d9eb; background: #fff; color: var(--bpr-purple); border-radius: 8px; padding: 7px 12px; font-weight: 700; }
+    .bpr-pagination button, .bpr-feedback button { border: 1px solid var(--bpr-border); background: var(--bpr-surface); color: var(--bpr-purple); border-radius: 8px; padding: 7px 12px; font-weight: 700; }
     .bpr-footnote { color: var(--bpr-muted); font-size: 11px; margin: 18px 3px 0; }
     .bpr-feedback { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 12px; min-height: 180px; padding: 22px; color: var(--bpr-muted); text-align: center; }
     .bpr-feedback--compact { min-height: 80px; }
     .bpr-feedback--error { color: #9d4049; }
     .bpr-spinner { width: 17px; height: 17px; border: 2px solid #ded5ec; border-top-color: var(--bpr-purple); border-radius: 50%; animation: bpr-spin .7s linear infinite; }
-    .bpr-empty { text-align: center; padding: 65px 20px; background: #fff; border: 1px solid var(--bpr-border); border-radius: 16px; }
+    .bpr-empty { text-align: center; padding: 65px 20px; background: var(--bpr-surface); border: 1px solid var(--bpr-border); border-radius: 16px; }
     .bpr-empty-icon { display: grid; place-items: center; margin: 0 auto 16px; width: 58px; height: 58px; border-radius: 18px; background: var(--bpr-soft); color: var(--bpr-purple); font-size: 23px; }
     .bpr-empty h2 { font-size: 16px; font-weight: 700; }
     .bpr-empty p { color: var(--bpr-muted); font-size: 13px; margin-top: 6px; }
@@ -93,7 +112,7 @@
     .bpr-detail-amount > span, .bpr-detail-amount > small { color: #d4c7e4; font-size: 12px; }
     .bpr-detail-amount strong { font-size: 23px; font-weight: 700; overflow-wrap: anywhere; }
     .bpr-detail-amount strong small { font-size: 11px; color: #d4c7e4; }
-    .bpr-panel { background: #fff; border: 1px solid var(--bpr-border); border-radius: 15px; padding: 23px 25px; margin-bottom: 14px; }
+    .bpr-panel { background: var(--bpr-surface); border: 1px solid var(--bpr-border); border-radius: 15px; padding: 23px 25px; margin-bottom: 14px; }
     .bpr-panel h2 { font-size: 15px; font-weight: 750; }
     .bpr-meta { display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px; margin-top: 21px; }
     .bpr-meta div, .bpr-line-values div { min-width: 0; }
@@ -115,6 +134,7 @@
     .bpr-shell {
         padding: 26px 18px 48px;
         .bpr-filter { grid-template-columns: 1fr 1fr; }
+        .bpr-presets { margin-bottom: 12px; }
         .bpr-day-button { grid-template-columns: repeat(3, minmax(0, 1fr)) 28px; }
         .bpr-day-title { grid-column: 1 / 4; }
         .bpr-chevron { grid-column: 4; grid-row: 1; }
@@ -132,7 +152,8 @@
         .bpr-company { padding: 7px 10px; }
         .bpr-company-icon { width: 32px; height: 32px; }
         .bpr-filter { gap: 12px; padding: 16px; }
-        .bpr-filter label:nth-child(3) { grid-column: 1 / -1; }
+        .bpr-filter label { grid-column: auto; }
+        .bpr-filter label:nth-child(5), .bpr-apply { grid-column: 1 / -1; }
         .bpr-apply { grid-column: 1 / -1; }
         .bpr-context { flex-direction: column; font-size: 11px; }
         .bpr-day-button { grid-template-columns: 1fr auto; gap: 12px; padding: 16px; }
@@ -159,3 +180,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) { .bpr-shell .bpr-spinner { animation-duration: 1.6s; } }
+
+
+.o_web_client[style*="color-scheme: dark"] .bpr-shell,
+html[data-bs-theme="dark"] .bpr-shell,
+html[data-color-scheme="dark"] .bpr-shell {
+    color-scheme: dark;
+}

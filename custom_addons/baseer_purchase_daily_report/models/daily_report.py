@@ -10,6 +10,8 @@ PAGE_SIZE = 50
 MAX_DAYS = 366
 ZERO = Decimal('0')
 PAYMENT_STATES = frozenset(('all', 'not_paid', 'partial', 'in_payment', 'paid', 'reversed', 'blocked'))
+STATUS_FILTERS = PAYMENT_STATES | frozenset(('draft', 'unapproved'))
+METHOD_SPECIAL = frozenset(('all', 'osama', 'cash'))
 ALLOWED_ROLES = (
     'baseer_access_roles.group_owner',
     'baseer_access_roles.group_accountant',
@@ -66,17 +68,21 @@ class PurchaseDailyReport(models.AbstractModel):
 
     @api.model
     def _domain(self, company, first, last, status):
-        if not isinstance(status, str) or status not in PAYMENT_STATES:
+        if not isinstance(status, str) or status not in STATUS_FILTERS:
             raise ValidationError(self.env._('Choose a valid payment status.'))
         domain = [
             ('company_id', '=', company.id),
-            ('state', '=', 'posted'),
             ('move_type', 'in', ('in_invoice', 'in_refund')),
             ('invoice_date', '>=', first),
             ('invoice_date', '<=', last),
         ]
-        if status != 'all':
-            domain.append(('payment_state', '=', status))
+        if status in ('draft', 'unapproved'):
+            # «لم تُعتمد» uses the same rule as «المسودات»: vendor bills still in draft.
+            domain.append(('state', '=', 'draft'))
+        else:
+            domain.append(('state', '=', 'posted'))
+            if status != 'all':
+                domain.append(('payment_state', '=', status))
         return domain
 
     @api.model
@@ -187,53 +193,185 @@ class PurchaseDailyReport(models.AbstractModel):
         bills.mapped('matched_payment_ids')
         partials = lines.mapped('matched_debit_ids') | lines.mapped('matched_credit_ids')
         counterparts = partials.mapped('debit_move_id') | partials.mapped('credit_move_id')
-        counterparts.mapped('move_id.line_ids')
+        moves = counterparts.mapped('move_id')
+        moves.mapped('line_ids.account_id')
+        moves.mapped('line_ids.partner_id')
+        moves.mapped('journal_id.bank_account_id')
 
     @api.model
-    def get_days(self, date_from, date_to, status='all'):
+    def _method_key_valid(self, key):
+        if not isinstance(key, str):
+            return False
+        if key in METHOD_SPECIAL:
+            return True
+        if key.startswith('journal:'):
+            suffix = key[8:]
+            return suffix.isdigit() and int(suffix) > 0
+        return False
+
+    @api.model
+    def _text_blob(self, *parts):
+        return ' '.join(str(part or '') for part in parts)
+
+    @api.model
+    def _is_osama_settlement(self, journal, move, accounts, line_partners):
+        """Osama custody: his journal/account, account ending 1994, or a settlement in his name."""
+        bank = journal.bank_account_id
+        numbers = self._text_blob(getattr(bank, 'acc_number', ''), getattr(bank, 'sanitized_acc_number', ''))
+        names = self._text_blob(
+            journal.display_name, journal.name, journal.code,
+            move.ref, move.narration if 'narration' in move._fields else '',
+            *[account.display_name for account in accounts],
+            *[account.name for account in accounts],
+            *[partner.display_name for partner in line_partners],
+            *[partner.name for partner in line_partners],
+        )
+        lowered = names.casefold()
+        if 'عهدة أسامة' in names or 'أسامة' in names or 'osama' in lowered:
+            return True
+        if 'عهدة مندوبي' in names or 'representative petty cash' in lowered:
+            return True
+        compact = ''.join(character for character in numbers if character.isdigit())
+        if compact.endswith('1994') or '1994' in numbers:
+            return True
+        return False
+
+    @api.model
+    def _settlement_counterparts(self, bill):
+        """Yield unique counterpart moves that settled this bill's payable terms."""
+        seen = set()
+        terms = bill.line_ids.filtered(lambda line: line.account_id.account_type == 'liability_payable')
+        for term in terms:
+            for partial in term.matched_debit_ids | term.matched_credit_ids:
+                counterpart = partial.credit_move_id if partial.debit_move_id == term else partial.debit_move_id
+                other = counterpart.move_id
+                if other.id == bill.id or other.id in seen:
+                    continue
+                seen.add(other.id)
+                yield other
+
+    @api.model
+    def _bill_methods(self, bill):
+        """Classify how this bill was paid, matching production settlement journals."""
+        methods = []
+        seen = set()
+        osama_label = self.env._('Paid via Osama')
+        cash_label = self.env._('Paid in cash')
+
+        def add(key, label):
+            if key not in seen:
+                seen.add(key)
+                methods.append({'key': key, 'label': label})
+
+        for other in self._settlement_counterparts(bill):
+            journal = other.journal_id
+            accounts = other.line_ids.mapped('account_id')
+            liquidity_partners = other.line_ids.filtered(
+                lambda line: line.account_id.account_type in ('asset_cash', 'asset_current')
+            ).mapped('partner_id')
+            if self._is_osama_settlement(journal, other, accounts, liquidity_partners):
+                add('osama', osama_label)
+                continue
+            if journal.type == 'cash':
+                add('cash', cash_label)
+                continue
+            add(f'journal:{journal.id}', journal.display_name or journal.name or journal.code or '')
+        return methods
+
+    @api.model
+    def _status_card_rows(self, company, first, last, method):
+        """Counts follow the date range and the selected payment-method card."""
+        currency = company.currency_id
+        cards = []
+        for key, label in (
+            ('not_paid', self.env._('Unpaid')),
+            ('unapproved', self.env._('Unapproved')),
+            ('draft', self.env._('Drafts')),
+        ):
+            moves = self.env['account.move'].sudo().search(self._domain(company, first, last, key))
+            if method != 'all':
+                self._prefetch_cash_allocation(moves)
+                moves = moves.filtered(lambda move: any(item['key'] == method for item in self._bill_methods(move)))
+            total = sum((-_decimal(move.amount_total_signed) for move in moves), ZERO)
+            cards.append({
+                'key': key, 'label': label, 'count': len(moves),
+                'total': _money(total, currency),
+            })
+        return cards
+
+    @api.model
+    def get_days(self, date_from, date_to, status='all', method='all'):
         company = self._scope()
         first, last = self._date(date_from), self._date(date_to)
         if first > last or (last - first).days + 1 > MAX_DAYS:
             raise ValidationError(self.env._('Choose a date range of at most 366 days.'))
+        if not self._method_key_valid(method):
+            raise ValidationError(self.env._('Choose a valid payment method.'))
         domain = self._domain(company, first, last, status)
-        # The sole privileged query is bounded by the verified company/domain.
-        rows = self.env['account.move'].sudo()._read_group(
-            domain, ['invoice_date:day'],
-            ['amount_total_signed:sum', 'amount_residual_signed:sum', '__count'],
-        )
         currency = company.currency_id
-        days = []
-        for invoice_date, signed_total, signed_residual, count in rows:
-            total, residual = -_decimal(signed_total), -_decimal(signed_residual)
-            days.append({
-                'date': fields.Date.to_string(invoice_date), 'count': count,
-                'total': _money(total, currency), 'residual': _money(residual, currency),
-                'paid': _money(ZERO, currency), 'paid_pending': False,
-                'paid_unavailable': False,
-            })
-        by_date = {day['date']: day for day in days}
-        totals = {key: ZERO for key in by_date}
-        # Iterate bounded batches; a day's 50-row UI page must not truncate totals.
+        by_date = {}
+        paid_totals = {}
+        methods_acc = {}
+
+        def day_row(invoice_date):
+            key = fields.Date.to_string(invoice_date)
+            if key not in by_date:
+                by_date[key] = {
+                    'date': key, 'count': 0, 'total': ZERO, 'residual': ZERO,
+                    'paid': ZERO, 'paid_pending': False, 'paid_unavailable': False,
+                }
+                paid_totals[key] = ZERO
+            return key
+
         last_id = 0
         Move = self.env['account.move'].sudo()
         while True:
             batch = Move.search(domain + [('id', '>', last_id)], order='id', limit=200)
             if not batch:
                 break
-            # Explicit bulk prefetch: one2many and many2many relations otherwise
-            # trigger queries per bill when accessed through singleton calls.
             self._prefetch_cash_allocation(batch)
             for bill in batch:
-                key = fields.Date.to_string(bill.invoice_date)
+                bill_methods = self._bill_methods(bill)
+                total = -_decimal(bill.amount_total_signed)
+                for item in bill_methods:
+                    bucket = methods_acc.setdefault(item['key'], {'key': item['key'], 'label': item['label'], 'count': 0, 'total': ZERO})
+                    bucket['count'] += 1
+                    bucket['total'] += total
+                if method != 'all' and method not in {item['key'] for item in bill_methods}:
+                    continue
+                key = day_row(bill.invoice_date)
+                by_date[key]['count'] += 1
+                by_date[key]['total'] += total
+                by_date[key]['residual'] += -_decimal(bill.amount_residual_signed)
                 paid, pending, unavailable = self._cash_allocation(bill)
-                totals[key] += paid
+                paid_totals[key] += paid
                 by_date[key]['paid_pending'] |= pending
                 by_date[key]['paid_unavailable'] |= unavailable
             last_id = batch[-1].id
-        for key, day in by_date.items():
-            day['paid'] = None if day['paid_unavailable'] else _money(totals[key], currency)
-        days.sort(key=lambda item: item['date'], reverse=True)
-        return {'company': {'id': company.id, 'name': company.name, 'currency': currency.name}, 'days': days}
+        days = []
+        for key in sorted(by_date, reverse=True):
+            day = by_date[key]
+            days.append({
+                'date': day['date'], 'count': day['count'],
+                'total': _money(day['total'], currency),
+                'residual': _money(day['residual'], currency),
+                'paid': None if day['paid_unavailable'] else _money(paid_totals[key], currency),
+                'paid_pending': day['paid_pending'],
+                'paid_unavailable': day['paid_unavailable'],
+            })
+        method_cards = []
+        for key in ('osama', 'cash'):
+            if key in methods_acc:
+                method_cards.append(methods_acc.pop(key))
+        method_cards.extend(sorted(methods_acc.values(), key=lambda item: (-item['count'], item['label'])))
+        for card in method_cards:
+            card['total'] = _money(card['total'], currency)
+        return {
+            'company': {'id': company.id, 'name': company.name, 'currency': currency.name},
+            'days': days,
+            'methods': method_cards,
+            'statuses': self._status_card_rows(company, first, last, method),
+        }
 
     @api.model
     def _entry_sources(self, moves):
@@ -269,7 +407,7 @@ class PurchaseDailyReport(models.AbstractModel):
             'id': move.id, 'number': move.name or '',
             'vendor': move.partner_id.display_name or '', 'reference': move.ref or '',
             'date': fields.Date.to_string(move.invoice_date),
-            'status': move.payment_state or 'not_paid', 'kind': move.move_type,
+            'status': 'draft' if move.state == 'draft' else (move.payment_state or 'not_paid'), 'kind': move.move_type,
             'currency': currency.name,
             'total': _money(sign * _decimal(move.amount_total), currency),
             'residual': _money(sign * _decimal(move.amount_residual), currency),
@@ -278,23 +416,29 @@ class PurchaseDailyReport(models.AbstractModel):
             'paid': None if unavailable else _money(paid, currency),
             'paid_pending': pending, 'paid_unavailable': unavailable,
             'entered_by': entered_by, 'entry_source': entry_source,
+            'payment_methods': self._bill_methods(move),
         }
 
     @api.model
-    def get_day(self, day, status='all', offset=0):
+    def get_day(self, day, status='all', offset=0, method='all'):
         company = self._scope()
         selected = self._date(day)
         if isinstance(offset, bool) or not isinstance(offset, int) or offset < 0:
             raise ValidationError(self.env._('Choose a valid page.'))
+        if not self._method_key_valid(method):
+            raise ValidationError(self.env._('Choose a valid payment method.'))
         domain = self._domain(company, selected, selected, status)
         moves = self.env['account.move'].sudo()
-        count = moves.search_count(domain)
-        records = moves.search(domain, order='id desc', offset=offset, limit=PAGE_SIZE)
+        records = moves.search(domain, order='id desc')
         self._prefetch_cash_allocation(records)
-        entry_sources = self._entry_sources(records)
+        if method != 'all':
+            records = records.filtered(lambda move: any(item['key'] == method for item in self._bill_methods(move)))
+        count = len(records)
+        page = records[offset:offset + PAGE_SIZE]
+        entry_sources = self._entry_sources(page)
         return {
-            'day': selected.isoformat(), 'rows': [self._bill_row(move, entry_sources) for move in records],
-            'offset': offset, 'count': count, 'has_more': offset + len(records) < count,
+            'day': selected.isoformat(), 'rows': [self._bill_row(move, entry_sources) for move in page],
+            'offset': offset, 'count': count, 'has_more': offset + len(page) < count,
         }
 
     @api.model
@@ -305,7 +449,8 @@ class PurchaseDailyReport(models.AbstractModel):
         # Revalidate type, state and exact company on every document request.
         move = self.env['account.move'].sudo().search([
             ('id', '=', invoice_id), ('company_id', '=', company.id),
-            ('state', '=', 'posted'), ('move_type', 'in', ('in_invoice', 'in_refund')),
+            ('state', 'in', ('posted', 'draft')),
+            ('move_type', 'in', ('in_invoice', 'in_refund')),
         ], limit=1)
         if not move:
             raise AccessError(self.env._('This purchase document is not available.'))

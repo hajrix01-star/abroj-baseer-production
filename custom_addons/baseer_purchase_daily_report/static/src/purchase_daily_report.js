@@ -5,13 +5,11 @@ import { registry } from "@web/core/registry";
 import { _t } from "@web/core/l10n/translation";
 import { userBus } from "@web/core/user";
 import { useBus, useService } from "@web/core/utils/hooks";
+import { detectPreset, monthValue, rangeForDay, rangeForMonth, rangeForPreset, riyadhYmd } from "./date_range";
 
 const MODEL = "baseer.purchase.daily.report";
 const PAGE_SIZE = 50;
-
-function localDate(date) {
-    return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, "0"), String(date.getDate()).padStart(2, "0")].join("-");
-}
+const PRESETS = ["today", "yesterday", "this_month", "last_month"];
 
 export class PurchaseDailyReport extends Component {
     static template = "baseer_purchase_daily_report.Report";
@@ -19,12 +17,16 @@ export class PurchaseDailyReport extends Component {
 
     setup() {
         this.orm = useService("orm");
-        const now = new Date();
+        const initial = rangeForPreset("this_month");
         this.requestId = 0;
         this.state = useState({
-            from: localDate(new Date(now.getFullYear(), now.getMonth(), 1)),
-            to: localDate(now),
+            from: initial.from,
+            to: initial.to,
+            day: initial.day,
+            month: initial.month,
+            preset: "this_month",
             payment: "all",
+            method: "all",
             applied: null,
             payload: null,
             loading: true,
@@ -50,6 +52,7 @@ export class PurchaseDailyReport extends Component {
             all: _t("All statuses"), not_paid: _t("Unpaid"), partial: _t("Partially paid"),
             in_payment: _t("In payment"), paid: _t("Paid"), reversed: _t("Reversed"),
             blocked: _t("Blocked"), invoicing_legacy: _t("Legacy"),
+            draft: _t("Draft"), drafts: _t("Drafts"), unapproved: _t("Unapproved"),
             apply: _t("Show purchases"), loading: _t("Loading purchases…"),
             error: _t("We could not load this report. Please try again."), retry: _t("Try again"),
             empty: _t("No purchases found for these filters."), emptyHint: _t("Try another date range or payment status."),
@@ -70,7 +73,25 @@ export class PurchaseDailyReport extends Component {
             paidNote: _t("Confirmed payments allocated to these invoices are shown. Other settlements can reduce the outstanding amount."),
             paidUnavailableNote: _t("An amount is unavailable when the cash payment cannot be verified, including some foreign currency payments."),
             liveNote: _t("Posted supplier bills and credit notes only."),
+            today: _t("Today"), yesterday: _t("Yesterday"),
+            thisMonth: _t("This month"), lastMonth: _t("Last month"),
+            pickDay: _t("Day"), pickMonth: _t("Month"),
+            paymentMethods: _t("Payment methods"), statusFilters: _t("Status filters"),
+            documentsShort: _t("documents"),
         };
+    }
+
+    get presetLabels() {
+        return {
+            today: this.labels.today,
+            yesterday: this.labels.yesterday,
+            this_month: this.labels.thisMonth,
+            last_month: this.labels.lastMonth,
+        };
+    }
+
+    get presets() {
+        return PRESETS;
     }
 
     statusLabel(status) { return this.labels[status] || status || "—"; }
@@ -80,9 +101,67 @@ export class PurchaseDailyReport extends Component {
         return (known.includes(error?.data?.name) && error.data.message) || this.labels.error;
     }
 
+    syncDates(from, to, extra = {}) {
+        const today = riyadhYmd();
+        this.state.from = from;
+        this.state.to = to;
+        this.state.preset = extra.preset || detectPreset(from, to);
+        this.state.day = extra.day || (from === to ? from : today.iso);
+        this.state.month = extra.month || (from && from.slice(0, 7)) || monthValue(today.year, today.month);
+    }
+
+    applyPreset(preset) {
+        const range = rangeForPreset(preset);
+        this.syncDates(range.from, range.to, { preset, day: range.day, month: range.month });
+        return this.applyFilters();
+    }
+
+    onDayPicked(event) {
+        const iso = event.target.value;
+        if (!iso) { return; }
+        const range = rangeForDay(iso);
+        this.syncDates(range.from, range.to, { preset: detectPreset(range.from, range.to), day: iso });
+        return this.applyFilters();
+    }
+
+    onMonthPicked(event) {
+        const value = event.target.value;
+        if (!value) { return; }
+        const range = rangeForMonth(value);
+        this.syncDates(range.from, range.to, { preset: detectPreset(range.from, range.to), month: value });
+        return this.applyFilters();
+    }
+
+    onFromToChanged() {
+        this.syncDates(this.state.from, this.state.to);
+    }
+
+    toggleMethod(key) {
+        this.state.method = this.state.method === key ? "all" : key;
+        return this.applyFilters();
+    }
+
+    toggleStatus(key) {
+        this.state.payment = this.state.payment === key ? "all" : key;
+        return this.applyFilters();
+    }
+
+    onPaymentChanged() {
+        return this.applyFilters();
+    }
+
+    isMethodActive(key) { return this.state.applied?.method === key; }
+    isStatusActive(key) { return this.state.applied?.payment === key; }
+    isPresetActive(preset) { return this.state.preset === preset; }
+
     async applyFilters() {
         const request = ++this.requestId;
-        const applied = { from: this.state.from, to: this.state.to, payment: this.state.payment };
+        const applied = {
+            from: this.state.from,
+            to: this.state.to,
+            payment: this.state.payment,
+            method: this.state.method,
+        };
         this.state.loading = true;
         this.state.error = "";
         this.state.expanded = null;
@@ -91,7 +170,7 @@ export class PurchaseDailyReport extends Component {
         this.state.invoiceLoading = false;
         this.state.invoiceError = "";
         try {
-            const result = await this.orm.call(MODEL, "get_days", [applied.from, applied.to, applied.payment]);
+            const result = await this.orm.call(MODEL, "get_days", [applied.from, applied.to, applied.payment, applied.method]);
             if (request !== this.requestId) { return; }
             this.state.payload = result;
             this.state.applied = applied;
@@ -123,7 +202,7 @@ export class PurchaseDailyReport extends Component {
         this.state.dayLoading = true;
         this.state.dayError = "";
         try {
-            const result = await this.orm.call(MODEL, "get_day", [day, this.state.applied.payment, offset]);
+            const result = await this.orm.call(MODEL, "get_day", [day, this.state.applied.payment, offset, this.state.applied.method]);
             if (request === this.requestId) { this.state.dayData = result; }
         } catch (error) {
             if (request === this.requestId) { this.state.dayError = this.errorMessage(error); }

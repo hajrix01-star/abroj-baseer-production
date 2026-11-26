@@ -1451,3 +1451,24 @@ msgstr "تحتاج فاتورة الدفعة القديمة إلى مراجعة 
 #: code:addons/baseer_financial_correction/models/batch_adapter.py:0
 msgid "A batch correction must preserve the original expense account."
 msgstr "يجب أن يحافظ تصحيح الدفعة على حساب المصروف الأصلي."
+
+#. module: baseer_financial_correction
+#. odoo-python
+#: code:addons/baseer_financial_correction/models/correction.py:0
+msgid "Choose a manual payment method linked directly to this company’s cash, bank, or official custody account."
+msgstr "اختر طريقة دفع يدوية مربوطة مباشرة بحساب النقد أو البنك أو العهدة الرسمي لهذه الشركة."
+
+#. module: baseer_financial_correction
+#: model:ir.model.fields,field_description:baseer_financial_correction.field_baseer_financial_correction__purchase_source_locked
+msgid "Invoice owned by a purchase order"
+msgstr "فاتورة تتبع أمر شراء"
+
+#. module: baseer_financial_correction
+#: model:ir.model.fields,help:baseer_financial_correction.field_baseer_financial_correction__purchase_source_locked
+msgid "When set, this wizard may change only the payment journal or method. The invoice and purchase order stay untouched."
+msgstr "عند تفعيله، يسمح المعالج بتغيير دفتر أو طريقة الدفع فقط. الفاتورة وأمر الشراء يبقيان كما هما."
+
+#. module: baseer_financial_correction
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_correction_form
+msgid "This invoice belongs to a purchase order. You can correct the payment journal or method; the invoice and purchase order stay unchanged."
+msgstr "هذه الفاتورة تتبع أمر شراء. يمكنك تصحيح دفتر أو طريقة الدفع فقط، والفاتورة وأمر الشراء يبقيان كما هما."

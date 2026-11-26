@@ -56,6 +56,12 @@ class FinancialCorrection(models.TransientModel):
     operation_token = fields.Char(readonly=True)
     completed = fields.Boolean(readonly=True)
     audit_id = fields.Many2one('baseer.financial.correction.audit', readonly=True)
+    purchase_source_locked = fields.Boolean(
+        string='Invoice owned by a purchase order',
+        compute='_compute_purchase_source_locked',
+        help='When set, this wizard may change only the payment journal or method. '
+             'The invoice and purchase order stay untouched.',
+    )
 
     _PROTECTED = {'company_id', 'move_id', 'payment_id', 'batch_line_id', 'baseline_json',
                   'operation_token', 'completed', 'audit_id', 'create_uid', 'operation'}
@@ -81,6 +87,13 @@ class FinancialCorrection(models.TransientModel):
             source = wizard.move_id or wizard.payment_id
             source._baseer_correction_require_access()
 
+    @api.depends('move_id')
+    def _compute_purchase_source_locked(self):
+        for wizard in self:
+            wizard.purchase_source_locked = bool(
+                wizard.move_id and wizard.move_id._baseer_correction_purchase_order()
+            )
+
     def _clean_context(self, company):
         return {'allowed_company_ids': company.ids, 'lang': self.env.user.lang,
                 'tz': self.env.user.tz}
@@ -93,7 +106,7 @@ class FinancialCorrection(models.TransientModel):
                        else journal.outbound_payment_method_line_ids)
             eligible = methods.filtered(lambda method: method.code == 'manual'
                 and method.payment_account_id == journal.default_account_id
-                and journal.default_account_id.account_type == 'asset_cash')
+                and journal._baseer_is_correction_liquidity_journal())
             wizard.payment_method_line_id = eligible if len(eligible) == 1 else False
 
     def _lock_wizard_rows(self):
@@ -133,9 +146,11 @@ class FinancialCorrection(models.TransientModel):
                 raise UserError(_('This operation is shared by several batch rows.'))
             batch_line = found
         model._validate_source(move, payment, batch_line, operation=operation)
+        purchase_locked = bool(move and move._baseer_correction_purchase_order())
         vals = {'company_id': company.id, 'move_id': move.id, 'payment_id': payment.id,
                 'batch_line_id': batch_line.id, 'partner_id': source.partner_id.id,
-                'reason': '', 'operation': operation, 'correct_payment': bool(payment and not move),
+                'reason': '', 'operation': operation,
+                'correct_payment': bool(payment and (not move or purchase_locked)),
                 'payment_amount_input': str(_money(payment.amount)) if payment else False,
                 'payment_journal_id': payment.journal_id.id,
                 'payment_method_line_id': payment.payment_method_line_id.id,
@@ -209,7 +224,9 @@ class FinancialCorrection(models.TransientModel):
                 raise UserError(_('Electronic documents must use the native cancellation or credit-note workflow.'))
         if move:
             move._baseer_correction_require_access()
-            move._baseer_assert_correction_eligible()
+            # Payment-journal-only edits may proceed on a PO-owned bill; cancel
+            # still follows the purchase-order route because it would cancel the bill.
+            move._baseer_assert_correction_eligible(ignore_purchase_owner=(operation == 'edit'))
             if move.move_type not in ('in_invoice', 'out_invoice') or not 1 <= len(move.invoice_line_ids) <= 50:
                 raise UserError(_('Only ordinary customer or supplier invoices with at most 50 lines are supported.'))
             if move.invoice_cash_rounding_id:
@@ -265,8 +282,8 @@ class FinancialCorrection(models.TransientModel):
                 or method.payment_type != payment_type or method.code != 'manual'
                 or (journal.currency_id and journal.currency_id != company.currency_id)
                 or method.payment_account_id != journal.default_account_id
-                or journal.default_account_id.account_type != 'asset_cash'):
-            raise UserError(_('Choose a manual payment method linked directly to this company’s cash or bank account.'))
+                or not journal._baseer_is_correction_liquidity_journal()):
+            raise UserError(_('Choose a manual payment method linked directly to this company’s cash, bank, or official custody account.'))
 
     @api.model
     def _snapshot(self, move, payment, batch_line):
@@ -339,6 +356,38 @@ class FinancialCorrection(models.TransientModel):
         if not self.reason or not self.reason.strip() or len(self.reason.strip()) > 2000:
             raise ValidationError(_('Enter a correction reason of at most 2,000 characters.'))
 
+    def _bill_correction_requested(self):
+        """True when the wizard would change the invoice itself."""
+        self.ensure_one()
+        move = self.move_id
+        if not move:
+            return False
+        if self.partner_id != move.partner_id:
+            return True
+        if self.batch_line_id:
+            return _money(move.amount_total) != _number(self.gross_amount_input, _('Invoice total'), minimum=_CENT)
+        originals = move.invoice_line_ids.filtered(lambda line: line.display_type == 'product')
+        if not self.line_ids:
+            return False
+        if len(self.line_ids) != len(originals) or self.line_ids.original_line_id != originals:
+            return True
+        for line in self.line_ids:
+            original = line.original_line_id
+            if (line.name != original.name
+                    or _number(line.quantity_input, _('Quantity'), minimum=_CENT) != Decimal(str(original.quantity)).quantize(_CENT)
+                    or _number(line.price_unit_input, _('Unit price')) != Decimal(str(original.price_unit)).quantize(_CENT)
+                    or _number(line.discount_input, _('Discount'), maximum=Decimal('100')) != Decimal(str(original.discount)).quantize(_CENT)
+                    or line.tax_ids != original.tax_ids):
+                return True
+        return False
+
+    def _payment_amount_changed(self, payment_vals):
+        """True when the requested payment amount differs from the posted one."""
+        self.ensure_one()
+        if not self.payment_id or not payment_vals:
+            return False
+        return _money(payment_vals.get('amount')) != _money(self.payment_id.amount)
+
     def _input_values(self):
         self.ensure_one()
         self._validate_reason()
@@ -363,6 +412,13 @@ class FinancialCorrection(models.TransientModel):
         move_vals = False
         if not self.move_id and not self.correct_payment:
             raise ValidationError(_('Select the payment correction to correct a standalone payment.'))
+        purchase_locked = bool(self.move_id and self.move_id._baseer_correction_purchase_order())
+        if purchase_locked:
+            if self.operation != 'edit' or not self.correct_payment or not payment_vals:
+                raise UserError(_('This operation belongs to another workflow. Correct it from its original document.'))
+            if self._bill_correction_requested() or self._payment_amount_changed(payment_vals):
+                raise UserError(_('This operation belongs to another workflow. Correct it from its original document.'))
+            return False, payment_vals
         if self.move_id:
             if self.batch_line_id:
                 _number(self.gross_amount_input, _('Invoice total'), minimum=_CENT)
@@ -434,7 +490,7 @@ class FinancialCorrection(models.TransientModel):
         move, payment = self.move_id, self.payment_id
         if payment:
             payment._seek_for_lines()[1].remove_move_reconcile()
-        if move:
+        if move and move_vals:
             move.button_draft()
             move.write(move_vals)
             if _money(move.amount_total) <= 0:

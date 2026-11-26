@@ -436,8 +436,13 @@ class DailyPurchaseReportCase(TransactionCase):
         draft = self._bill(3, post=False)
         report = self._report('cashier')
         self.assertEqual(report.get_invoice(bill.id)['id'], bill.id)
-        with self.assertRaises(AccessError):
-            report.get_invoice(draft.id)
+        # Authorized roles may open a draft from the drafts / unapproved filter.
+        self.assertEqual(report.get_invoice(draft.id)['id'], draft.id)
+        self.assertEqual(report.get_invoice(draft.id)['status'], 'draft')
+        # The default posted view includes the posted bill only, not the draft.
+        payload = report.get_days('2099-09-15', '2099-09-15', 'all')
+        self.assertEqual(payload['days'][0]['count'], 1)
+        self.assertNotIn(draft.id, [row['id'] for row in report.get_day('2099-09-15', 'all', 0)['rows']])
         # Altering a context's active company cannot bypass the user company guard.
         forged = report.with_context(allowed_company_ids=[self.company_b.id])
         with self.assertRaises(AccessError):
@@ -449,6 +454,7 @@ class DailyPurchaseReportCase(TransactionCase):
             lambda: unauthorized.get_days('2099-09-15', '2099-09-15', 'all'),
             lambda: unauthorized.get_day('2099-09-15', 'all', 0),
             lambda: unauthorized.get_invoice(bill.id),
+            lambda: unauthorized.get_invoice(draft.id),
         ):
             with self.assertRaises(AccessError):
                 operation()
@@ -523,7 +529,7 @@ class DailyPurchaseReportCase(TransactionCase):
     def test_payment_method_cards_and_filters(self):
         cash = self._cash_journal()
         osama = self._osama_journal()
-        bank = self._bank_journal('الراجحي ••2029', 'BNK1')
+        bank = self._bank_journal('الراجحي ••2029', 'DPR1')
         cash_bill = self._bill(40, day='2099-09-15')
         osama_bill = self._bill(50, day='2099-09-15')
         bank_bill = self._bill(60, day='2099-09-15')

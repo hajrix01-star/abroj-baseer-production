@@ -152,7 +152,9 @@
                                         </tr>
                                         <tr t-if="row.kind === 'transfer'" class="bpr-row--transfer">
                                             <td class="bpr-cell-date"><span class="bpr-chevron-space"/><bdi class="bpr-full" t-esc="row.date"/><bdi class="bpr-short" t-esc="shortDate(row.date)"/></td>
-                                            <td t-att-colspan="purchaseColspan - 1" class="bpr-muted" t-esc="labels.transferOnly"/>
+                                            <td/>
+                                            <td t-foreach="state.payload.table.columns" t-as="column" t-key="column.key"/>
+                                            <td/>
                                             <t t-if="state.payload.table.show_custody">
                                                 <td class="bpr-g2"><bdi t-esc="row.transfer"/></td>
                                                 <td><bdi t-esc="row.balance"/></td>

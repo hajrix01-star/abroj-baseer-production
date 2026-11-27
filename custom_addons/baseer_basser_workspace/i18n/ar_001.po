@@ -108,8 +108,8 @@ msgstr "طلبات المشتريات"
 
 #. module: baseer_basser_workspace
 #: model:baseer.basser.workspace.item,description:baseer_basser_workspace.workspace_item_cashier_procurement_requests
-msgid "Review and resend previous requests."
-msgstr "مراجعة الطلبات السابقة وإعادة إرسالها."
+msgid "Review requests and record the received purchase."
+msgstr "مراجعة الطلبات وتسجيل استلام المشتريات."
 
 #. module: baseer_basser_workspace
 #: model:baseer.basser.workspace.item,name:baseer_basser_workspace.workspace_item_cashier_sales_summaries

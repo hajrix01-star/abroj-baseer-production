@@ -178,6 +178,7 @@ class BasserWorkspaceCase(TransactionCase):
             self.env.ref('baseer_basser_workspace.workspace_item_cashier_procurement_requests').id,
             self.env.ref('baseer_basser_workspace.workspace_item_cashier_sales_summaries').id,
             self.env.ref('baseer_basser_workspace.workspace_item_cashier_advances').id,
+            self.env.ref('baseer_basser_workspace.workspace_item_cashier_purchase_batches').id,
             self.env.ref('baseer_basser_workspace.workspace_item_cashier_heat_calendar').id,
             self.env.ref('baseer_basser_workspace.workspace_item_cashier_daily_purchase_report').id,
         }
@@ -186,6 +187,7 @@ class BasserWorkspaceCase(TransactionCase):
         opened = self.env['baseer.basser.workspace.section'].with_user(cashier).open_workspace_item(
             self.env.ref('baseer_basser_workspace.workspace_item_cashier_procurement_requests').id,
         )
+        # Kept from #1011: the live "Previous requests" menu is a catalog client action.
         self.assertEqual(opened['action']['type'], 'ir.actions.client')
         self.assertEqual(opened['action']['tag'], 'baseer_procurement_requests.catalog')
         self.assertEqual(opened['action']['params'], {'workspace_tab': 'recent'})
@@ -253,6 +255,7 @@ class BasserWorkspaceCase(TransactionCase):
         workspace = self.env['baseer.basser.workspace.section'].with_user(accountant).get_workspace()
         item_ids = {item['id'] for section in workspace['sections'] for item in section['items']}
         self.assertSetEqual(item_ids, {
+            self.env.ref('baseer_basser_workspace.workspace_item_accountant_purchase_batches').id,
             self.env.ref('baseer_basser_workspace.workspace_item_accountant_advances').id,
             self.env.ref(
                 'baseer_basser_workspace.workspace_item_accountant_representative_petty_cash'
@@ -286,22 +289,6 @@ class BasserWorkspaceCase(TransactionCase):
             with self.assertRaises(ValidationError), self.env.cr.savepoint():
                 item.write({'active': True})
             self.assertFalse(item.active, xmlid)
-
-    def test_purchase_batch_shortcuts_are_hidden_without_removing_native_history(self):
-        action = self.env.ref('baseer_purchase_batch.action_purchase_batches')
-        self.assertEqual(action.res_model, 'baseer.purchase.batch')
-        for role in ('cashier', 'accountant'):
-            item = self.env.ref(
-                'baseer_basser_workspace.workspace_item_%s_purchase_batches' % role
-            )
-            self.assertFalse(item.active)
-            workspace = self.env['baseer.basser.workspace.section'].with_user(self._user(role))
-            ids = {entry['id'] for section in workspace.get_workspace()['sections']
-                   for entry in section['items']}
-            self.assertNotIn(item.id, ids)
-            with self.assertRaises(AccessError):
-                workspace.open_workspace_item(item.id)
-        self.assertTrue(self.env.ref('baseer_purchase_batch.menu_purchase_batches').exists())
 
     def test_daily_purchase_report_role_shortcuts_are_bounded(self):
         menu = self.env.ref('baseer_purchase_daily_report.menu_daily_purchase_report')
@@ -388,7 +375,7 @@ class BasserWorkspaceCase(TransactionCase):
     def test_basser_t03b_owner_can_hide_and_restore_a_workspace_item(self):
         owner = self._user('owner')
         cashier = self._user('cashier')
-        item = self.env.ref('baseer_basser_workspace.workspace_item_cashier_daily_purchase_report')
+        item = self.env.ref('baseer_basser_workspace.workspace_item_cashier_purchase_batches')
         self.assertTrue(item.active)
 
         item.with_user(owner).action_hide_from_basser()

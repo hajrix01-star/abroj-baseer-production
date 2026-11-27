@@ -110,6 +110,8 @@ test('numbers use Western digits without abbreviating calendar values', () => {
 });
 test('chart time positions run from right to left', () => {
     expect(chartX(0, 6)).toBeGreaterThan(chartX(5, 6));
+    expect(chartX(0, 6, 700, true)).toBeLessThan(chartX(5, 6, 700, true));
+    expect(chartX(0, 6, 700, true)).toBeLessThan(chartX(0, 6));
 });
 
 test('table values use accounting notation', () => {

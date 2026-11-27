@@ -92,8 +92,10 @@ export const formatPoints = (n) => n == null || n === false || !Number.isFinite(
 export const ratioDifference = (value, previous) => value == null || previous == null ? null : value - previous;
 export const formatTargetPercent = (n) => n == null ? "—" : `${Number(n).toLocaleString("en-US", { maximumFractionDigits: 1 })}%`;
 export const timelineYear = (period) => String(period?.mode === "month" ? period.month : (period?.year || period?.date_to || period?.date || "")).slice(0, 4);
-export const chartX = (i, n, width = 700) =>
-  width - 48 - (width - 70) * (n <= 1 ? 0.5 : i / (n - 1));
+export const chartX = (i, n, width = 700, ltr = false) => {
+  const t = n <= 1 ? 0.5 : i / (n - 1);
+  return ltr ? 48 + (width - 70) * t : width - 48 - (width - 70) * t;
+};
 export const miniX = (i, n) => 95 - (n <= 1 ? 45 : 90 * i / (n - 1));
 // Full names suit titles and pickers; use short names for dense tables, charts and year tiles.
 export const MONTHS_FULL = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -248,9 +250,12 @@ export class Sparkline extends Component {
 }
 export class LineChart extends Component {
   static template = "baseer_dashboard2.LineChart";
-  static props = { series: Array, labels: { optional: true }, months: { optional: true }, percent: { optional: true }, compactTop: { optional: true }, fiveTicks: { optional: true } };
-  chartX = chartX;
+  static props = { series: Array, labels: { optional: true }, months: { optional: true }, percent: { optional: true }, compactTop: { optional: true }, fiveTicks: { optional: true }, ltr: { type: Boolean, optional: true } };
   setup() { this.hover = useState({ index: -1, series: -1 }); }
+  chartX(i, n, width = 700) { return chartX(i, n, width, !!this.props.ltr); }
+  get axisStart() { return this.props.ltr ? 48 : 20; }
+  get axisEnd() { return this.props.ltr ? 678 : 652; }
+  get axisLabelX() { return this.props.ltr ? 40 : 660; }
   get slots() { return Array.from({ length: Math.max(0, ...this.renderedSeries.map(s => s.values.length)) }, (_, i) => i); }
   slotWidth() { return this.slots.length > 1 ? 630 / (this.slots.length - 1) : 630; }
   pointInfo(event, index) {
@@ -996,9 +1001,13 @@ export class Dashboard2 extends Component {
     const line = this.state.data?.sales_line;
     const peak = line?.peak;
     if (line?.granularity === "month") {
-      const empty = (line.points || []).filter((p) => p.empty && !p.value).map((p) => p.label);
-      const peakText = peak ? `أعلى شهر ${peak.label} — ${this.fmt(peak.value)} ر.س` : "لا بيانات";
-      return empty.length ? `${peakText} · ${empty.join(" و")} فارغ` : peakText;
+      const points = line.points || [];
+      const filled = points.filter((p) => p.value != null);
+      if (!filled.length) return "لا بيانات";
+      const first = this.monthName(filled[0].key, false, false);
+      const last = this.monthName(filled[filled.length - 1].key, false, false);
+      const empty = points.filter((p) => p.value == null).map((p) => this.monthName(p.key, false, false));
+      return empty.length ? `من ${first} إلى ${last} · ${empty.join(" و")} بدون بيانات` : `من ${first} إلى ${last}`;
     }
     return peak ? `خط واحد للمبيعات · أعلى يوم ${peak.day} ${this.monthName(line.month, false, false)} بـ ${this.fmt(peak.value)} ر.س` : "خط واحد للمبيعات";
   }

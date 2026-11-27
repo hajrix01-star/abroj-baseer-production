@@ -41,7 +41,7 @@
     <t t-name="baseer_dashboard2.LineChart">
         <div>
         <div class="chart-legend"><span t-foreach="renderedSeries.filter(s =&gt; s.name and !s.hideLegend)" t-as="entry" t-key="entry_index"><i t-att-class="entry.dashed ? 'dashed' : entry.gold ? 'gold' : ''"/><t t-esc="entry.name"/></span></div>
-        <svg class="bd2-chart" t-att-viewBox="props.compactTop ? '0 30 700 210' : '0 0 700 240'" role="img">
+        <svg class="bd2-chart" t-att-viewBox="props.compactTop ? '0 30 700 210' : '0 0 700 240'" role="img" t-att-direction="props.ltr ? 'ltr' : false" t-att-style="props.ltr ? 'direction:ltr' : false">
             <defs>
                 <linearGradient id="gold-area" x1="0" x2="0" y1="0" y2="1">
                     <stop offset="0" stop-color="var(--bd2-gold)" stop-opacity="0.24"/>
@@ -53,8 +53,8 @@
             </t>
             <line t-if="hover.index &gt;= 0" class="bd2-guide" t-att-x1="chartX(hover.index,slots.length)" t-att-x2="chartX(hover.index,slots.length)" y1="30" y2="205" stroke="var(--bd2-gold)" stroke-width="1"/>
             <t t-foreach="ticks" t-as="i" t-key="i">
-                <line x1="20" x2="652" t-att-y1="y(i)" t-att-y2="y(i)" stroke="var(--bd2-grid)"/>
-                <text x="660" t-att-y="y(i)+4" fill="var(--bd2-muted)" font-size="10" t-esc="compact(i)"/>
+                <line t-att-x1="axisStart" t-att-x2="axisEnd" t-att-y1="y(i)" t-att-y2="y(i)" stroke="var(--bd2-grid)"/>
+                <text t-att-x="axisLabelX" t-att-y="y(i)+4" t-att-text-anchor="props.ltr ? 'end' : undefined" fill="var(--bd2-muted)" font-size="10" t-esc="compact(i)"/>
             </t>
             <t t-foreach="renderedSeries" t-as="s" t-key="s_index">
                 <path t-if="s.area" t-att-d="area(s.values)" fill="url(#gold-area)"/>
@@ -63,11 +63,11 @@
                 <path t-if="s.partial" t-att-d="partialPath(s.values, s.partial)" fill="none" t-att-stroke="s.gold ? 'var(--bd2-gold)' : 'var(--bd2-c1)'" stroke-width="2.3" stroke-dasharray="5 4"/>
                 <t t-if="!s.dashed or s.endpoint"><t t-foreach="s.values" t-as="v" t-key="v_index">
                     <circle t-if="v !== null and v !== undefined and (!s.dashed or v_index === s.values.findLastIndex(x=&gt;x != null))" t-att-cx="chartX(v_index,s.values.length)" t-att-cy="y(v)" t-att-r="hover.index === v_index and hover.series === s_index ? 6 : (v_index === s.values.findLastIndex(x=&gt;x != null) ? 5 : 3)" t-att-fill="v_index === s.values.findLastIndex(x=&gt;x != null) ? (s.gold ? 'var(--bd2-gold)' : 'var(--bd2-c1)') : 'var(--bd2-card)'" t-att-stroke="s.gold ? 'var(--bd2-gold)' : 'var(--bd2-c1)'" stroke-width="2"/>
-                    <text t-att-class="((s.firstLabel or s.endpoint) ? 'bd2-value-label bd2-endpoint-label' : v_index % 2 ? 'bd2-value-label bd2-point-alternate' : 'bd2-value-label')+(s.drill ? ' bd2-drill' : '')" t-att-role="s.drill ? 'button' : false" t-att-tabindex="s.drill ? 0 : false" t-on-click="(e)=&gt;s.drill and s.drill(e,v_index)" t-on-keydown="(e)=&gt;s.drill and s.drill(e,v_index)" t-if="((s.area and !s.firstLabel) or s.pointLabels or ((s.firstLabel or s.endpoint) and v_index === s.values.findLastIndex(x=&gt;x != null)) or (props.percent and v_index === s.values.findLastIndex(x=&gt;x != null))) and v !== null and v !== undefined" t-att-x="(s.firstLabel or s.endpoint) ? chartX(v_index,s.values.length)+8 : chartX(v_index,s.values.length)" t-att-y="(s.firstLabel or s.endpoint) ? labelY(s,v) : y(v)-8" t-att-text-anchor="(s.firstLabel or s.endpoint) ? 'start' : 'middle'" fill="var(--bd2-ink)" font-size="9" font-weight="700" t-esc="compact(v)"/>
+                    <text t-att-class="((s.firstLabel or s.endpoint) ? 'bd2-value-label bd2-endpoint-label' : v_index % 2 ? 'bd2-value-label bd2-point-alternate' : 'bd2-value-label')+(s.drill ? ' bd2-drill' : '')" t-att-role="s.drill ? 'button' : false" t-att-tabindex="s.drill ? 0 : false" t-on-click="(e)=&gt;s.drill and s.drill(e,v_index)" t-on-keydown="(e)=&gt;s.drill and s.drill(e,v_index)" t-if="((s.area and !s.firstLabel) or s.pointLabels or ((s.firstLabel or s.endpoint) and v_index === s.values.findLastIndex(x=&gt;x != null)) or (props.percent and v_index === s.values.findLastIndex(x=&gt;x != null))) and v !== null and v !== undefined" t-att-x="(s.firstLabel or s.endpoint) ? chartX(v_index,s.values.length)+(props.ltr ? -8 : 8) : chartX(v_index,s.values.length)" t-att-y="(s.firstLabel or s.endpoint) ? labelY(s,v) : y(v)-8" t-att-text-anchor="(s.firstLabel or s.endpoint) ? (props.ltr ? 'end' : 'start') : 'middle'" fill="var(--bd2-ink)" font-size="9" font-weight="700" t-esc="compact(v)"/>
                 </t></t>
             </t>
             <t t-foreach="props.labels || []" t-as="label" t-key="label_index">
-                <text t-att-class="props.labels.length &gt; 6 and label_index % 2 ? 'bd2-axis-alternate' : 'bd2-axis-label'" t-att-x="chartX(label_index,props.labels.length)" y="229" direction="ltr" unicode-bidi="isolate" t-att-text-anchor="label_index === 0 ? 'end' : label_last ? 'start' : 'middle'" fill="var(--bd2-muted)" font-size="10" t-esc="label"/>
+                <text t-att-class="props.labels.length &gt; 6 and label_index % 2 ? 'bd2-axis-alternate' : 'bd2-axis-label'" t-att-x="chartX(label_index,props.labels.length)" y="229" direction="ltr" unicode-bidi="isolate" t-att-text-anchor="label_index === 0 ? (props.ltr ? 'start' : 'end') : label_last ? (props.ltr ? 'end' : 'start') : 'middle'" fill="var(--bd2-muted)" font-size="10" t-esc="label"/>
             </t>
         </svg>
         </div>
@@ -139,7 +139,7 @@
                     <b t-att-class="state.data.timeline?.stats.best_month ? 'bd2-drill' : ''" t-att-role="state.data.timeline?.stats.best_month ? 'button' : false" t-att-tabindex="state.data.timeline?.stats.best_month ? 0 : false" t-on-click="(e)=&gt;state.data.timeline?.stats.best_month and this.drill(e,state.page,'timeline_best')" t-on-keydown="(e)=&gt;state.data.timeline?.stats.best_month and this.drill(e,state.page,'timeline_best')" t-esc="state.data.timeline?.stats.best_month ? months[state.data.timeline.stats.best_month.month-1]+' · '+fmt(state.data.timeline.stats.best_month.value)+' ر.س' : '—'"/>
                 </div>
             </div>
-            <LineChart series="timelineSeries" labels="timelineLabels" months="timelineMonths" compactTop="true"/>
+            <LineChart series="timelineSeries" labels="timelineLabels" months="timelineMonths" compactTop="true" ltr="true"/>
         </section>
     </t>
     <t t-name="baseer_dashboard2.Overview">
@@ -200,7 +200,7 @@
         <article class="card chart-card">
             <h3 t-esc="salesLineTitle"/>
             <p class="lead" t-esc="salesLineLead"/>
-            <LineChart series="salesLineSeries" labels="salesLineLabels" months="salesLineMonths" fiveTicks="true"/>
+            <LineChart series="salesLineSeries" labels="salesLineLabels" months="salesLineMonths" fiveTicks="true" ltr="true"/>
         </article>
 
         <div class="section-title"><h2>التطبيقات والعملاء</h2><span t-esc="periodTitle()"/></div>
@@ -212,7 +212,7 @@
                 <div class="ratio highlightable"><b t-esc="pct(state.data.sales?.apps_pct)"/><span> من المبيعات</span></div>
                 <div class="cmp">
                     <div t-if="state.period?.mode !== 'year'" class="cmp-row"><span>الشهر الماضي <t t-esc="fmt(state.data.sales?.previous?.apps)"/></span><span t-att-class="'chg highlightable ' + chgClass(state.data.sales?.apps_change_pct, 'up')" t-esc="chgText(state.data.sales?.apps_change_pct, state.data.sales?.previous?.apps)"/></div>
-                    <div class="cmp-row"><span>السنة الماضية</span><span class="chg highlightable none">لا بيانات</span></div>
+                    <div class="cmp-row"><span>السنة الماضية</span><span t-att-class="'chg highlightable ' + chgClass(state.data.sales?.apps_previous_year_change_pct, 'up')" t-esc="chgText(state.data.sales?.apps_previous_year_change_pct, state.data.sales?.previous_year?.apps, state.data.sales?.previous_year_label)"/></div>
                 </div>
             </div>
             <div class="card mini">
@@ -222,7 +222,7 @@
                 <div class="ratio highlightable">متوسط الفاتورة <b t-esc="fmt(state.data.sales?.customers?.avg_ticket)"/></div>
                 <div class="cmp">
                     <div t-if="state.period?.mode !== 'year'" class="cmp-row"><span>الشهر الماضي <t t-esc="fmt(state.data.sales?.previous?.customers?.value)"/></span><span t-att-class="'chg highlightable ' + chgClass(state.data.sales?.customers_change_pct, 'up')" t-esc="chgText(state.data.sales?.customers_change_pct, state.data.sales?.previous?.customers?.value)"/></div>
-                    <div class="cmp-row"><span>السنة الماضية</span><span class="chg highlightable none">لا بيانات</span></div>
+                    <div class="cmp-row"><span>السنة الماضية</span><span t-att-class="'chg highlightable ' + chgClass(state.data.sales?.customers_previous_year_change_pct, 'up')" t-esc="chgText(state.data.sales?.customers_previous_year_change_pct, state.data.sales?.previous_year?.customers?.value, state.data.sales?.previous_year_label)"/></div>
                 </div>
             </div>
         </div>
@@ -231,7 +231,7 @@
         <div class="grid two-wide">
             <div class="card">
                 <div class="muted">المبيعات الفعلية مقابل نقطة التعادل وخط الصافي</div>
-                <LineChart series="[{values:state.data.breakeven_series.map(x=&gt;x.sales_net),previousYear:state.data.breakeven_series.map(x=&gt;x.previous_year?.sales_net),gold:true,area:true,name:'المبيعات',drill:(e,index)=&gt;this.drill(e,'overview','sales_net',{period:this.monthPeriod(state.data.breakeven_series[index].month)})},{values:state.data.breakeven_series.map(x=&gt;x.breakeven),previousYear:state.data.breakeven_series.map(x=&gt;x.previous_year?.breakeven),dashed:true,endpoint:true,name:'نقطة التعادل'},{values:state.data.breakeven_series.map(x=&gt;x.net_profit),name:'الصافي',endpoint:true,firstLabel:true,drill:(e,index)=&gt;this.drill(e,'overview','net_profit',{period:this.monthPeriod(state.data.breakeven_series[index].month)})}]" labels="trendLabels" months="trend.map(x=&gt;x.month)" fiveTicks="true"/>
+                <LineChart series="[{values:state.data.breakeven_series.map(x=&gt;x.sales_net),previousYear:state.data.breakeven_series.map(x=&gt;x.previous_year?.sales_net),gold:true,area:true,name:'المبيعات',drill:(e,index)=&gt;this.drill(e,'overview','sales_net',{period:this.monthPeriod(state.data.breakeven_series[index].month)})},{values:state.data.breakeven_series.map(x=&gt;x.breakeven),previousYear:state.data.breakeven_series.map(x=&gt;x.previous_year?.breakeven),dashed:true,endpoint:true,name:'نقطة التعادل'},{values:state.data.breakeven_series.map(x=&gt;x.net_profit),name:'الصافي',endpoint:true,firstLabel:true,drill:(e,index)=&gt;this.drill(e,'overview','net_profit',{period:this.monthPeriod(state.data.breakeven_series[index].month)})}]" labels="trendLabels" months="trend.map(x=&gt;x.month)" fiveTicks="true" ltr="true"/>
                 <div class="safety-chips"><strong>هامش صافي الربح:</strong><span t-foreach="state.data.breakeven_series" t-as="m" t-key="m.month"><t t-esc="monthName(m.month, true, false, m.partial)"/> <bdi dir="ltr" t-att-title="m_last and state.data.breakeven?.reason === 'incomplete_costs' ? 'الشهر لم يكتمل' : undefined" t-esc="m_last and state.data.breakeven?.reason === 'incomplete_costs' ? '—' : pct(m.margin_pct)"/></span></div>
             </div>
             <t t-call="baseer_dashboard2.BreakEven"/>

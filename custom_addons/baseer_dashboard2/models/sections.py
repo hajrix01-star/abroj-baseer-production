@@ -1120,6 +1120,22 @@ class DashboardSections(models.AbstractModel):
         )
 
         sales_line = self._sales_line(ids, start, end, mode, days, today, result)
+        sales = result.get('sales')
+        if sales is not None:
+            prior_apps = year_snap['apps'] if year_ok else None
+            prior_customers = (year_snap.get('customers') or {}) if year_ok else {}
+            sales['previous_year'] = {
+                'apps': prior_apps,
+                'customers': year_snap.get('customers') if year_ok else None,
+            }
+            sales['apps_previous_year_change_pct'] = change(sales.get('apps'), prior_apps) if year_ok else None
+            current_customers = (sales.get('customers') or {}).get('value')
+            sales['customers_previous_year_change_pct'] = (
+                change(current_customers, prior_customers.get('value')) if year_ok else None
+            )
+            sales['previous_year_label'] = None if year_ok else (
+                'بيانات ناقصة' if (year_snap.get('sales_net') or year_snap.get('has_sales_days')) else 'لا بيانات'
+            )
         return {'cards': cards, 'sales_line': sales_line}
 
     def _sales_line(self, ids, start, end, mode, days, today, result):

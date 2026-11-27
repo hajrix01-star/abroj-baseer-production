@@ -74,6 +74,11 @@ class TestOverviewPeriod(TransactionCase):
         self.assertEqual(month['sales_line']['granularity'], 'day')
         self.assertEqual(len(month['sales_line']['points']), 31)
         self.assertEqual(month['sales_line']['points'][0]['label'], '1')
+        self.assertIn('previous_year', month['sales'])
+        self.assertIn('apps', month['sales']['previous_year'])
+        self.assertIn('customers', month['sales']['previous_year'])
+        if month['sales_line'].get('peak'):
+            self.assertIn('day', month['sales_line']['peak'])
         today = service.get_section('overview', {'company_key': key, 'period': {'mode': 'today'}})
         self.assertTrue(today['available'])
         self.assertEqual(today['cards']['mode'], 'today')

@@ -47,10 +47,12 @@ msgid "All statuses"
 msgstr "جميع الحالات"
 
 #. module: baseer_purchase_daily_report
+#. odoo-python
+#: code:addons/baseer_purchase_daily_report/models/daily_report.py:0
 #. odoo-javascript
 #: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
 msgid "Unpaid"
-msgstr "لم تسدد"
+msgstr "لم تُسدَّد"
 
 #. module: baseer_purchase_daily_report
 #. odoo-javascript
@@ -307,8 +309,8 @@ msgstr "قد تشمل المبالغ المسوّاة التسويات والم�
 #. module: baseer_purchase_daily_report
 #. odoo-javascript
 #: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
-msgid "Posted supplier bills and credit notes only."
-msgstr "فواتير الموردين والإشعارات الدائنة المرحلة فقط."
+msgid "The default view shows posted bills. Use Drafts to include unposted bills."
+msgstr "العرض الافتراضي للفواتير المرحلة. استخدم المسودات لعرض الفواتير غير المرحلة."
 
 
 #. module: baseer_purchase_daily_report
@@ -434,6 +436,8 @@ msgid "Draft"
 msgstr "مسودة"
 
 #. module: baseer_purchase_daily_report
+#. odoo-python
+#: code:addons/baseer_purchase_daily_report/models/daily_report.py:0
 #. odoo-javascript
 #: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
 msgid "Drafts"
@@ -488,6 +492,12 @@ msgstr "هذا الشهر"
 #: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
 msgid "Last month"
 msgstr "الشهر الماضي"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Date presets"
+msgstr "اختصارات التاريخ"
 
 #. module: baseer_purchase_daily_report
 #. odoo-javascript

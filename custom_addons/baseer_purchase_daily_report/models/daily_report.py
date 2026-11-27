@@ -1,5 +1,5 @@
 """Read-only, narrowly scoped supplier bill projections for Baseer roles."""
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal, ROUND_HALF_UP
 
 from odoo import api, fields, models
@@ -12,6 +12,11 @@ ZERO = Decimal('0')
 PAYMENT_STATES = frozenset(('all', 'not_paid', 'partial', 'in_payment', 'paid', 'reversed', 'blocked'))
 STATUS_FILTERS = PAYMENT_STATES | frozenset(('draft',))
 METHOD_SPECIAL = frozenset(('all', 'osama', 'cash'))
+# Representative custody balances are reported from this date (agreed policy).
+CUSTODY_START = date(2026, 11, 1)
+CUSTODY_KEY = 'osama'
+UNPAID_KEY = 'unpaid'
+OTHER_KEY = 'other'
 ALLOWED_ROLES = (
     'baseer_access_roles.group_owner',
     'baseer_access_roles.group_accountant',
@@ -244,30 +249,238 @@ class PurchaseDailyReport(models.AbstractModel):
                 yield other
 
     @api.model
+    def _counterpart_method(self, other, custody_accounts):
+        """Classify one settling counterpart entry as a payment method (key, label)."""
+        journal = other.journal_id
+        accounts = other.line_ids.mapped('account_id')
+        if self._is_custody_settlement(journal, accounts, custody_accounts):
+            return CUSTODY_KEY, self.env._('Paid via Osama')
+        if journal.type == 'cash':
+            return 'cash', self.env._('Paid in cash')
+        return f'journal:{journal.id}', journal.display_name or journal.name or journal.code or ''
+
+    @api.model
     def _bill_methods(self, bill):
         """Classify how this bill was paid, matching production settlement journals."""
         methods = []
         seen = set()
-        osama_label = self.env._('Paid via Osama')
-        cash_label = self.env._('Paid in cash')
-
-        def add(key, label):
+        custody_accounts = self._custody_accounts(bill.company_id)
+        for other in self._settlement_counterparts(bill):
+            key, label = self._counterpart_method(other, custody_accounts)
             if key not in seen:
                 seen.add(key)
                 methods.append({'key': key, 'label': label})
-
-        custody_accounts = self._custody_accounts(bill.company_id)
-        for other in self._settlement_counterparts(bill):
-            journal = other.journal_id
-            accounts = other.line_ids.mapped('account_id')
-            if self._is_custody_settlement(journal, accounts, custody_accounts):
-                add('osama', osama_label)
-                continue
-            if journal.type == 'cash':
-                add('cash', cash_label)
-                continue
-            add(f'journal:{journal.id}', journal.display_name or journal.name or journal.code or '')
         return methods
+
+    @api.model
+    def _method_column_label(self, key, label):
+        """Short table heading for a payment-method column."""
+        return {
+            CUSTODY_KEY: self.env._('Custody'),
+            'cash': self.env._('Cash'),
+            UNPAID_KEY: self.env._('Unpaid'),
+            OTHER_KEY: self.env._('Other settlements'),
+        }.get(key, label)
+
+    @api.model
+    def _bill_method_amounts(self, bill, custody_accounts=None):
+        """Split one bill's company-currency total across its payment methods.
+
+        Each reconciled payable allocation is placed under the method of the
+        entry that settled it (custody is identified exactly as in
+        ``_bill_methods``); the open residual is ``unpaid``. Any remaining
+        difference (for example exchange rounding) is shown as ``other`` so the
+        method amounts always add up to the bill total.
+        Returns ``{key: (label, Decimal)}`` with signed amounts (credit notes negative).
+        """
+        if custody_accounts is None:
+            custody_accounts = self._custody_accounts(bill.company_id)
+        sign = Decimal('-1') if bill.move_type == 'in_refund' else Decimal('1')
+        total = -_decimal(bill.amount_total_signed)
+        result = {}
+
+        def add(key, label, amount):
+            if amount:
+                previous = result.get(key, (label, ZERO))[1]
+                result[key] = (label, previous + amount)
+
+        if bill.state == 'posted':
+            residual = -_decimal(bill.amount_residual_signed)
+            seen = set()
+            terms = bill.line_ids.filtered(lambda line: line.account_id.account_type == 'liability_payable')
+            for term in terms:
+                for partial in term.matched_debit_ids | term.matched_credit_ids:
+                    if partial.id in seen:
+                        continue
+                    seen.add(partial.id)
+                    counterpart = partial.credit_move_id if partial.debit_move_id == term else partial.debit_move_id
+                    other = counterpart.move_id
+                    if other.id == bill.id:
+                        continue
+                    key, label = self._counterpart_method(other, custody_accounts)
+                    add(key, label, sign * _decimal(partial.amount))
+        else:
+            residual = total
+        add(UNPAID_KEY, self.env._('Unpaid'), residual)
+        add(OTHER_KEY, self.env._('Other settlements'),
+            total - sum((amount for _label, amount in result.values()), ZERO))
+        return result
+
+    @api.model
+    def _custody_model(self, company):
+        return self.env['baseer.procurement.representative.advance'].sudo().with_company(company)
+
+    @api.model
+    def _custody_period(self, first, last):
+        """Clip the report range to the custody reporting start; None if empty."""
+        start = max(first, CUSTODY_START)
+        if start > last:
+            return None
+        return start, last
+
+    @api.model
+    def _custody_transfers(self, company, first, last):
+        """Signed transfers to representative custody, one row per movement.
+
+        Funding is positive; returns and funding reversals are negative, which
+        is how ``baseer_procurement_requests`` nets them in its balance.
+        Historical (PCUST) transfers are read through that module's own query.
+        """
+        period = self._custody_period(first, last)
+        if not period:
+            return []
+        start, end = period
+        Advance = self._custody_model(company)
+        rows = []
+        movements = Advance.search([
+            ('company_id', '=', company.id), ('state', '=', 'posted'),
+            ('movement_type', 'in', ('funding', 'return', 'reversal')),
+            ('movement_date', '>=', start), ('movement_date', '<=', end),
+        ], order='movement_date, id')
+        labels = {
+            'funding': self.env._('Transfer to custody'),
+            'return': self.env._('Returned from custody'),
+            'reversal': self.env._('Transfer reversal'),
+        }
+        for movement in movements:
+            amount = _decimal(movement.amount)
+            rows.append({
+                'key': f'advance:{movement.id}',
+                'date': movement.movement_date,
+                'label': labels[movement.movement_type],
+                'representative': movement.representative_partner_id.display_name or '',
+                'amount': amount if movement.movement_type == 'funding' else -amount,
+            })
+        legacy = Advance._legacy_custody_activity_sql()
+        self.env.cr.execute(f'''
+            SELECT legacy.source, legacy.id, legacy.partner_id, legacy.day, legacy.movement_type, legacy.amount
+              FROM ({legacy}) legacy
+             WHERE legacy.movement_type IN ('funding', 'return')
+               AND legacy.day >= %(start)s AND legacy.day <= %(end)s
+             ORDER BY legacy.day, legacy.id
+        ''', {'company': company.id, 'partner': None, 'start': start, 'end': end})
+        legacy_rows = self.env.cr.fetchall()
+        partners = self.env['res.partner'].sudo().browse({row[2] for row in legacy_rows if row[2]})
+        names = {partner.id: partner.display_name for partner in partners}
+        for source, record_id, partner_id, day, movement_type, amount in legacy_rows:
+            amount = _decimal(amount)
+            rows.append({
+                'key': f'{source}:{record_id}',
+                'date': day,
+                'label': labels['funding' if movement_type == 'funding' else 'return'],
+                'representative': names.get(partner_id, ''),
+                'amount': amount if movement_type == 'funding' else -amount,
+            })
+        rows.sort(key=lambda row: (row['date'], row['key']))
+        return rows
+
+    @api.model
+    def _custody_representatives(self, company):
+        Advance = self._custody_model(company)
+        partners = Advance.search([('company_id', '=', company.id)]).mapped('representative_partner_id')
+        journals = self.env['account.journal'].sudo().with_context(active_test=False).search([
+            ('company_id', '=', company.id), ('baseer_custody_representative_id', '!=', False),
+        ])
+        partners |= journals.mapped('baseer_custody_representative_id')
+        partners |= self.env['res.partner'].sudo().with_company(company).search([
+            ('is_purchase_representative', '=', True), ('company_id', 'in', [False, company.id]),
+            ('is_company', '=', False), ('parent_id', '=', False),
+        ])
+        return partners
+
+    @api.model
+    def _custody_summary(self, company, first, last):
+        """Custody cards, computed only through baseer_procurement_requests.
+
+        ``funded`` and ``spent`` use that module's own aggregation helpers for
+        the clipped period; ``remaining`` is the module's authoritative
+        ``_baseer_representative_available_amount`` summed per representative.
+        """
+        company = company.sudo()
+        configured = company.baseer_procurement_representative_petty_cash_account_id
+        Advance = self._custody_model(company)
+        if not configured and not Advance.search_count([('company_id', '=', company.id)], limit=1):
+            return None
+        period = self._custody_period(first, last)
+        funded = spent = ZERO
+        if period:
+            start, end = period
+            stop = end + timedelta(days=1)
+
+            def total(model, domain):
+                return _decimal(Advance._baseer_grouped_amount(model, domain))
+
+            movement = [('company_id', '=', company.id), ('state', '=', 'posted'),
+                        ('movement_date', '>=', start), ('movement_date', '<=', end)]
+            settlements = [('company_id', '=', company.id), ('state', '=', 'posted'),
+                           ('move_id.date', '>=', start), ('move_id.date', '<=', end)]
+            legacy_funded, legacy_returned, legacy_spent = Advance._legacy_custody_totals(
+                company, None, start=start, end=stop)
+            funded = (
+                total(Advance, movement + [('movement_type', '=', 'funding')])
+                - total(Advance, movement + [('movement_type', '=', 'return')])
+                - total(Advance, movement + [('movement_type', '=', 'reversal')])
+                + legacy_funded - legacy_returned
+            )
+            _previous, native_spend = Advance._native_custody_spend(company, None, start, stop)
+            spent = (
+                total(self.env['baseer.procurement.representative.advance.settlement'], settlements)
+                + total(self.env['baseer.procurement.representative.petty.cash.invoice.settlement'], settlements)
+                + legacy_spent + native_spend
+            )
+        remaining = sum((
+            Decimal(str(Advance._baseer_representative_available_amount(company, partner)))
+            for partner in self._custody_representatives(company)
+        ), ZERO)
+        currency = company.currency_id
+        return {
+            'active': bool(period),
+            'start': (period[0] if period else CUSTODY_START).isoformat(),
+            'end': last.isoformat(),
+            'funded': _money(funded, currency),
+            'spent': _money(spent, currency),
+            'remaining': _money(remaining, currency),
+            'can_open': self._custody_screen_allowed(),
+        }
+
+    @api.model
+    def _custody_screen_allowed(self):
+        user = self.env.user
+        return any(user.has_group(group) for group in (
+            'baseer_procurement_requests.group_procurement_accountant',
+            'baseer_procurement_requests.group_procurement_manager',
+            'baseer_procurement_requests.group_procurement_cashier',
+            'base.group_system',
+        ))
+
+    @api.model
+    def open_custody_screen(self):
+        """Open the representative custody screen owned by baseer_procurement_requests."""
+        self._scope()
+        if not self._custody_screen_allowed():
+            raise AccessError(self.env._('You do not have access to the custody screen.'))
+        return self.env['ir.actions.actions']._for_xml_id(
+            'baseer_procurement_requests.action_representative_petty_cash')
 
     @api.model
     def _status_card_rows(self, company, first, last, method):
@@ -313,6 +526,9 @@ class PurchaseDailyReport(models.AbstractModel):
                 paid_totals[key] = ZERO
             return key
 
+        table_days = {}
+        columns = {}
+        custody_accounts = self._custody_accounts(company)
         last_id = 0
         Move = self.env['account.move'].sudo()
         while True:
@@ -335,6 +551,10 @@ class PurchaseDailyReport(models.AbstractModel):
                 by_date[key]['residual'] += -_decimal(bill.amount_residual_signed)
                 paid, pending, unavailable = self._cash_allocation(bill)
                 paid_totals[key] += paid
+                table_day = table_days.setdefault(key, {})
+                for method_key, (label, amount) in self._bill_method_amounts(bill, custody_accounts).items():
+                    columns.setdefault(method_key, label)
+                    table_day[method_key] = table_day.get(method_key, ZERO) + amount
                 by_date[key]['paid_pending'] |= pending
                 by_date[key]['paid_unavailable'] |= unavailable
             last_id = batch[-1].id
@@ -361,6 +581,59 @@ class PurchaseDailyReport(models.AbstractModel):
             'days': days,
             'methods': method_cards,
             'statuses': self._status_card_rows(company, first, last, method),
+            'custody': self._custody_summary(company, first, last),
+            'table': self._method_table(company, first, last, status, method, by_date, table_days, columns, days),
+        }
+
+    @api.model
+    def _method_table(self, company, first, last, status, method, by_date, table_days, columns, days=()):
+        """Main table rows: one per invoice day with a column per payment method, plus custody transfer rows.
+
+        Transfer rows carry only the custody transfer amount and are never part
+        of the purchase totals. They follow the custody cards, so they are shown
+        for the default status and for the custody method filter.
+        """
+        currency = company.currency_id
+        formatted_days = {day['date']: day for day in days}
+        order = [key for key in (CUSTODY_KEY, 'cash') if key in columns]
+        order += sorted(
+            (key for key in columns if key not in (CUSTODY_KEY, 'cash', UNPAID_KEY, OTHER_KEY)),
+            key=lambda key: (-abs(sum((day.get(key, ZERO) for day in table_days.values()), ZERO)), columns[key]),
+        )
+        order += [key for key in (UNPAID_KEY, OTHER_KEY) if key in columns]
+        totals = {key: ZERO for key in order}
+        rows = []
+        for key in sorted(by_date):
+            amounts = table_days.get(key, {})
+            for column in order:
+                totals[column] += amounts.get(column, ZERO)
+            row = dict(formatted_days.get(key, {}))
+            row.update({
+                'kind': 'day', 'key': f'day:{key}', 'date': key, 'count': by_date[key]['count'],
+                'amounts': {column: _money(amounts[column], currency) for column in order if column in amounts},
+                'total': _money(by_date[key]['total'], currency),
+            })
+            rows.append(row)
+        transfers = []
+        if status == 'all' and method in ('all', CUSTODY_KEY):
+            transfers = self._custody_transfers(company, first, last)
+        transfer_total = ZERO
+        for transfer in transfers:
+            transfer_total += transfer['amount']
+            rows.append({
+                'kind': 'transfer', 'key': transfer['key'], 'date': fields.Date.to_string(transfer['date']),
+                'label': transfer['label'], 'representative': transfer['representative'],
+                'transfer': _money(transfer['amount'], currency),
+            })
+        # Newest first; on the same date the purchases row precedes its transfers.
+        rows.sort(key=lambda row: (row['date'], row['kind'] == 'day', row['key']), reverse=True)
+        return {
+            'columns': [{'key': key, 'label': self._method_column_label(key, columns[key])} for key in order],
+            'rows': rows,
+            'totals': {key: _money(value, currency) for key, value in totals.items()},
+            'total': _money(sum((day['total'] for day in by_date.values()), ZERO), currency),
+            'has_transfers': bool(transfers),
+            'transfer_total': _money(transfer_total, currency),
         }
 
     @api.model
@@ -407,6 +680,10 @@ class PurchaseDailyReport(models.AbstractModel):
             'paid_pending': pending, 'paid_unavailable': unavailable,
             'entered_by': entered_by, 'entry_source': entry_source,
             'payment_methods': self._bill_methods(move),
+            'method_amounts': [{
+                'key': key, 'label': self._method_column_label(key, label),
+                'amount': _money(amount, company_currency),
+            } for key, (label, amount) in self._bill_method_amounts(move).items()],
         }
 
     @api.model

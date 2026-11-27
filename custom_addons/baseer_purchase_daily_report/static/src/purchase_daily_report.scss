@@ -61,6 +61,33 @@
     .bpr-card strong em { font-size: 10px; font-style: normal; font-weight: 500; color: var(--bpr-muted); }
     .bpr-card span { color: var(--bpr-muted); font-size: 11px; }
     .bpr-cards--status { margin-top: 10px; }
+    .bpr-cards--custody { margin-top: 10px; }
+    .bpr-card--custody { cursor: default; }
+    button.bpr-card--custody { cursor: pointer; }
+    .bpr-card--custody-in strong { color: light-dark(#1f7a4d, #7fd8a8); }
+    .bpr-card--custody-out strong { color: light-dark(#a1432f, #f0a08c); }
+    .bpr-main-table { padding: 6px 0 10px; overflow: hidden; }
+    .bpr-main-table .bpr-table { font-size: 13px; }
+    .bpr-table .bpr-row--day { cursor: pointer; }
+    .bpr-table .bpr-row--day:hover td, .bpr-table .bpr-row--open td { background: var(--bpr-soft); }
+    .bpr-table .bpr-cell-date strong, .bpr-table .bpr-cell-date small { display: block; }
+    .bpr-table .bpr-cell-date small { color: var(--bpr-muted); font-size: 11px; margin-top: 2px; }
+    .bpr-table .bpr-col--toggle { width: 36px; text-align: center; }
+    .bpr-table .bpr-col--toggle .bpr-chevron { margin: auto; background: transparent; padding: 0; }
+    .bpr-table .bpr-col--unpaid { color: #a66a22; }
+    .bpr-table .bpr-row--detail > td { padding: 0; white-space: normal; }
+    .bpr-table .bpr-row--detail .bpr-day-content { position: sticky; inset-inline-start: 0; max-width: calc(100vw - 48px); border-top: 0; }
+    .bpr-table-note { margin: 8px 12px 0; color: var(--bpr-muted); font-size: 11px; }
+    .bpr-table-scroll { position: relative; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .bpr-table { width: 100%; border-collapse: collapse; font-size: 12px; white-space: nowrap; }
+    .bpr-table th, .bpr-table td { padding: 8px 10px; border-bottom: 1px solid var(--bpr-border); text-align: start; }
+    .bpr-table thead th { color: var(--bpr-muted); font-weight: 700; }
+    .bpr-table .bpr-num { text-align: end; font-variant-numeric: tabular-nums; }
+    .bpr-table .bpr-col--total { font-weight: 700; }
+    .bpr-table tfoot th { font-weight: 750; border-top: 2px solid var(--bpr-border); border-bottom: 0; }
+    .bpr-table .bpr-row--transfer td { background: var(--bpr-soft); color: var(--bpr-muted); }
+    .bpr-table .bpr-row--transfer .bpr-col--transfer { color: inherit; font-weight: 700; }
+    .bpr-method-part { display: block; }
     .bpr-status--draft { color: #6b4ea3; background: light-dark(#f3edfb, #2f2544); }
     .bpr-days { display: flex; flex-direction: column; gap: 10px; }
     .bpr-day { border: 1px solid var(--bpr-border); border-radius: 14px; background: var(--bpr-surface); overflow: hidden; }

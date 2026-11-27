@@ -9,7 +9,7 @@ const source = readFileSync(new URL("../src/overrides/models/pos_order.js", impo
 // Minimal luxon stand-in: records the zone/locale/format the module asks for.
 const dateCalls = [];
 class FakeDateTime {
-    constructor(iso) { this.iso = iso; }
+    constructor(iso, isValid = true) { this.iso = iso; this.isValid = isValid; }
     static isDateTime(value) { return value instanceof FakeDateTime; }
     static fromISO(iso) { return new FakeDateTime(iso); }
     setZone(zone) { dateCalls.push(["zone", zone]); return this; }
@@ -46,7 +46,8 @@ function decodeTlv(base64) {
 const order = new PosOrder();
 Object.assign(order, {
     config_id: { baseer_zatca_phase2_enabled: false },
-    raw: { account_move: false }, to_invoice: false, l10n_sa_invoice_edi_state: false, finalized: true,
+    raw: { account_move: false }, to_invoice: false, l10n_sa_invoice_edi_state: false, state: "paid",
+    currency: { round: (value) => Math.round(value * 100) / 100 },
     company: { name: "شركة أرز | ARZ", vat: "312765667200003" },
     date_order: new FakeDateTime("2026-11-27T11:04:22Z"), priceIncl: 25, amountTaxes: 3.2609,
     isSACompany: () => true, isSettlement: () => false,
@@ -79,11 +80,39 @@ order.raw = {}; order.l10n_sa_invoice_edi_state = undefined;
 assert.equal(order.generateQrcode(), "phase1-qr");
 order.raw = { account_move: false }; order.l10n_sa_invoice_edi_state = false;
 
-// Draft / pro-forma bill: no tax QR.
+// Draft / pro-forma bill and cancelled order: no tax QR. Done/invoiced keep it.
 calls.length = 0;
-order.finalized = false;
+for (const state of ["draft", "cancel"]) {
+    order.state = state;
+    assert.equal(order.generateQrcode(), false);
+}
+assert.deepEqual(calls, []);
+for (const state of ["done", "invoiced"]) {
+    order.state = state;
+    assert.equal(order.generateQrcode(), "phase1-qr");
+}
+order.state = "paid";
+
+// Invalid date, non-numeric amount or a field over 255 bytes: no broken QR.
+calls.length = 0;
+order.date_order = new FakeDateTime("bad", false);
 assert.equal(order.generateQrcode(), false);
-order.finalized = true;
+order.date_order = "2026-11-27 11:04:22";
+assert.equal(order.generateQrcode(), false);
+order.date_order = new FakeDateTime("2026-11-27T11:04:22Z");
+order.priceIncl = NaN;
+assert.equal(order.generateQrcode(), false);
+order.priceIncl = 25;
+order.company.name = "x".repeat(256);
+assert.equal(order.generateQrcode(), false);
+order.company.name = "شركة أرز | ARZ";
+assert.deepEqual(calls, []);
+
+// Amounts are rounded by the POS currency before formatting.
+order.amountTaxes = 3.2649;
+order.generateQrcode();
+assert.equal(decodeTlv(calls.at(-1)[0])[5], "3.26");
+order.amountTaxes = 3.26;
 
 // Phase 2 enabled: native e-invoice QR only.
 calls.length = 0;

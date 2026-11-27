@@ -116,6 +116,8 @@
         <field name="sequence">30</field>
     </record>
     <record id="workspace_item_accountant_procurement_custody" model="baseer.basser.workspace.item">
+        <!-- Retired: legacy PCUST Petty Cash is read-only and its menus are hidden. -->
+        <field name="active" eval="False"/>
         <field name="section_id" ref="workspace_section_accountant_operations"/>
         <field name="name">Petty Cash</field>
         <field name="description">Review purchasing Petty Cash balances and movements.</field>
@@ -123,6 +125,8 @@
         <field name="sequence">31</field>
     </record>
     <record id="workspace_item_accountant_monthly_custody_reconciliation" model="baseer.basser.workspace.item">
+        <!-- Retired: legacy PCUST Petty Cash is read-only and its menus are hidden. -->
+        <field name="active" eval="False"/>
         <field name="section_id" ref="workspace_section_accountant_operations"/>
         <field name="name">Monthly custody reconciliation</field>
         <field name="description">Review the monthly petty-cash reconciliation.</field>

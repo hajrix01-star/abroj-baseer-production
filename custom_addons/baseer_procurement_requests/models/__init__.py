@@ -7,3 +7,4 @@ from . import native_custody_payments
 from . import company_onboarding
 from . import procurement_auto_draft
 from . import receipt_custody
+from . import legacy_custody_freeze

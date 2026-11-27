@@ -4,6 +4,8 @@ from odoo import Command, fields
 from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tests.common import TransactionCase
 
+from odoo.addons.baseer_procurement_requests.models.legacy_custody_freeze import legacy_fixture_context
+
 
 class RepresentativePettyCashCase(TransactionCase):
     """Focused accounting and workflow checks for PRA-BUILD-1 only."""
@@ -283,10 +285,12 @@ class RepresentativePettyCashCase(TransactionCase):
             'name': 'Legacy custody employee', 'company_id': self.company.id,
             'work_contact_id': self.representative.id,
         })
-        custody = self.env['baseer.procurement.custody'].create({
+        # Historical PCUST records can only be built in-process; the path is frozen.
+        legacy_env = legacy_fixture_context(self.env)
+        custody = legacy_env['baseer.procurement.custody'].create({
             'company_id': self.company.id, 'employee_id': employee.id,
         })
-        Event = self.env['baseer.procurement.custody.event']
+        Event = legacy_env['baseer.procurement.custody.event']
         first = Event.create({
             'custody_id': custody.id, 'event_type': 'funding', 'event_date': '2025-01-04',
             'amount': 100, 'cash_journal_id': self.bank_journal.id,
@@ -309,14 +313,77 @@ class RepresentativePettyCashCase(TransactionCase):
         self.assertEqual([(row['type'], row['amount']) for row in feb['daily_movements']], [('funding', 50), ('return', 20)])
         self.assertIn(100, [row['amount'] for row in feb['carryovers']])
         with self.assertRaises(UserError):
-            Event.create({
+            self.env['baseer.procurement.custody.event'].create({
                 'custody_id': custody.id, 'event_type': 'funding', 'event_date': '2025-02-12',
                 'amount': 1, 'cash_journal_id': self.bank_journal.id,
-            }).action_post()
+            })
         Model.submit_aggregate_return(self.representative.id, self.bank_journal.id, 60, str(uuid4()), '2025-02-15')
         self.assertEqual(Model._baseer_representative_available_amount(self.company, self.representative), 70)
         legacy_line = first.move_id.line_ids.filtered(lambda line: line.account_id == self.petty_cash_account)
         self.assertLess(legacy_line.amount_residual, 80)
+
+    def test_legacy_pcust_path_is_frozen_but_history_stays_readable_and_counted(self):
+        self._use_isolated_sar_company()
+        self.company.write({
+            'baseer_procurement_custody_account_id': self.petty_cash_account.id,
+            'baseer_procurement_custody_journal_id': self.general_journal.id,
+            'baseer_procurement_representative_petty_cash_account_id': False,
+        })
+        employee = self.env['hr.employee'].create({
+            'name': 'Frozen legacy custody employee', 'company_id': self.company.id,
+            'work_contact_id': self.representative.id,
+        })
+        Custody = self.env['baseer.procurement.custody']
+        Event = self.env['baseer.procurement.custody.event']
+        # Neither a superuser API call nor a forged context key can open the path.
+        for model in (Custody, Custody.with_context(_baseer_legacy_custody_fixture=True)):
+            with self.assertRaises(UserError), self.env.cr.savepoint():
+                model.create({'company_id': self.company.id, 'employee_id': employee.id})
+        legacy_env = legacy_fixture_context(self.env)
+        custody = legacy_env['baseer.procurement.custody'].create({
+            'company_id': self.company.id, 'employee_id': employee.id,
+        })
+        funding = legacy_env['baseer.procurement.custody.event'].create({
+            'custody_id': custody.id, 'event_type': 'funding', 'event_date': '2025-01-04',
+            'amount': 100, 'cash_journal_id': self.bank_journal.id,
+        })
+        funding.action_post()
+        draft = legacy_env['baseer.procurement.custody.event'].create({
+            'custody_id': custody.id, 'event_type': 'funding', 'event_date': '2025-01-05',
+            'amount': 5, 'cash_journal_id': self.bank_journal.id,
+        })
+        custody, funding, draft = custody.with_env(self.env), funding.with_env(self.env), draft.with_env(self.env)
+        self.company.baseer_procurement_representative_petty_cash_account_id = self.petty_cash_account
+
+        # History remains readable and keeps counting in the live balance.
+        self.assertEqual(custody.read(['name', 'state'])[0]['state'], 'open')
+        self.assertEqual(funding.state, 'posted')
+        Model = self.env['baseer.procurement.representative.advance']
+        self.assertEqual(Model._baseer_representative_available_amount(self.company, self.representative), 100)
+        custody.message_post(body='Read-only audit note')
+
+        blocked = [
+            lambda: custody.write({'opened_on': '2025-01-01'}),
+            lambda: custody.unlink(),
+            lambda: custody.action_close(),
+            lambda: Event.create({
+                'custody_id': custody.id, 'event_type': 'funding', 'event_date': '2025-02-12',
+                'amount': 1, 'cash_journal_id': self.bank_journal.id,
+            }),
+            lambda: draft.action_post(),
+            lambda: draft.write({'reference': 'changed'}),
+            lambda: draft.unlink(),
+            lambda: self.env['baseer.procurement.custody.period.close'].create({
+                'custody_id': custody.id, 'month_start': '2025-01-01',
+            }),
+            lambda: self.env['baseer.purchase.batch'].create({'procurement_custody_id': custody.id}),
+            lambda: self.env['baseer.purchase.batch.line'].create({'procurement_custody_id': custody.id}),
+        ]
+        for action in blocked:
+            with self.assertRaises(UserError), self.env.cr.savepoint():
+                action()
+        self.assertEqual(draft.state, 'draft')
+        self.assertEqual(Model._baseer_representative_available_amount(self.company, self.representative), 100)
 
     def test_funding_posts_once_and_is_immutable(self):
         request = self._sent_request()

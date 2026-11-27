@@ -3228,3 +3228,9 @@ msgstr "اختر دفترًا نقديًا أو بنكيًا حسابه الاف
 #: code:addons/baseer_procurement_requests/models/native_custody_payments.py:0
 msgid "This custody journal already belongs to a representative. Use a separate journal for the new representative."
 msgstr "هذا الدفتر مخصص لمندوب سبق تعيينه. استخدم دفترًا مستقلًا للمندوب الجديد."
+
+#. module: baseer_procurement_requests
+#. odoo-python
+#: code:addons/baseer_procurement_requests/models/legacy_custody_freeze.py:0
+msgid "Legacy Petty Cash (PCUST) is read-only. Record transfers and returns in Representative Petty Cash instead."
+msgstr "العهدة القديمة (PCUST) للقراءة فقط. سجّل التحويلات والمرتجعات في «عهدة مندوب المشتريات»."

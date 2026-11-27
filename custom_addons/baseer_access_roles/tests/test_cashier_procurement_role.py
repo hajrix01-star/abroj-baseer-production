@@ -7,6 +7,8 @@ from odoo import Command, fields
 from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tests.common import TransactionCase
 
+from odoo.addons.baseer_procurement_requests.models.legacy_custody_freeze import legacy_fixture_context
+
 
 class CashierProcurementRoleCase(TransactionCase):
     def test_optional_bwork_operator_grant_stays_explicit_and_role_limited(self):
@@ -89,8 +91,8 @@ class CashierProcurementRoleCase(TransactionCase):
         self.assertFalse(administrator.has_group('baseer_access_roles.group_accountant'))
         self.assertFalse(administrator.has_group('baseer_access_roles.group_cashier'))
 
-    def test_cpr_t00b_accountant_creates_petty_cash_owner_controls_it(self):
-        """Accountants create the fund; only the owner can alter or remove it."""
+    def test_cpr_t00b_legacy_petty_cash_is_frozen_and_owner_controls_remain(self):
+        """Legacy PCUST is read-only: nobody creates or closes it; owner gates still apply."""
         company = self.env['res.company'].create({'name': 'Petty Cash ACL company'})
         accountant = self.env['res.users'].with_context(no_reset_password=True).create({
             'name': 'Petty Cash accountant',
@@ -104,14 +106,14 @@ class CashierProcurementRoleCase(TransactionCase):
         })
         custody_model = self.env['baseer.procurement.custody']
         accountant_custody = custody_model.with_user(accountant).with_company(company)
+        with self.assertRaises(UserError):
+            accountant_custody.create({'company_id': company.id, 'is_company_pool': True})
 
-        self.assertTrue(accountant_custody.check_access_rights('create', raise_exception=False))
-        self.assertTrue(accountant_custody.check_access_rights('write', raise_exception=False))
-        self.assertFalse(accountant_custody.check_access_rights('unlink', raise_exception=False))
-        petty_cash = accountant_custody.create({
+        petty_cash = legacy_fixture_context(self.env)['baseer.procurement.custody'].create({
             'company_id': company.id,
             'is_company_pool': True,
-        })
+        }).with_env(self.env)
+        self.assertEqual(petty_cash.with_user(accountant).with_company(company).read(['state'])[0]['state'], 'open')
         with self.assertRaises(AccessError):
             petty_cash.with_user(accountant).write({'name': 'Not allowed'})
         with self.assertRaises(AccessError):
@@ -121,11 +123,14 @@ class CashierProcurementRoleCase(TransactionCase):
 
         owner = self.env.ref('base.user_admin')
         owner.write({'baseer_access_role': 'owner'})
-        owner_custody = custody_model.with_user(owner).with_company(company)
-        for operation in ('create', 'write', 'unlink'):
-            self.assertTrue(owner_custody.check_access_rights(operation, raise_exception=False))
-        petty_cash.with_user(owner).with_company(company).action_close()
-        self.assertEqual(petty_cash.state, 'closed')
+        for action in (
+            lambda record: record.write({'name': 'Owner rename'}),
+            lambda record: record.action_close(),
+            lambda record: record.unlink(),
+        ):
+            with self.assertRaises(UserError), self.env.cr.savepoint():
+                action(petty_cash.with_user(owner).with_company(company))
+        self.assertEqual(petty_cash.state, 'open')
 
     def test_cpr_t00c_accountant_can_enter_purchase_batches_but_not_operational_requests(self):
         """Accountant is the least-privilege role for supplier-bill entry."""

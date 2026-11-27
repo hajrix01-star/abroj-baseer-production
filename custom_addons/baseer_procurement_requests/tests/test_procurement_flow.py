@@ -8,6 +8,8 @@ from urllib.parse import parse_qs, urlparse
 import hashlib
 import json
 
+from odoo.addons.baseer_procurement_requests.models.legacy_custody_freeze import legacy_fixture_context
+
 from ..models.procurement import BWORK_RECEIPT_INTERNAL
 
 
@@ -1667,6 +1669,8 @@ class ProcurementFlowCase(TransactionCase):
             request.action_confirm_actual_purchase()
 
     def test_custody_funding_creates_a_native_balanced_entry(self):
+        # Legacy PCUST is frozen; this regression builds historical records in-process only.
+        self.env = legacy_fixture_context(self.env)
         account_model = self.env['account.account']
         custody_account = account_model.create({
             'name': 'PRC custody receivable', 'code': 'PRC901', 'account_type': 'asset_receivable',
@@ -1731,6 +1735,8 @@ class ProcurementFlowCase(TransactionCase):
         posted source documents must identify the contact and respect the
         accountant-only and locked-period controls.
         """
+        # Legacy PCUST is frozen; this regression builds historical records in-process only.
+        self.env = legacy_fixture_context(self.env)
         custody_account, cash_account, bank_account, _general, cash, bank = self._custody_accounting_fixture('PRC93')
         representative = self.env['res.partner'].create({
             'name': 'PRC external purchasing representative',
@@ -1786,7 +1792,8 @@ class ProcurementFlowCase(TransactionCase):
                 self.env.ref('account.group_account_invoice').id,
             ])],
         })
-        with self.assertRaises(AccessError):
+        # The frozen legacy path refuses every non-fixture caller before role checks.
+        with self.assertRaises(UserError):
             funding.with_user(manager_only).action_post()
         funding.action_post()
         self.assertEqual(funding.move_id.state, 'posted')
@@ -1836,6 +1843,8 @@ class ProcurementFlowCase(TransactionCase):
         return carrying a request, or a post-funding identity edit must fail.
         Legacy employee custody also cannot accept an unrelated contact.
         """
+        # Legacy PCUST is frozen; this regression builds historical records in-process only.
+        self.env = legacy_fixture_context(self.env)
         _custody_account, _cash_account, _bank_account, _general, cash, bank = self._custody_accounting_fixture('PRC96')
         representative = self.env['res.partner'].create({
             'name': 'PRC96 representative', 'company_id': self.company.id,
@@ -1886,6 +1895,8 @@ class ProcurementFlowCase(TransactionCase):
         from being bound to a legacy custody record and preserves the
         representative's remaining balance.
         """
+        # Legacy PCUST is frozen; this regression builds historical records in-process only.
+        self.env = legacy_fixture_context(self.env)
         company = self.company
         env = self.env
         custody_account, _cash_account, _bank_account, general, cash, _bank = self._custody_accounting_fixture('PRC94', company)
@@ -2016,6 +2027,8 @@ class ProcurementFlowCase(TransactionCase):
         settlement path for that calendar month, while the current month is
         never closable.
         """
+        # Legacy PCUST is frozen; this regression builds historical records in-process only.
+        self.env = legacy_fixture_context(self.env)
         _custody_account, _cash_account, _bank_account, _general, cash, bank = self._custody_accounting_fixture('PRC95')
         self.company.write({'fiscalyear_lock_date': False, 'tax_lock_date': False})
         representative = self.env['res.partner'].create({
@@ -2124,6 +2137,8 @@ class ProcurementFlowCase(TransactionCase):
 
     def test_custody_reconciliation_never_crosses_two_open_custodies(self):
         """A return to custody A must leave the same buyer's custody B intact."""
+        # Legacy PCUST is frozen; this regression builds historical records in-process only.
+        self.env = legacy_fixture_context(self.env)
         Account = self.env['account.account']
         custody_account = Account.create({'name': 'PRC isolated custody', 'code': 'PRC921', 'account_type': 'asset_receivable', 'reconcile': True, 'company_ids': [Command.set(self.company.ids)]})
         cash_account = Account.create({'name': 'PRC isolated cash', 'code': 'PRC922', 'account_type': 'asset_cash', 'company_ids': [Command.set(self.company.ids)]})

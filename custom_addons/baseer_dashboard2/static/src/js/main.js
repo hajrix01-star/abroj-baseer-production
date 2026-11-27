@@ -91,7 +91,7 @@ export const formatPercent = (n) => n == null || n === false || !Number.isFinite
 export const formatPoints = (n) => n == null || n === false || !Number.isFinite(Number(n)) ? "—" : `${Number(n) < 0 ? "−" : ""}${roundedPercentMagnitude(n)}`;
 export const ratioDifference = (value, previous) => value == null || previous == null ? null : value - previous;
 export const formatTargetPercent = (n) => n == null ? "—" : `${Number(n).toLocaleString("en-US", { maximumFractionDigits: 1 })}%`;
-export const timelineYear = (period) => (period?.mode === "month" ? period.month : period?.date_to)?.slice(0, 4) || "";
+export const timelineYear = (period) => String(period?.mode === "month" ? period.month : (period?.year || period?.date_to || period?.date || "")).slice(0, 4);
 export const chartX = (i, n, width = 700) =>
   width - 48 - (width - 70) * (n <= 1 ? 0.5 : i / (n - 1));
 export const miniX = (i, n) => 95 - (n <= 1 ? 45 : 90 * i / (n - 1));
@@ -500,6 +500,8 @@ export class Dashboard2 extends Component {
       mode: getStored("mode", "light"),
       period: getStored("period", null),
       timeline: getStored("timeline", "monthly"),
+      comparison: getStored("comparison", "previous_period"),
+      periodMenu: false,
       view: "pnl",
       pnl_view: null,
       pnl_range: null,
@@ -509,7 +511,8 @@ export class Dashboard2 extends Component {
       cashDrills: {},
       navOpen: false,
     });
-    useExternalListener(window, "keydown", (event) => { if (event.key === "Escape") this.state.navOpen = false; });
+    useExternalListener(window, "keydown", (event) => { if (event.key === "Escape") { this.state.navOpen = false; this.state.periodMenu = false; } });
+    useExternalListener(window, "pointerdown", (event) => { if (!event.target.closest?.(".bd2-period")) this.state.periodMenu = false; });
     onWillUnmount(() => { this.loadToken++; this.closePnlDetails(); dashboardTooltip.destroy(); });
     this.loadToken = 0;
     onWillStart(() => this.init());
@@ -524,12 +527,11 @@ export class Dashboard2 extends Component {
       this.state.meta = m;
       if (!m.companies.some((c) => c.key === this.state.company))
         this.state.company = m.default_company_key;
-      this.state.period ||= {
-        mode: "month",
-        month: m.default_month,
-        date_from: m.today,
-        date_to: m.today,
-      };
+      if (!this.state.period || !["today", "month", "year", "date", "range"].includes(this.state.period.mode)) {
+        this.state.period = m.default_period || { mode: "today", date: m.today, month: m.today.slice(0, 7), year: Number(m.today.slice(0, 4)), date_from: m.today, date_to: m.today };
+      } else {
+        this.state.period = this.normalizePeriod(this.state.period, m);
+      }
       // Only an explicit user selection is stored, so an untouched installation follows the server default.
       this.state.pnl_view = getStored("pnl_view", null) || m.pnl_default_view || "month";
       this.resetPnlRange();
@@ -617,7 +619,7 @@ export class Dashboard2 extends Component {
               company_key: this.state.company,
               period: this.state.period,
               timeline_mode: this.state.timeline,
-              heatmap_month: this.state.period.mode === "month" ? this.state.period.month : this.state.period.date_to.slice(0, 7),
+              heatmap_month: this.periodMonth(),
             },
           ],
         );
@@ -646,17 +648,18 @@ export class Dashboard2 extends Component {
     this.state[key] = value;
     if (key === "pnl_view") { this.persist(key); if (value === "range") this.resetPnlRange(); }
     if (key === "page") this.state.navOpen = false;
-    if (["page", "company", "mode", "timeline", "period"].includes(key))
+    if (["page", "company", "mode", "timeline", "period", "comparison"].includes(key))
       this.persist(key);
     if (key !== "mode") await this.load();
   }
   resetPnlRange() {
-    const p = this.state.period;
-    if (p.mode === "range") this.state.pnl_range = {date_from: p.date_from, date_to: p.date_to};
-    else {
+    const p = this.normalizePeriod(this.state.period, this.state.meta || {});
+    if (p.mode === "month" && p.month) {
       const [y, m] = p.month.split("-").map(Number);
       const last = new Date(Date.UTC(y, m, 0)).getUTCDate();
       this.state.pnl_range = {date_from: p.month + "-01", date_to: p.month + "-" + String(last).padStart(2, "0")};
+    } else {
+      this.state.pnl_range = {date_from: p.date_from, date_to: p.date_to};
     }
   }
   async pnlRangeChange(key, value) {
@@ -666,17 +669,11 @@ export class Dashboard2 extends Component {
     if (r.date_from && r.date_to && r.date_from <= r.date_to) await this.load();
   }
   async periodChange(key, value) {
-    this.closePnlDetails();
-    this.state.cashDrills = {};
-    this.state.period[key] = value;
-    this.persist("period");
-    if (
-      this.state.period.mode === "month" ||
-      (this.state.period.date_from &&
-        this.state.period.date_to &&
-        this.state.period.date_from <= this.state.period.date_to)
-    )
-      await this.load();
+    const next = { ...this.state.period, [key]: value };
+    if (key === "mode") return this.selectPeriodMode(value);
+    if (key === "month") return this.selectPeriodMode("month", value);
+    if (key === "date_from" || key === "date_to") return this.selectPeriodMode("range", next);
+    return this.selectPeriodMode(next.mode, next[key]);
   }
   get icons() {
     return {
@@ -883,6 +880,162 @@ export class Dashboard2 extends Component {
     a.download = "dashboard.csv";
     a.click();
     URL.revokeObjectURL(a.href);
+  }
+
+  normalizePeriod(period, meta = this.state.meta || {}) {
+    const today = meta.today || new Date().toISOString().slice(0, 10);
+    const p = { ...(period || {}) };
+    const mode = ["today", "month", "year", "date", "range"].includes(p.mode) ? p.mode : "today";
+    if (mode === "today") {
+      return { mode, date: today, month: today.slice(0, 7), year: Number(today.slice(0, 4)), date_from: today, date_to: today };
+    }
+    if (mode === "date") {
+      const day = p.date || p.date_from || today;
+      return { mode, date: day, month: day.slice(0, 7), year: Number(day.slice(0, 4)), date_from: day, date_to: day };
+    }
+    if (mode === "month") {
+      const month = p.month || today.slice(0, 7);
+      const [y, m] = month.split("-").map(Number);
+      const last = new Date(Date.UTC(y, m, 0)).getUTCDate();
+      const end = month === today.slice(0, 7) ? today : `${month}-${String(last).padStart(2, "0")}`;
+      return { mode, month, year: y, date: end, date_from: `${month}-01`, date_to: end };
+    }
+    if (mode === "year") {
+      const year = Number(p.year || (p.date_to || today).slice(0, 4));
+      const start = `${year}-01-01`;
+      const end = year === Number(today.slice(0, 4)) ? today : `${year}-12-31`;
+      return { mode, year, month: end.slice(0, 7), date: end, date_from: start, date_to: end };
+    }
+    return { mode: "range", date_from: p.date_from || today, date_to: p.date_to || today, month: (p.date_to || today).slice(0, 7), year: Number((p.date_to || today).slice(0, 4)), date: p.date_to || today };
+  }
+  periodMonth() {
+    const p = this.normalizePeriod(this.state.period);
+    return p.month || (p.date_to || p.date || this.state.meta?.today || "").slice(0, 7);
+  }
+  periodMonths() {
+    const months = [...(this.state.meta?.months_available || [])];
+    const current = this.state.meta?.today?.slice(0, 7);
+    if (current && !months.includes(current)) months.unshift(current);
+    if (this.state.period?.month && !months.includes(this.state.period.month)) months.unshift(this.state.period.month);
+    return months;
+  }
+  periodYears() {
+    const years = [...(this.state.meta?.years_available || [])].map(Number);
+    const current = Number(this.state.meta?.today?.slice(0, 4));
+    if (current && !years.includes(current)) years.unshift(current);
+    if (this.state.period?.year && !years.includes(Number(this.state.period.year))) years.unshift(Number(this.state.period.year));
+    return [...new Set(years)].sort((a, b) => b - a);
+  }
+  togglePeriodMenu() { this.state.periodMenu = !this.state.periodMenu; }
+  async selectComparison(kind) {
+    this.state.comparison = kind;
+    this.persist("comparison");
+    this.state.periodMenu = false;
+  }
+  async selectPeriodMode(mode, value) {
+    this.closePnlDetails();
+    this.state.cashDrills = {};
+    const current = { ...this.state.period };
+    if (mode === "month") current.month = value || current.month || this.periodMonth();
+    if (mode === "year") current.year = value ? Number(value) : (current.year || Number(this.state.meta.today.slice(0, 4)));
+    if (mode === "date") current.date = value || current.date || this.state.meta.today;
+    if (mode === "range" && value && typeof value === "object") Object.assign(current, value);
+    current.mode = mode === "range" ? "range" : mode;
+    this.state.period = this.normalizePeriod(current);
+    this.persist("period");
+    this.resetPnlRange();
+    if (mode !== "range" || (this.state.period.date_from && this.state.period.date_to && this.state.period.date_from <= this.state.period.date_to)) {
+      this.state.periodMenu = mode === "month" || mode === "year" || mode === "date" ? true : false;
+      if (mode === "today") this.state.periodMenu = false;
+      await this.load();
+    }
+  }
+  periodFacet() {
+    const p = this.normalizePeriod(this.state.period);
+    if (p.mode === "today") return `اليوم · ${this.dateName(p.date)}`;
+    if (p.mode === "month") return `الشهر · ${this.monthName(p.month)}`;
+    if (p.mode === "year") return `السنة · ${p.year}`;
+    if (p.mode === "date") return `تاريخ محدد · ${this.dateName(p.date)}`;
+    return `${this.dateName(p.date_from)} – ${this.dateName(p.date_to)}`;
+  }
+  periodTitle(partial = false) {
+    const p = this.normalizePeriod(this.state.period);
+    const label = p.mode === "today" ? this.dateName(p.date)
+      : p.mode === "month" ? this.monthName(p.month)
+      : p.mode === "year" ? String(p.year)
+      : p.mode === "date" ? this.dateName(p.date)
+      : `${this.dateName(p.date_from)} – ${this.dateName(p.date_to)}`;
+    return partial ? `${label} (جزئي)` : label;
+  }
+  comparisonCaption() {
+    return this.state.comparison === "previous_year" || this.state.period?.mode === "year" ? "بالسنة السابقة" : "بالفترة السابقة";
+  }
+  chgClass(pct, goodWhen = "up") {
+    if (pct == null) return "none";
+    const up = Number(pct) >= 0;
+    if (goodWhen === "down") return up ? "up-bad" : "down-good";
+    return up ? "up-good" : "down-bad";
+  }
+  chgText(pct, previous, missingLabel) {
+    if (previous == null && (pct == null)) return missingLabel || "لا بيانات";
+    if (pct == null) return missingLabel || "لا بيانات";
+    const arrow = Number(pct) >= 0 ? "↑" : "↓";
+    return `${arrow} ${Math.abs(Math.round(Number(pct)))}%`;
+  }
+  equationText(eq) {
+    if (!eq) return "";
+    return `${this.fmt(eq.sales)} − ${this.fmt(eq.purchases)} − ${this.fmt(eq.expenses)}`;
+  }
+  get salesLineTitle() {
+    const line = this.state.data?.sales_line;
+    if (line?.granularity === "month") return `مبيعات ${line.year} الشهرية`;
+    const month = line?.month || this.periodMonth();
+    return `مبيعات ${this.monthName(month, false, false)} اليومية`;
+  }
+  get salesLineLead() {
+    const line = this.state.data?.sales_line;
+    const peak = line?.peak;
+    if (line?.granularity === "month") {
+      const empty = (line.points || []).filter((p) => p.empty && !p.value).map((p) => p.label);
+      const peakText = peak ? `أعلى شهر ${peak.label} — ${this.fmt(peak.value)} ر.س` : "لا بيانات";
+      return empty.length ? `${peakText} · ${empty.join(" و")} فارغ` : peakText;
+    }
+    return peak ? `خط واحد للمبيعات · أعلى يوم ${peak.day} ${this.monthName(line.month, false, false)} بـ ${this.fmt(peak.value)} ر.س` : "خط واحد للمبيعات";
+  }
+  get salesLineLabels() {
+    const points = this.state.data?.sales_line?.points || [];
+    if (this.state.data?.sales_line?.granularity === "month") return points.map((p) => p.label);
+    return points.map((p, i) => (i === 0 || i === points.length - 1 || Number(p.label) % 5 === 0 || p.current ? p.label : ""));
+  }
+  get salesLineMonths() {
+    return (this.state.data?.sales_line?.points || []).map((p) => p.key);
+  }
+  get salesLineSeries() {
+    const line = this.state.data?.sales_line;
+    const points = line?.points || [];
+    const current = {
+      values: points.map((p) => p.value),
+      gold: line?.granularity === "day",
+      area: true,
+      endpoint: true,
+      name: line?.granularity === "month" ? String(line.year) : this.monthName(line?.month),
+    };
+    if (line?.granularity === "month") {
+      const previous = {
+        values: points.map((p) => (this.state.comparison === "previous_year" ? p.previous_year : p.previous_year)),
+        dashed: true,
+        name: String((line.year || 0) - 1),
+      };
+      return [current, previous];
+    }
+    return [current];
+  }
+  compareSalaryNote() {
+    const rows = this.state.data?.companies_compare || [];
+    const flagged = rows.filter((row) => row.salaries_warning && row.key !== this.state.company);
+    if (!flagged.length) return "";
+    const names = flagged.map((row) => row.label || row.name).join(" و");
+    return `رواتب ${names} أيضاً غير مكتملة، لذلك صافي الهامش عندهم أعلى من الحقيقي`;
   }
   async addEvent() {
     await this.action.doAction(

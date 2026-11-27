@@ -114,10 +114,7 @@
                     <h3>المسار الزمني للمبيعات</h3>
                     <div class="muted"><t t-esc="state.timeline==='monthly' ? 'شهرياً' : 'سنوياً'"/> — <t t-esc="(state.period.mode==='month' ? state.period.month : state.period.date_to).slice(0,4)"/> مقابل <t t-esc="previousYear()"/> (الخط المتقطع)</div>
                 </div>
-                <div class="seg">
-                    <button t-att-class="state.timeline==='monthly'?'on':''" t-on-click="()=&gt;this.choose('timeline','monthly')">شهري</button>
-                    <button t-att-class="state.timeline==='yearly'?'on':''" t-on-click="()=&gt;this.choose('timeline','yearly')">سنوي</button>
-                </div>
+
             </div>
             <div class="stats">
                 <div>
@@ -146,44 +143,122 @@
         </section>
     </t>
     <t t-name="baseer_dashboard2.Overview">
-        <t t-set="partialMonth" t-value="state.period?.mode === 'month' and trend.at(-1)?.partial"/>
-        <div class="grid three">
-            <div class="card mini" t-foreach="[['المشتريات',state.data.purchases?.value,state.data.purchases?.pct,state.data.purchases?.trend?.map(x=&gt;x.has_data ? x.pct : null),state.data.purchases?.trend?.map(x=&gt;x.has_data ? x.value : null),state.data.purchases?.change_pct],['تطبيقات التوصيل',state.data.sales?.apps,state.data.sales?.apps_pct,state.data.sales?.trend?.map(x=&gt;x.has_data ? x.apps_pct : null),state.data.sales?.trend?.map(x=&gt;x.has_data ? x.apps : null),state.data.sales?.apps_change_pct],['عدد العملاء (الطلبات)',state.data.sales?.customers?.value,state.data.sales?.customers?.avg_ticket,state.data.sales?.trend?.map(x=&gt;x.has_data ? x.customers.avg_ticket : null),state.data.sales?.trend?.map(x=&gt;x.has_data ? x.customers.value : null),state.data.sales?.customers_change_pct]]" t-as="item" t-key="item[0]">
-                <div class="mini-head"><div><div class="mini-title"><span class="card-icon"><svg viewBox="0 0 24 24"><path t-att-d="iconPath(['purchases','apps','customers'][item_index])"/></svg></span><h3 t-esc="item[0]"/></div><small t-if="item_index!==1" class="block muted"><t t-esc="monthName(state.period.month)"/><t t-if="item_index === 2 and state.data.sales?.customers?.cutover_date"> · <t t-esc="customerCutoverLabel(state.data.sales.customers.cutover_date)"/></t></small><small t-if="item_index===1" class="block muted">كيتا + هنقر + جاهز · شامل الضريبة</small></div><div t-if="item_index !== 2 or state.data.sales?.customers?.available" class="mini-value"><strong t-att-class="item[1] != null and (item_index !== 1 or ((!!state.data.sales?.source_counts?.summary !== !!state.data.sales?.source_counts?.pos))) ? 'bd2-drill' : ''" t-att-role="item[1] != null and (item_index !== 1 or ((!!state.data.sales?.source_counts?.summary !== !!state.data.sales?.source_counts?.pos))) ? 'button' : false" t-att-tabindex="item[1] != null and (item_index !== 1 or ((!!state.data.sales?.source_counts?.summary !== !!state.data.sales?.source_counts?.pos))) ? 0 : false" t-on-click="(e)=&gt;item[1] != null and (item_index !== 1 or ((!!state.data.sales?.source_counts?.summary !== !!state.data.sales?.source_counts?.pos))) and this.drill(e,'overview',['purchases','apps','customers'][item_index])" t-on-keydown="(e)=&gt;item[1] != null and (item_index !== 1 or ((!!state.data.sales?.source_counts?.summary !== !!state.data.sales?.source_counts?.pos))) and this.drill(e,'overview',['purchases','apps','customers'][item_index])" t-esc="item_index === 0 and !state.data.purchases?.available ? 'غير متوفر' : fmt(item[1])"/><div class="mini-pill"><t t-if="item[2] == null">غير متوفر</t><t t-elif="item_index &lt; 2"><bdi dir="ltr" t-att-class="item_index === 0 or (!!state.data.sales?.source_counts?.summary !== !!state.data.sales?.source_counts?.pos) ? 'bd2-drill' : ''" t-att-role="item_index === 0 or (!!state.data.sales?.source_counts?.summary !== !!state.data.sales?.source_counts?.pos) ? 'button' : false" t-att-tabindex="item_index === 0 or (!!state.data.sales?.source_counts?.summary !== !!state.data.sales?.source_counts?.pos) ? 0 : false" t-on-click="(e)=&gt;(item_index === 0 or (!!state.data.sales?.source_counts?.summary !== !!state.data.sales?.source_counts?.pos)) and this.drill(e,'overview',item_index === 0 ? 'purchases' : 'apps')" t-on-keydown="(e)=&gt;(item_index === 0 or (!!state.data.sales?.source_counts?.summary !== !!state.data.sales?.source_counts?.pos)) and this.drill(e,'overview',item_index === 0 ? 'purchases' : 'apps')" t-esc="pct(item[2])"/> من المبيعات<t t-if="item_index === 1"> · شامل الضريبة</t></t><t t-else="" t-esc="fmt(item[2])+' متوسط الفاتورة'"/><t t-if="item[2] != null and partialMonth"> (جزئي)</t></div></div></div>
-                <t t-if="item_index !== 2 or state.data.sales?.customers?.available"><Sparkline months="state.data.purchases.trend.map(x=&gt;x.month)" previousYear="item_index === 1 ? state.data.sales.trend.map(x=&gt;x.previous_year?.apps) : item_index === 2 ? state.data.sales.trend.map(x=&gt;x.previous_year?.customers.value) : state.data.purchases.trend.map(x=&gt;x.previous_year?.value)" previousYearSecondary="item_index === 1 ? state.data.sales.trend.map(x=&gt;x.previous_year?.apps_pct) : item_index === 2 ? state.data.sales.trend.map(x=&gt;x.previous_year?.customers.avg_ticket) : state.data.purchases.trend.map(x=&gt;x.previous_year?.pct)" unit="item_index === 2 ? 'orders' : false" values="item[4]" previous="item[3]" mini="true" ratioPercent="item_index &lt; 2" amountDecimal="item_index === 2" canDrill="(i,previous)=&gt;this.miniDrillable(item_index,i,previous)" onDrill="(e,i,previous)=&gt;this.miniDrill(e,item_index,i,previous)"/><div class="mini-labels"><span t-foreach="state.data.purchases.trend.map(x=&gt;monthName(x.month, true, false, x.partial))" t-as="label" t-key="label_index" t-att-class="label_index % 2 ? 'bd2-axis-alternate' : ''" t-esc="label"/></div><div class="mini-legend"><span><i/><t t-esc="item_index === 2 ? 'عدد الطلبات' : 'المبلغ'"/></span><span><i class="gold"/><t t-esc="item_index === 2 ? 'متوسط الفاتورة' : 'النسبة'"/></span></div></t><div t-else="" class="customer-empty">غير متوفر — يتوفر من بيانات نقاط البيع فقط</div>
+        <t t-set="partialMonth" t-value="state.data.cards?.partial || (state.period?.mode === 'month' and trend.at(-1)?.partial)"/>
+        <t t-set="cards" t-value="state.data.cards || {}"/>
+        <section t-att-class="'summary-cards' + (state.period?.mode === 'year' ? ' is-year' : '')">
+            <article t-if="state.period?.mode !== 'year'" class="card summary-card">
+                <h2>مبيعات اليوم</h2>
+                <div class="sub" t-esc="dateName(cards.today_sales?.date)"/>
+                <div class="amount highlightable"><t t-esc="fmt(cards.today_sales?.value)"/><span>ر.س</span></div>
+                <div class="cmp">
+                    <div class="cmp-row"><span>الشهر الماضي <t t-esc="fmt(cards.today_sales?.previous)"/></span><span t-att-class="'chg highlightable ' + chgClass(cards.today_sales?.previous_change_pct, 'up')" t-esc="chgText(cards.today_sales?.previous_change_pct, cards.today_sales?.previous)"/></div>
+                    <div class="cmp-row"><span>السنة الماضية</span><span t-att-class="'chg highlightable ' + chgClass(cards.today_sales?.previous_year_change_pct, 'up')" t-esc="chgText(cards.today_sales?.previous_year_change_pct, cards.today_sales?.previous_year, cards.today_sales?.previous_year_label)"/></div>
+                </div>
+            </article>
+            <article class="card summary-card">
+                <h2 t-esc="state.period?.mode === 'year' ? 'مبيعات السنة لين اليوم' : 'مبيعات الشهر لين اليوم'"/>
+                <div class="sub"><t t-esc="dateName(cards.period_sales?.date_from)"/> إلى <t t-esc="dateName(cards.period_sales?.date_to)"/></div>
+                <div class="amount highlightable"><t t-esc="fmt(cards.period_sales?.value)"/><span>ر.س</span></div>
+                <div class="cmp">
+                    <div t-if="state.period?.mode !== 'year'" class="cmp-row"><span>الشهر الماضي <t t-esc="fmt(cards.period_sales?.previous)"/></span><span t-att-class="'chg highlightable ' + chgClass(cards.period_sales?.previous_change_pct, 'up')" t-esc="chgText(cards.period_sales?.previous_change_pct, cards.period_sales?.previous)"/></div>
+                    <div class="cmp-row"><span>السنة الماضية</span><span t-att-class="'chg highlightable ' + chgClass(cards.period_sales?.previous_year_change_pct, 'up')" t-esc="chgText(cards.period_sales?.previous_year_change_pct, cards.period_sales?.previous_year, cards.period_sales?.previous_year_label)"/></div>
+                </div>
+            </article>
+            <article class="card summary-card net">
+                <h2>الصافي</h2>
+                <div t-if="cards.net?.salaries_warning" class="badge">غير مكتمل – الرواتب لم تُسجّل</div>
+                <div t-elif="state.period?.mode === 'year'" class="sub">حتى <t t-esc="dateName(cards.date_to)"/></div>
+                <div class="amount highlightable"><t t-esc="fmt(cards.net?.value)"/><span>ر.س</span></div>
+                <div class="eq" dir="ltr" t-esc="equationText(cards.net?.equation)"/>
+                <div class="cmp">
+                    <div t-if="state.period?.mode !== 'year'" class="cmp-row"><span>الشهر الماضي <t t-esc="fmt(cards.net?.previous)"/></span><span t-att-class="'chg highlightable ' + chgClass(cards.net?.previous_change_pct, 'up')" t-esc="chgText(cards.net?.previous_change_pct, cards.net?.previous)"/></div>
+                    <div class="cmp-row"><span>السنة الماضية</span><span t-att-class="'chg highlightable ' + chgClass(cards.net?.previous_year_change_pct, 'up')" t-esc="chgText(cards.net?.previous_year_change_pct, cards.net?.previous_year, cards.net?.previous_year_label)"/></div>
+                </div>
+            </article>
+            <article class="card summary-card">
+                <h2>المشتريات</h2>
+                <div class="sub">إجمالي الفترة</div>
+                <div class="amount highlightable"><t t-esc="fmt(cards.purchases?.value)"/><span>ر.س</span></div>
+                <div class="ratio highlightable"><b t-esc="pct(cards.purchases?.pct)"/><span> من المبيعات</span></div>
+                <div class="cmp">
+                    <div t-if="state.period?.mode !== 'year'" class="cmp-row"><span>الشهر الماضي <t t-esc="fmt(cards.purchases?.previous)"/></span><span t-att-class="'chg highlightable ' + chgClass(cards.purchases?.previous_change_pct, 'down')" t-esc="chgText(cards.purchases?.previous_change_pct, cards.purchases?.previous)"/></div>
+                    <div class="cmp-row"><span>السنة الماضية</span><span t-att-class="'chg highlightable ' + chgClass(cards.purchases?.previous_year_change_pct, 'down')" t-esc="chgText(cards.purchases?.previous_year_change_pct, cards.purchases?.previous_year, cards.purchases?.previous_year_label)"/></div>
+                </div>
+            </article>
+            <article class="card summary-card">
+                <h2>المصاريف</h2>
+                <div class="sub">كل المصاريف ما عدا المشتريات</div>
+                <div class="amount highlightable"><t t-esc="fmt(cards.expenses?.value)"/><span>ر.س</span></div>
+                <div class="ratio highlightable"><b t-esc="pct(cards.expenses?.pct)"/><span> من المبيعات</span></div>
+                <div class="cmp">
+                    <div t-if="state.period?.mode !== 'year'" class="cmp-row"><span>الشهر الماضي <t t-esc="fmt(cards.expenses?.previous)"/></span><span t-att-class="'chg highlightable ' + chgClass(cards.expenses?.previous_change_pct, 'down')" t-esc="chgText(cards.expenses?.previous_change_pct, cards.expenses?.previous)"/></div>
+                    <div class="cmp-row"><span>السنة الماضية</span><span t-att-class="'chg highlightable ' + chgClass(cards.expenses?.previous_year_change_pct, 'down')" t-esc="chgText(cards.expenses?.previous_year_change_pct, cards.expenses?.previous_year, cards.expenses?.previous_year_label)"/></div>
+                </div>
+            </article>
+        </section>
+
+        <article class="card chart-card">
+            <h3 t-esc="salesLineTitle"/>
+            <p class="lead" t-esc="salesLineLead"/>
+            <LineChart series="salesLineSeries" labels="salesLineLabels" months="salesLineMonths" fiveTicks="true"/>
+        </article>
+
+        <div class="section-title"><h2>التطبيقات والعملاء</h2><span t-esc="periodTitle()"/></div>
+        <div class="grid two mini-grid">
+            <div class="card mini">
+                <div class="mini-head"><div><div class="mini-title"><span class="card-icon"><svg viewBox="0 0 24 24"><path t-att-d="iconPath('apps')"/></svg></span><h3>تطبيقات التوصيل</h3></div>
+                <small class="block muted">كيتا + هنقر + جاهز</small></div>
+                <div class="mini-value"><strong t-att-class="state.data.sales?.apps != null and (!!state.data.sales?.source_counts?.summary !== !!state.data.sales?.source_counts?.pos) ? 'bd2-drill highlightable' : 'highlightable'" t-att-role="state.data.sales?.apps != null and (!!state.data.sales?.source_counts?.summary !== !!state.data.sales?.source_counts?.pos) ? 'button' : false" t-att-tabindex="state.data.sales?.apps != null and (!!state.data.sales?.source_counts?.summary !== !!state.data.sales?.source_counts?.pos) ? 0 : false" t-on-click="(e)=&gt;state.data.sales?.apps != null and (!!state.data.sales?.source_counts?.summary !== !!state.data.sales?.source_counts?.pos) and this.drill(e,'overview','apps')" t-on-keydown="(e)=&gt;state.data.sales?.apps != null and (!!state.data.sales?.source_counts?.summary !== !!state.data.sales?.source_counts?.pos) and this.drill(e,'overview','apps')" t-esc="fmt(state.data.sales?.apps)"/></div></div>
+                <div class="ratio highlightable"><b t-esc="pct(state.data.sales?.apps_pct)"/><span> من المبيعات</span></div>
+                <div class="cmp">
+                    <div t-if="state.period?.mode !== 'year'" class="cmp-row"><span>الشهر الماضي <t t-esc="fmt(state.data.sales?.previous?.apps)"/></span><span t-att-class="'chg highlightable ' + chgClass(state.data.sales?.apps_change_pct, 'up')" t-esc="chgText(state.data.sales?.apps_change_pct, state.data.sales?.previous?.apps)"/></div>
+                    <div class="cmp-row"><span>السنة الماضية</span><span class="chg highlightable none">لا بيانات</span></div>
+                </div>
+            </div>
+            <div class="card mini">
+                <div class="mini-head"><div><div class="mini-title"><span class="card-icon"><svg viewBox="0 0 24 24"><path t-att-d="iconPath('customers')"/></svg></span><h3>عدد العملاء</h3></div>
+                <small class="block muted"><t t-esc="periodTitle(partialMonth)"/><t t-if="state.data.sales?.customers?.cutover_date"> · <t t-esc="customerCutoverLabel(state.data.sales.customers.cutover_date)"/></t></small></div>
+                <div t-if="state.data.sales?.customers?.available" class="mini-value"><strong class="bd2-drill highlightable" role="button" tabindex="0" t-on-click="(e)=&gt;this.drill(e,'overview','customers')" t-on-keydown="(e)=&gt;this.drill(e,'overview','customers')" t-esc="fmt(state.data.sales?.customers?.value)"/><span class="amount-unit"> طلب</span></div></div>
+                <div class="ratio highlightable">متوسط الفاتورة <b t-esc="fmt(state.data.sales?.customers?.avg_ticket)"/></div>
+                <div class="cmp">
+                    <div t-if="state.period?.mode !== 'year'" class="cmp-row"><span>الشهر الماضي <t t-esc="fmt(state.data.sales?.previous?.customers?.value)"/></span><span t-att-class="'chg highlightable ' + chgClass(state.data.sales?.customers_change_pct, 'up')" t-esc="chgText(state.data.sales?.customers_change_pct, state.data.sales?.previous?.customers?.value)"/></div>
+                    <div class="cmp-row"><span>السنة الماضية</span><span class="chg highlightable none">لا بيانات</span></div>
+                </div>
             </div>
         </div>
-        <div class="grid five">
-            <KpiCard months="trend.map(x=&gt;x.month)" partialMonth="trend.at(-1)?.partial" t-foreach="objectEntries(state.data.kpis || {})" t-as="entry" t-key="entry[0]" title="name(entry[0])" warning="entry[0]==='salaries' and state.data.previous_salaries_warning" icon="entry[0]" value="entry[1].value" change="entry[1].change_pct" trend="entry[1].trend" previousYearTrend="entry[1].previous_year_trend" previousTrend="entry[1].previous_trend" partial="trend.map(x=&gt;x.partial)" hero="entry[0]==='net_profit'" goodWhen="entry[1].good_when" foodProgress="entry[0]==='food_cost' and current.ratios.food_pct != null and state.data.targets.food_pct?.value ? current.ratios.food_pct / state.data.targets.food_pct.value * 100 : null" onDrill="(e)=&gt;this.drill(e,'overview',entry[0])"/>
-        </div>
-        <div t-if="state.data.salaries_warning" class="chip">الرواتب أقل بوضوح من متوسط آخر 3 أشهر — قد تكون غير مكتملة</div><div t-if="state.data.breakeven?.reason==='incomplete_costs'" class="chip">تكاليف الشهر لم تكتمل؛ قد تكون بيانات الأكل والمشتريات غير مكتملة أيضاً</div>
+
+        <div class="section-title"><h2>المبيعات والصافي مقابل نقطة التعادل</h2><span t-esc="periodTitle(partialMonth)"/></div>
         <div class="grid two-wide">
             <div class="card">
-                <h3>المبيعات وصافي الربح مقابل نقطة التعادل</h3>
-                <div class="muted">المسافة بين خط المبيعات والخط المتقطع = هامش الأمان</div>
-                <LineChart series="[{values:state.data.breakeven_series.map(x=&gt;x.sales_net),previousYear:state.data.breakeven_series.map(x=&gt;x.previous_year?.sales_net),firstLabel:true,partial:state.data.breakeven_series.map(x=&gt;x.partial),name:'المبيعات',drill:(e,i)=&gt;this.drill(e,'overview','sales_net',{month:state.data.breakeven_series[i].month})}, {values:state.data.breakeven_series.map(x=&gt;x.net_profit),previousYear:state.data.breakeven_series.map(x=&gt;x.previous_year?.net_profit),partial:state.data.breakeven_series.map(x=&gt;x.partial),gold:true,area:true,firstLabel:true,name:'صافي الربح',drill:(e,i)=&gt;this.drill(e,'overview','net_profit',{month:state.data.breakeven_series[i].month})},{values:state.data.breakeven_series.map(x=&gt;x.breakeven),previousYear:state.data.breakeven_series.map(x=&gt;x.previous_year?.breakeven),dashed:true,endpoint:true,name:'نقطة التعادل'}]" labels="trendLabels" months="trend.map(x=&gt;x.month)" fiveTicks="true"/>
+                <div class="muted">المبيعات الفعلية مقابل نقطة التعادل وخط الصافي</div>
+                <LineChart series="[{values:state.data.breakeven_series.map(x=&gt;x.sales_net),previousYear:state.data.breakeven_series.map(x=&gt;x.previous_year?.sales_net),gold:true,area:true,name:'المبيعات',drill:(e,index)=&gt;this.drill(e,'overview','sales_net',{period:this.monthPeriod(state.data.breakeven_series[index].month)})},{values:state.data.breakeven_series.map(x=&gt;x.breakeven),previousYear:state.data.breakeven_series.map(x=&gt;x.previous_year?.breakeven),dashed:true,endpoint:true,name:'نقطة التعادل'},{values:state.data.breakeven_series.map(x=&gt;x.net_profit),name:'الصافي',endpoint:true,firstLabel:true,drill:(e,index)=&gt;this.drill(e,'overview','net_profit',{period:this.monthPeriod(state.data.breakeven_series[index].month)})}]" labels="trendLabels" months="trend.map(x=&gt;x.month)" fiveTicks="true"/>
                 <div class="safety-chips"><strong>هامش صافي الربح:</strong><span t-foreach="state.data.breakeven_series" t-as="m" t-key="m.month"><t t-esc="monthName(m.month, true, false, m.partial)"/> <bdi dir="ltr" t-att-title="m_last and state.data.breakeven?.reason === 'incomplete_costs' ? 'الشهر لم يكتمل' : undefined" t-esc="m_last and state.data.breakeven?.reason === 'incomplete_costs' ? '—' : pct(m.margin_pct)"/></span></div>
             </div>
             <t t-call="baseer_dashboard2.BreakEven"/>
         </div>
+
+        <div class="section-title"><h2>من المبيعات إلى صافي الربح</h2><span t-esc="periodTitle(partialMonth)"/></div>
         <div class="card">
-            <h3>من المبيعات إلى صافي الربح — <bdi dir="ltr" t-esc="monthName(state.period.month, false, true, partialMonth)"/></h3>
-            <div class="muted">المبالغ ونسبتها من المبيعات شاملة الضريبة</div><div class="bridge-legend"><span>■ مجموع</span><span>■ خصم</span><span>■ صافي الربح</span></div>
+            <h3>تفصيل المصاريف ونسبتها من المبيعات — <bdi dir="ltr" t-esc="periodTitle(partialMonth)"/></h3>
+            <div class="muted">المبالغ ونسبتها من المبيعات شاملة الضريبة</div>
             <div t-att-class="'bridge-row '+(row.key==='net_profit'?'net-profit':(['sales_net','gross_profit','operating_profit'].includes(row.key)?'subtotal':''))" t-foreach="state.data.bridge" t-as="row" t-key="row.key">
                 <b t-att-title="row.key==='zakat_tax' ? 'قيود الزكاة سنوية أو غير منتظمة بين الفترات' : false" t-esc="row.key==='utilities' ? 'الكهرباء والماء' : name(row.key)"/>
                 <div class="bd2-track"><i t-att-style="bridgeStyle(row, row_index)"/></div>
-                <strong dir="ltr" t-att-class="bridgeDrillKey(row.key) ? 'bd2-drill' : ''" t-att-role="bridgeDrillKey(row.key) ? 'button' : false" t-att-tabindex="bridgeDrillKey(row.key) ? 0 : false" t-on-click="(e)=&gt;bridgeDrillKey(row.key) and this.drill(e,'overview',bridgeDrillKey(row.key))" t-on-keydown="(e)=&gt;bridgeDrillKey(row.key) and this.drill(e,'overview',bridgeDrillKey(row.key))" t-esc="tableFmt(row.amount || 0, true)"/>
+                <strong dir="ltr" t-att-class="bridgeDrillKey(row.key) ? 'bd2-drill' : ''" t-att-role="bridgeDrillKey(row.key) ? 'button' : false" t-att-tabindex="bridgeDrillKey(row.key) ? 0 : false" t-on-click="(e)=&gt;this.bridgeDrillKey(row.key) and this.drill(e,'overview',this.bridgeDrillKey(row.key))" t-on-keydown="(e)=&gt;this.bridgeDrillKey(row.key) and this.drill(e,'overview',this.bridgeDrillKey(row.key))" t-esc="fmt(row.amount)"/>
                 <span class="muted"><bdi dir="ltr" t-esc="tablePct(row.pct == null ? null : Math.abs(row.pct))"/></span>
             </div>
-            <div class="muted tax-note">يشمل ضريبة قيمة مضافة مستحقة للهيئة: <t t-esc="fmt(current.tax?.vat_payable)"/> (مخرجات <t t-esc="fmt(current.tax?.output_vat)"/> − مدخلات <t t-esc="fmt(current.tax?.input_vat)"/>)<t t-if="current.tax?.tobacco_fee"> ورسوم تبغ: <t t-esc="fmt(current.tax.tobacco_fee)"/></t></div>
+            <div class="muted tax-note">يشمل ضريبة قيمة مضافة مستحقة للهيئة: <t t-esc="fmt(current.tax?.vat_payable)"/> (مخرجات <t t-esc="fmt(current.tax?.output_vat)"/> − مدخلات <t t-esc="fmt(current.tax?.input_vat)"/>) ر.س</div>
             <div t-if="current.tax?.unallocated_input_vat_lines" class="chip">ضريبة مدخلات غير موزعة: <t t-esc="fmt(current.tax.unallocated_input_vat)"/></div>
         </div>
         <div t-foreach="state.data.sales.warnings" t-as="warning" t-key="warning.company_id+warning.date+warning.label" class="chip"><t t-esc="warning.date"/> · <t t-esc="warning.label"/></div>
+        <div class="section-title"><h2>مقارنة الشركات</h2><span t-esc="periodTitle(partialMonth)"/></div>
         <t t-call="baseer_dashboard2.Compare"/>
+        <div class="section-title"><h2>المسار الزمني</h2><span t-esc="periodTitle()"/></div>
+        <t t-call="baseer_dashboard2.Timeline"/>
     </t>
     <t t-name="baseer_dashboard2.BreakEven">
         <div class="card">
-            <h3>نقطة التعادل — <t t-esc="monthName(state.period.month, false, false)"/></h3>
+            <h3>نقطة التعادل — <t t-esc="periodTitle()"/></h3>
             <div class="muted">المبيعات اللازمة لتغطية كل التكاليف</div>
             <div t-if="state.data.breakeven?.available" class="break">
                 <div>
@@ -206,8 +281,8 @@
     <t t-name="baseer_dashboard2.Compare">
         <t t-set="partialMonth" t-value="state.period?.mode === 'month' and trend.at(-1)?.partial"/>
         <div class="card" t-if="state.data.companies_compare?.length &gt; 1">
-            <h3>مقارنة الشركات</h3>
-            <div class="muted"><bdi dir="ltr" t-esc="monthName(state.period.month, false, true, partialMonth)"/> — الشركات الثلاث جنب بعض</div>
+            <h3 class="sr-only">مقارنة الشركات</h3>
+            <div class="muted">الشركات الثلاث جنب بعض</div>
             <div class="bd2-scroll-x"><table>
                 <thead>
                     <tr>
@@ -228,6 +303,7 @@
                     </tr>
                 </tbody>
             </table></div>
+            <p t-if="compareSalaryNote()" class="warn-note" t-esc="compareSalaryNote()"/>
         </div>
     </t>
     <t t-name="baseer_dashboard2.Revenue">
@@ -735,6 +811,42 @@
             </table></div>
         </div>
     </t>
+    <t t-name="baseer_dashboard2.PeriodFilter">
+        <section class="bd2-period" t-on-click.stop="">
+            <div class="bd2-odoo-search">
+                <button type="button" class="search-main" t-on-click.stop="()=&gt;this.togglePeriodMenu()">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                    <span class="search-value" t-esc="periodFacet()"/>
+                </button>
+                <button type="button" class="search-arrow" aria-label="فتح فلتر الفترة" t-att-aria-expanded="state.periodMenu ? 'true' : 'false'" t-on-click.stop="()=&gt;this.togglePeriodMenu()">
+                    <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 5 4-5z"/></svg>
+                </button>
+            </div>
+            <div t-if="state.periodMenu" class="bd2-odoo-menu" t-on-click.stop="">
+                <div class="bd2-odoo-col">
+                    <h3>الفترة</h3>
+                    <button type="button" t-att-class="'bd2-odoo-item' + (state.period?.mode==='today' ? ' is-on' : '')" t-on-click="()=&gt;this.selectPeriodMode('today')"><span class="mark" t-esc="state.period?.mode==='today' ? '✓' : ''"/>اليوم</button>
+                    <button type="button" t-att-class="'bd2-odoo-item' + (state.period?.mode==='month' ? ' is-on' : '')" t-on-click="()=&gt;this.selectPeriodMode('month')"><span class="mark" t-esc="state.period?.mode==='month' ? '✓' : ''"/>الشهر</button>
+                    <button type="button" t-att-class="'bd2-odoo-item' + (state.period?.mode==='year' ? ' is-on' : '')" t-on-click="()=&gt;this.selectPeriodMode('year')"><span class="mark" t-esc="state.period?.mode==='year' ? '✓' : ''"/>السنة</button>
+                    <button type="button" t-att-class="'bd2-odoo-item' + (state.period?.mode==='date' ? ' is-on' : '')" t-on-click="()=&gt;this.selectPeriodMode('date')"><span class="mark" t-esc="state.period?.mode==='date' ? '✓' : ''"/>تاريخ محدد</button>
+                    <select t-if="state.period?.mode==='month'" class="bd2-odoo-select" t-att-value="state.period.month" t-on-change="(e)=&gt;this.selectPeriodMode('month', e.target.value)">
+                        <option t-foreach="periodMonths()" t-as="m" t-key="m" t-att-value="m" t-att-selected="m===state.period.month" t-esc="monthName(m)"/>
+                    </select>
+                    <select t-if="state.period?.mode==='year'" class="bd2-odoo-select" t-att-value="String(state.period.year)" t-on-change="(e)=&gt;this.selectPeriodMode('year', e.target.value)">
+                        <option t-foreach="periodYears()" t-as="y" t-key="y" t-att-value="y" t-att-selected="Number(y)===Number(state.period.year)" t-esc="y"/>
+                    </select>
+                    <input t-if="state.period?.mode==='date'" class="bd2-odoo-select" type="date" t-att-value="state.period.date" t-on-change="(e)=&gt;this.selectPeriodMode('date', e.target.value)"/>
+                </div>
+                <div class="bd2-odoo-col">
+                    <h3>المقارنة</h3>
+                    <button type="button" t-att-class="'bd2-odoo-item' + (state.comparison==='previous_period' ? ' is-on' : '')" t-on-click="()=&gt;this.selectComparison('previous_period')"><span class="mark" t-esc="state.comparison==='previous_period' ? '✓' : ''"/>الفترة السابقة</button>
+                    <button type="button" t-att-class="'bd2-odoo-item' + (state.comparison==='previous_year' ? ' is-on' : '')" t-on-click="()=&gt;this.selectComparison('previous_year')"><span class="mark" t-esc="state.comparison==='previous_year' ? '✓' : ''"/>السنة السابقة</button>
+                </div>
+            </div>
+            <div class="period-caption">الفترة المعروضة: <t t-esc="periodTitle()"/> · مقارنة <t t-esc="comparisonCaption()"/></div>
+        </section>
+    </t>
+
     <t t-name="baseer_dashboard2.Main">
         <div class="o_bd2" t-att-class="{'bd2-nav-open': state.navOpen}" dir="rtl" data-bd2-theme="navy-gold" t-att-data-bd2-mode="state.mode">
             <div t-if="state.navOpen" class="bd2-nav-backdrop" t-on-click="()=&gt;state.navOpen=false"/>
@@ -777,29 +889,16 @@
                         <div class="seg company-strip bd2-scroll-x">
                             <button t-foreach="state.meta?.companies || []" t-as="co" t-key="co.key" t-att-class="state.company===co.key?'on':''" t-on-click="()=&gt;this.choose('company',co.key)"><t t-esc="co.name"/><span t-if="!co.name" class="company-label-fallback" t-esc="co.label"/></button>
                         </div>
-                        <div class="seg period-strip">
-                            <button t-att-class="state.period?.mode==='month'?'on':''" t-on-click="()=&gt;this.periodChange('mode','month')">شهر</button>
-                            <button t-att-class="state.period?.mode==='range'?'on':''" t-on-click="()=&gt;this.periodChange('mode','range')">من – إلى</button>
-                            <select t-if="state.period?.mode==='month'" t-att-value="state.period.month" t-on-change="(e)=&gt;this.periodChange('month',e.target.value)">
-                                <option t-foreach="state.meta?.months_available || []" t-as="m" t-key="m" t-att-value="m" t-att-selected="m===state.period.month" t-esc="monthName(m)"/>
-                                <option t-if="state.meta?.today and !state.meta.months_available.includes(state.meta.today.slice(0,7))" t-att-value="state.meta.today.slice(0,7)" t-esc="monthName(state.meta.today.slice(0,7))"/>
-                                <option t-if="!state.meta?.months_available.length" t-att-value="state.period.month" t-esc="monthName(state.period.month)"/>
-                            </select>
-                            <t t-else="">
-                                <input type="date" t-att-value="state.period?.date_from" t-on-change="(e)=&gt;this.periodChange('date_from',e.target.value)"/>
-                                <input type="date" t-att-value="state.period?.date_to" t-on-change="(e)=&gt;this.periodChange('date_to',e.target.value)"/>
-                            </t>
-                        </div>
                         <button class="icon-button" title="الوضع الليلي" t-on-click="()=&gt;this.choose('mode',state.mode==='light'?'dark':'light')">☾</button>
                     </div>
                 </header>
-                <div class="context">
+                <t t-call="baseer_dashboard2.PeriodFilter"/>
+                <div t-if="state.page !== 'overview' and state.page !== 'glossary'" class="context">
                     <span class="chip context-source">بيانات أودو المرحّلة</span>
                     <span>عرض:</span>
                     <span class="chip" t-esc="companyName"/>
-                    <span class="chip" t-esc="state.period?.mode==='month' ? monthName(state.period.month) : dateName(state.period?.date_from)+' – '+dateName(state.period?.date_to)"/>
-                    <span t-if="state.period?.mode==='month' and state.period.month===state.meta?.today.slice(0,7)" class="chip">جزئي</span>
-                    <span class="chip">الاتجاه: آخر 6 أشهر</span>
+                    <span class="chip" t-esc="periodTitle()"/>
+                    <span t-if="state.data?.cards?.partial || (state.period?.mode==='month' and state.period.month===state.meta?.today.slice(0,7))" class="chip">جزئي</span>
                     <span t-if="state.data?.sales?.source_counts" class="chip" t-esc="state.data.sales.source_counts.summary &amp;&amp; state.data.sales.source_counts.pos ? 'المصدر: ملخصات ونقاط البيع' : state.data.sales.source_counts.summary ? 'المصدر: ملخصات يومية' : 'المصدر: نقاط البيع'"/>
                 </div>
                 <div t-if="state.loading" class="card loading">جارٍ تحميل البيانات…</div>
@@ -807,7 +906,6 @@
                 <div t-elif="state.data?.available === false" class="card">غير متوفر <div class="muted" t-esc="state.data.reason"/>
                 </div>
                 <t t-else="">
-                    <div t-if="state.page==='overview'" class="section-divider">المسار الزمني</div><t t-if="state.page==='overview'" t-call="baseer_dashboard2.Timeline"/><div t-if="state.page==='overview'" class="section-divider">ملخص <t t-esc="monthName(state.period.month)"/></div>
                     <t t-if="state.page==='overview'" t-call="baseer_dashboard2.Overview"/>
                     <t t-if="state.page==='revenue'" t-call="baseer_dashboard2.Revenue"/>
                     <t t-if="state.page==='expenses'" t-call="baseer_dashboard2.Expenses"/>

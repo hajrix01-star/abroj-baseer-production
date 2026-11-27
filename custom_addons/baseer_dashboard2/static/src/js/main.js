@@ -532,7 +532,7 @@ export class Dashboard2 extends Component {
       this.state.meta = m;
       if (!m.companies.some((c) => c.key === this.state.company))
         this.state.company = m.default_company_key;
-      if (!this.state.period || !["today", "month", "year", "date", "range"].includes(this.state.period.mode)) {
+      if (!this.state.period || !["today", "yesterday", "month", "year", "date", "range"].includes(this.state.period.mode)) {
         this.state.period = m.default_period || { mode: "today", date: m.today, month: m.today.slice(0, 7), year: Number(m.today.slice(0, 4)), date_from: m.today, date_to: m.today };
       } else {
         this.state.period = this.normalizePeriod(this.state.period, m);
@@ -890,9 +890,13 @@ export class Dashboard2 extends Component {
   normalizePeriod(period, meta = this.state.meta || {}) {
     const today = meta.today || new Date().toISOString().slice(0, 10);
     const p = { ...(period || {}) };
-    const mode = ["today", "month", "year", "date", "range"].includes(p.mode) ? p.mode : "today";
+    const mode = ["today", "yesterday", "month", "year", "date", "range"].includes(p.mode) ? p.mode : "today";
     if (mode === "today") {
       return { mode, date: today, month: today.slice(0, 7), year: Number(today.slice(0, 4)), date_from: today, date_to: today };
+    }
+    if (mode === "yesterday") {
+      const day = this.yesterdayDate(meta);
+      return { mode, date: day, month: day.slice(0, 7), year: Number(day.slice(0, 4)), date_from: day, date_to: day };
     }
     if (mode === "date") {
       const day = p.date || p.date_from || today;
@@ -938,6 +942,15 @@ export class Dashboard2 extends Component {
   isPeriodYear(year) {
     return Number(year) === Number(this.state.period?.year);
   }
+  yesterdayDate(meta = this.state.meta || {}) {
+    const today = meta.today || new Date().toISOString().slice(0, 10);
+    const [year, month, day] = today.split("-").map(Number);
+    const previous = new Date(Date.UTC(year, month - 1, day - 1));
+    return previous.toISOString().slice(0, 10);
+  }
+  todaySalesTitle() {
+    return this.state.period?.mode === "yesterday" ? "مبيعات أمس" : "مبيعات اليوم";
+  }
   togglePeriodMenu() { this.state.periodMenu = !this.state.periodMenu; }
   async selectComparison(kind) {
     this.state.comparison = kind;
@@ -958,13 +971,14 @@ export class Dashboard2 extends Component {
     this.resetPnlRange();
     if (mode !== "range" || (this.state.period.date_from && this.state.period.date_to && this.state.period.date_from <= this.state.period.date_to)) {
       this.state.periodMenu = mode === "month" || mode === "year" || mode === "date" ? true : false;
-      if (mode === "today") this.state.periodMenu = false;
+      if (mode === "today" || mode === "yesterday") this.state.periodMenu = false;
       await this.load();
     }
   }
   periodFacet() {
     const p = this.normalizePeriod(this.state.period);
     if (p.mode === "today") return `اليوم · ${this.dateName(p.date)}`;
+    if (p.mode === "yesterday") return `أمس · ${this.dateName(p.date)}`;
     if (p.mode === "month") return `الشهر · ${this.monthName(p.month)}`;
     if (p.mode === "year") return `السنة · ${p.year}`;
     if (p.mode === "date") return `تاريخ محدد · ${this.dateName(p.date)}`;
@@ -972,7 +986,7 @@ export class Dashboard2 extends Component {
   }
   periodTitle(partial = false) {
     const p = this.normalizePeriod(this.state.period);
-    const label = p.mode === "today" ? this.dateName(p.date)
+    const label = p.mode === "today" || p.mode === "yesterday" ? this.dateName(p.date)
       : p.mode === "month" ? this.monthName(p.month)
       : p.mode === "year" ? String(p.year)
       : p.mode === "date" ? this.dateName(p.date)

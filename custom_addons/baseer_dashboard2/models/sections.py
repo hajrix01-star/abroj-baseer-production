@@ -1021,7 +1021,7 @@ class DashboardSections(models.AbstractModel):
         year_ok = self._window_covered(ids, year_start, year_end)
         month_start, month_last = month_bounds(end if mode != 'year' else today)
         month_end = min(month_last, today) if (month_start.year, month_start.month) == (today.year, today.month) else month_last
-        if mode in ('today', 'date'):
+        if mode in ('today', 'date', 'yesterday'):
             focus = start
         elif mode != 'year' and start <= today <= end:
             focus = today
@@ -1170,7 +1170,7 @@ class DashboardSections(models.AbstractModel):
         # Daily line for the month containing the selected period.
         month_start, month_last = month_bounds(end)
         month_end = min(month_last, today, end if end >= month_start else month_last)
-        # Load the whole month so today/date still show the month curve.
+        # Load the whole month so today/yesterday/date still show the month curve.
         sales, month_days, _channels, _hours = self._sales_summary(ids, month_start, min(month_last, today))
         totals = {}
         for (_cid, day), data in month_days.items():

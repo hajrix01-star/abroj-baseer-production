@@ -32,6 +32,8 @@ class TestOverviewPeriod(TransactionCase):
         service, _company = self._service()
         today = fields.Date.context_today(service)
         self.assertEqual(service._period({'mode': 'today'}), (today, today))
+        yesterday = today - timedelta(days=1)
+        self.assertEqual(service._period({'mode': 'yesterday'}), (yesterday, yesterday))
         self.assertEqual(service._period({'mode': 'date', 'date': '2026-11-15'}), (date(2026, 11, 15), date(2026, 11, 15)))
         october = service._period({'mode': 'month', 'month': '2026-10'})
         self.assertEqual(october, (date(2026, 10, 1), date(2026, 10, 31)))
@@ -46,6 +48,8 @@ class TestOverviewPeriod(TransactionCase):
             service._period({'mode': 'week'})
         prev = service._comparison_bounds(date(2026, 11, 27), date(2026, 11, 27), 'date', 'previous_period')
         self.assertEqual(prev, (date(2026, 10, 27), date(2026, 10, 27)))
+        prev_yesterday = service._comparison_bounds(yesterday, yesterday, 'yesterday', 'previous_period')
+        self.assertEqual(prev_yesterday, service._comparison_bounds(yesterday, yesterday, 'date', 'previous_period'))
         year_bounds = service._comparison_bounds(date(2026, 11, 1), date(2026, 11, 27), 'month', 'previous_year')
         self.assertEqual(year_bounds, (date(2025, 11, 1), date(2025, 11, 27)))
 
@@ -91,6 +95,27 @@ class TestOverviewPeriod(TransactionCase):
         self.assertEqual(len(year['sales_line']['points']), 12)
         self.assertEqual(year['sales_line']['points'][0]['label'], month_label('2026-01', short=True))
         self.assertEqual(year['sales_line']['points'][11]['label'], 'Dec')
+
+    def test_yesterday_cards_match_single_day(self):
+        service, company = self._service()
+        key = str(company.id)
+        today = fields.Date.context_today(service)
+        yesterday = today - timedelta(days=1)
+        section = service.get_section('overview', {'company_key': key, 'period': {'mode': 'yesterday'}})
+        self.assertTrue(section['available'])
+        self.assertEqual(section['cards']['mode'], 'yesterday')
+        self.assertEqual(section['period']['date_from'], str(yesterday))
+        self.assertEqual(section['period']['date_to'], str(yesterday))
+        self.assertEqual(section['cards']['today_sales']['date'], str(yesterday))
+        for name in ('today_sales', 'period_sales', 'net', 'purchases', 'expenses'):
+            self.assertIn(name, section['cards'], name)
+        self.assertEqual(section['cards']['period_sales']['kind'], 'mtd')
+        # Same five-card layout as today: day sales + MTD + net/purchases/expenses for that day.
+        today_section = service.get_section('overview', {'company_key': key, 'period': {'mode': 'today'}})
+        self.assertEqual(set(section['cards']) & {'today_sales', 'period_sales', 'net', 'purchases', 'expenses'},
+                         set(today_section['cards']) & {'today_sales', 'period_sales', 'net', 'purchases', 'expenses'})
+        self.assertNotIn(54, [c.get('id') for c in service.get_meta()['companies']])
+        self.assertNotIn(56, [c.get('id') for c in service.get_meta()['companies']])
 
     def test_english_month_labels_stay_english(self):
         self.assertEqual(month_label(date(2026, 11, 1)), 'November')

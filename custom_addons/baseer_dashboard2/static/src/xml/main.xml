@@ -147,7 +147,7 @@
         <t t-set="cards" t-value="state.data.cards || {}"/>
         <section t-att-class="'summary-cards' + (state.period?.mode === 'year' ? ' is-year' : '')">
             <article t-if="state.period?.mode !== 'year'" class="card summary-card">
-                <h2>مبيعات اليوم</h2>
+                <h2 t-esc="todaySalesTitle()"/>
                 <div class="sub" t-esc="dateName(cards.today_sales?.date)"/>
                 <div class="amount highlightable"><t t-esc="fmt(cards.today_sales?.value)"/><span>ر.س</span></div>
                 <div class="cmp">
@@ -826,6 +826,7 @@
                 <div class="bd2-odoo-col">
                     <h3>الفترة</h3>
                     <button type="button" t-att-class="'bd2-odoo-item' + (state.period?.mode==='today' ? ' is-on' : '')" t-on-click="()=&gt;this.selectPeriodMode('today')"><span class="mark" t-esc="state.period?.mode==='today' ? '✓' : ''"/>اليوم</button>
+                    <button type="button" t-att-class="'bd2-odoo-item' + (state.period?.mode==='yesterday' ? ' is-on' : '')" t-on-click="()=&gt;this.selectPeriodMode('yesterday')"><span class="mark" t-esc="state.period?.mode==='yesterday' ? '✓' : ''"/>أمس</button>
                     <button type="button" t-att-class="'bd2-odoo-item' + (state.period?.mode==='month' ? ' is-on' : '')" t-on-click="()=&gt;this.selectPeriodMode('month')"><span class="mark" t-esc="state.period?.mode==='month' ? '✓' : ''"/>الشهر</button>
                     <button type="button" t-att-class="'bd2-odoo-item' + (state.period?.mode==='year' ? ' is-on' : '')" t-on-click="()=&gt;this.selectPeriodMode('year')"><span class="mark" t-esc="state.period?.mode==='year' ? '✓' : ''"/>السنة</button>
                     <button type="button" t-att-class="'bd2-odoo-item' + (state.period?.mode==='date' ? ' is-on' : '')" t-on-click="()=&gt;this.selectPeriodMode('date')"><span class="mark" t-esc="state.period?.mode==='date' ? '✓' : ''"/>تاريخ محدد</button>
@@ -843,7 +844,7 @@
                     <button type="button" t-att-class="'bd2-odoo-item' + (state.comparison==='previous_year' ? ' is-on' : '')" t-on-click="()=&gt;this.selectComparison('previous_year')"><span class="mark" t-esc="state.comparison==='previous_year' ? '✓' : ''"/>السنة السابقة</button>
                 </div>
             </div>
-            <div class="period-caption">الفترة المعروضة: <t t-esc="periodTitle()"/> · مقارنة <t t-esc="comparisonCaption()"/></div>
+            <div t-if="state.period?.mode !== 'yesterday'" class="period-caption">الفترة المعروضة: <t t-esc="periodTitle()"/> · مقارنة <t t-esc="comparisonCaption()"/></div>
         </section>
     </t>
 

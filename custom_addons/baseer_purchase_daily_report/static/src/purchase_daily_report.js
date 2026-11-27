@@ -5,7 +5,7 @@ import { registry } from "@web/core/registry";
 import { _t } from "@web/core/l10n/translation";
 import { userBus } from "@web/core/user";
 import { useBus, useService } from "@web/core/utils/hooks";
-import { detectPreset, monthValue, rangeForDay, rangeForMonth, rangeForPreset, riyadhYmd } from "./date_range";
+import { detectPreset, rangeForPreset } from "./date_range";
 
 const MODEL = "baseer.purchase.daily.report";
 const PAGE_SIZE = 50;
@@ -22,8 +22,6 @@ export class PurchaseDailyReport extends Component {
         this.state = useState({
             from: initial.from,
             to: initial.to,
-            day: initial.day,
-            month: initial.month,
             preset: "this_month",
             payment: "all",
             method: "all",
@@ -52,7 +50,7 @@ export class PurchaseDailyReport extends Component {
             all: _t("All statuses"), not_paid: _t("Unpaid"), partial: _t("Partially paid"),
             in_payment: _t("In payment"), paid: _t("Paid"), reversed: _t("Reversed"),
             blocked: _t("Blocked"), invoicing_legacy: _t("Legacy"),
-            draft: _t("Draft"), drafts: _t("Drafts"), unapproved: _t("Unapproved"),
+            draft: _t("Draft"), drafts: _t("Drafts"),
             apply: _t("Show purchases"), loading: _t("Loading purchases…"),
             error: _t("We could not load this report. Please try again."), retry: _t("Try again"),
             empty: _t("No purchases found for these filters."), emptyHint: _t("Try another date range or payment status."),
@@ -72,10 +70,10 @@ export class PurchaseDailyReport extends Component {
             amountCurrency: _t("Original invoice currency"),
             paidNote: _t("Confirmed payments allocated to these invoices are shown. Other settlements can reduce the outstanding amount."),
             paidUnavailableNote: _t("An amount is unavailable when the cash payment cannot be verified, including some foreign currency payments."),
-            liveNote: _t("Posted supplier bills and credit notes only."),
+            liveNote: _t("The default view shows posted bills. Use Drafts to include unposted bills."),
             today: _t("Today"), yesterday: _t("Yesterday"),
             thisMonth: _t("This month"), lastMonth: _t("Last month"),
-            pickDay: _t("Day"), pickMonth: _t("Month"),
+            datePresets: _t("Date presets"),
             paymentMethods: _t("Payment methods"), statusFilters: _t("Status filters"),
             documentsShort: _t("documents"),
         };
@@ -95,6 +93,10 @@ export class PurchaseDailyReport extends Component {
     }
 
     statusLabel(status) { return this.labels[status] || status || "—"; }
+    statusCardLabel(card) {
+        const labels = { not_paid: this.labels.not_paid, draft: this.labels.drafts };
+        return labels[card.key] || card.label;
+    }
     kindLabel(kind) { return kind === "in_refund" ? this.labels.refund : this.labels.invoice; }
     errorMessage(error) {
         const known = ["odoo.exceptions.UserError", "odoo.exceptions.ValidationError", "odoo.exceptions.AccessError"];
@@ -102,33 +104,14 @@ export class PurchaseDailyReport extends Component {
     }
 
     syncDates(from, to, extra = {}) {
-        const today = riyadhYmd();
         this.state.from = from;
         this.state.to = to;
         this.state.preset = extra.preset || detectPreset(from, to);
-        this.state.day = extra.day || (from === to ? from : today.iso);
-        this.state.month = extra.month || (from && from.slice(0, 7)) || monthValue(today.year, today.month);
     }
 
     applyPreset(preset) {
         const range = rangeForPreset(preset);
-        this.syncDates(range.from, range.to, { preset, day: range.day, month: range.month });
-        return this.applyFilters();
-    }
-
-    onDayPicked(event) {
-        const iso = event.target.value;
-        if (!iso) { return; }
-        const range = rangeForDay(iso);
-        this.syncDates(range.from, range.to, { preset: detectPreset(range.from, range.to), day: iso });
-        return this.applyFilters();
-    }
-
-    onMonthPicked(event) {
-        const value = event.target.value;
-        if (!value) { return; }
-        const range = rangeForMonth(value);
-        this.syncDates(range.from, range.to, { preset: detectPreset(range.from, range.to), month: value });
+        this.syncDates(range.from, range.to, { preset });
         return this.applyFilters();
     }
 

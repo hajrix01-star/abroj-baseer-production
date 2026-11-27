@@ -38,11 +38,11 @@
     .bpr-company small, .bpr-company strong { display: block; }
     .bpr-company small { font-size: 10px; color: var(--bpr-muted); }
     .bpr-company strong { font-size: 13px; max-width: 240px; overflow-wrap: anywhere; }
-    .bpr-filter { display: grid; grid-template-columns: repeat(2, minmax(130px, 1fr)) repeat(2, minmax(130px, 1fr)) minmax(160px, 1.2fr) auto; align-items: end; gap: 16px; background: var(--bpr-surface); border: 1px solid var(--bpr-border); border-radius: 16px; padding: 20px; box-shadow: 0 8px 30px rgba(30, 36, 50, .025); }
+    .bpr-filter { display: grid; grid-template-columns: repeat(2, minmax(130px, 1fr)) minmax(160px, 1.2fr) auto; align-items: end; gap: 16px; background: var(--bpr-surface); border: 1px solid var(--bpr-border); border-radius: 16px; padding: 20px; box-shadow: 0 8px 30px rgba(30, 36, 50, .025); }
     .bpr-filter label { display: flex; flex-direction: column; gap: 7px; min-width: 0; margin: 0; }
     .bpr-filter label > span { font-size: 12px; color: #586272; font-weight: 700; }
     .bpr-filter input, .bpr-filter select { background: var(--bpr-input); border: 1px solid var(--bpr-input-border); border-radius: 9px; color: var(--bpr-ink); height: 44px; min-width: 0; padding: 0 12px; width: 100%; }
-    .bpr-filter input[type="date"], .bpr-filter input[type="month"] { direction: ltr; text-align: start; color-scheme: inherit; }
+    .bpr-filter input[type="date"] { direction: ltr; text-align: start; color-scheme: inherit; }
     .bpr-apply { background: var(--bpr-purple); border: 0; border-radius: 9px; color: #fff; font-weight: 700; height: 44px; padding: 0 22px; white-space: nowrap; }
     .bpr-apply:hover { background: var(--bpr-purple-dark); }
     .bpr-apply i { margin-inline-end: 6px; }
@@ -61,7 +61,7 @@
     .bpr-card strong em { font-size: 10px; font-style: normal; font-weight: 500; color: var(--bpr-muted); }
     .bpr-card span { color: var(--bpr-muted); font-size: 11px; }
     .bpr-cards--status { margin-top: 10px; }
-    .bpr-status--draft, .bpr-status--unapproved { color: #6b4ea3; background: light-dark(#f3edfb, #2f2544); }
+    .bpr-status--draft { color: #6b4ea3; background: light-dark(#f3edfb, #2f2544); }
     .bpr-days { display: flex; flex-direction: column; gap: 10px; }
     .bpr-day { border: 1px solid var(--bpr-border); border-radius: 14px; background: var(--bpr-surface); overflow: hidden; }
     .bpr-day--open { border-color: #d4c8e7; box-shadow: 0 8px 28px rgba(53, 38, 83, .045); }
@@ -153,8 +153,7 @@
         .bpr-company-icon { width: 32px; height: 32px; }
         .bpr-filter { gap: 12px; padding: 16px; }
         .bpr-filter label { grid-column: auto; }
-        .bpr-filter label:nth-child(5), .bpr-apply { grid-column: 1 / -1; }
-        .bpr-apply { grid-column: 1 / -1; }
+        .bpr-filter label:nth-child(3), .bpr-apply { grid-column: 1 / -1; }
         .bpr-context { flex-direction: column; font-size: 11px; }
         .bpr-day-button { grid-template-columns: 1fr auto; gap: 12px; padding: 16px; }
         .bpr-day-title { grid-column: 1; }

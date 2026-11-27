@@ -57,15 +57,13 @@
                 </t>
                 <t t-else="">
                     <header class="bpr-header"><div class="bpr-heading"><span class="bpr-eyebrow"><span class="bpr-eyebrow-dot"/> <span t-esc="labels.eyebrow"/></span><h1 t-esc="labels.title"/><p t-esc="labels.subtitle"/></div><div t-if="state.payload" class="bpr-company"><span class="bpr-company-icon"><i class="fa fa-building-o" aria-hidden="true"/></span><div><small t-esc="labels.activeCompany"/><strong t-esc="state.payload.company.name"/></div></div></header>
-                    <nav class="bpr-presets" t-att-aria-label="labels.pickDay">
+                    <nav class="bpr-presets" t-att-aria-label="labels.datePresets">
                         <button type="button" t-foreach="presets" t-as="preset" t-key="preset" t-attf-class="bpr-preset {{isPresetActive(preset) ? 'bpr-preset--active' : ''}}" t-on-click="() => this.applyPreset(preset)" t-esc="presetLabels[preset]"/>
                     </nav>
                     <form class="bpr-filter" t-on-submit.prevent="applyFilters">
-                        <label class="bpr-picker"><span t-esc="labels.pickDay"/><input type="date" t-att-value="state.day" t-on-change="onDayPicked" required="required"/></label>
-                        <label class="bpr-picker"><span t-esc="labels.pickMonth"/><input type="month" t-att-value="state.month" t-on-change="onMonthPicked" required="required"/></label>
                         <label><span t-esc="labels.from"/><input type="date" t-model="state.from" t-on-change="onFromToChanged" required="required"/></label>
                         <label><span t-esc="labels.to"/><input type="date" t-model="state.to" t-on-change="onFromToChanged" required="required"/></label>
-                        <label><span t-esc="labels.payment"/><select t-model="state.payment" t-on-change="onPaymentChanged"><option value="all" t-esc="labels.all"/><option value="not_paid" t-esc="labels.not_paid"/><option value="partial" t-esc="labels.partial"/><option value="in_payment" t-esc="labels.in_payment"/><option value="paid" t-esc="labels.paid"/><option value="reversed" t-esc="labels.reversed"/><option value="blocked" t-esc="labels.blocked"/><option value="unapproved" t-esc="labels.unapproved"/><option value="draft" t-esc="labels.drafts"/></select></label>
+                        <label><span t-esc="labels.payment"/><select t-model="state.payment" t-on-change="onPaymentChanged"><option value="all" t-esc="labels.all"/><option value="not_paid" t-esc="labels.not_paid"/><option value="partial" t-esc="labels.partial"/><option value="in_payment" t-esc="labels.in_payment"/><option value="paid" t-esc="labels.paid"/><option value="reversed" t-esc="labels.reversed"/><option value="blocked" t-esc="labels.blocked"/><option value="draft" t-esc="labels.drafts"/></select></label>
                         <button type="submit" class="bpr-apply" t-att-disabled="state.loading"><i class="fa fa-search" aria-hidden="true"/> <span t-esc="labels.apply"/></button>
                     </form>
                     <section t-if="state.payload" class="bpr-cards" t-att-aria-label="labels.paymentMethods">
@@ -77,7 +75,7 @@
                     </section>
                     <section t-if="state.payload" class="bpr-cards bpr-cards--status" t-att-aria-label="labels.statusFilters">
                         <button type="button" t-foreach="state.payload.statuses" t-as="card" t-key="card.key" t-attf-class="bpr-card bpr-card--status bpr-card--{{card.key}} {{isStatusActive(card.key) ? 'bpr-card--active' : ''}}" t-on-click="() => this.toggleStatus(card.key)">
-                            <small t-esc="card.label"/>
+                            <small t-esc="statusCardLabel(card)"/>
                             <strong><bdi t-esc="card.total"/> <em t-esc="state.payload.company.currency"/></strong>
                             <span><bdi t-esc="card.count"/> <t t-esc="labels.documents"/></span>
                         </button>

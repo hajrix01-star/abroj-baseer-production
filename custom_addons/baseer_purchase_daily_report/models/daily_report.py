@@ -10,7 +10,7 @@ PAGE_SIZE = 50
 MAX_DAYS = 366
 ZERO = Decimal('0')
 PAYMENT_STATES = frozenset(('all', 'not_paid', 'partial', 'in_payment', 'paid', 'reversed', 'blocked'))
-STATUS_FILTERS = PAYMENT_STATES | frozenset(('draft', 'unapproved'))
+STATUS_FILTERS = PAYMENT_STATES | frozenset(('draft',))
 METHOD_SPECIAL = frozenset(('all', 'osama', 'cash'))
 ALLOWED_ROLES = (
     'baseer_access_roles.group_owner',
@@ -76,8 +76,7 @@ class PurchaseDailyReport(models.AbstractModel):
             ('invoice_date', '>=', first),
             ('invoice_date', '<=', last),
         ]
-        if status in ('draft', 'unapproved'):
-            # «لم تُعتمد» uses the same rule as «المسودات»: vendor bills still in draft.
+        if status == 'draft':
             domain.append(('state', '=', 'draft'))
         else:
             domain.append(('state', '=', 'posted'))
@@ -285,7 +284,6 @@ class PurchaseDailyReport(models.AbstractModel):
         cards = []
         for key, label in (
             ('not_paid', self.env._('Unpaid')),
-            ('unapproved', self.env._('Unapproved')),
             ('draft', self.env._('Drafts')),
         ):
             moves = self.env['account.move'].sudo().search(self._domain(company, first, last, key))

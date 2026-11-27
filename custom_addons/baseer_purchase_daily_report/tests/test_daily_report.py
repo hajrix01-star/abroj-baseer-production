@@ -436,7 +436,7 @@ class DailyPurchaseReportCase(TransactionCase):
         draft = self._bill(3, post=False)
         report = self._report('cashier')
         self.assertEqual(report.get_invoice(bill.id)['id'], bill.id)
-        # Authorized roles may open a draft from the drafts / unapproved filter.
+        # Authorized roles may open a draft from the drafts filter.
         self.assertEqual(report.get_invoice(draft.id)['id'], draft.id)
         self.assertEqual(report.get_invoice(draft.id)['status'], 'draft')
         # The default posted view includes the posted bill only, not the draft.
@@ -590,7 +590,7 @@ class DailyPurchaseReportCase(TransactionCase):
         self.assertEqual(card['key'], 'osama')
         self.assertEqual(card['total'], '15.00')
 
-    def test_draft_and_unapproved_match_and_exclude_unpaid(self):
+    def test_draft_card_excludes_unpaid_and_drops_unapproved(self):
         draft = self._bill(80, day='2099-09-18', post=False)
         unpaid = self._bill(90, day='2099-09-18')
         cancelled = self._bill(10, day='2099-09-18')
@@ -601,34 +601,36 @@ class DailyPurchaseReportCase(TransactionCase):
         self.assertEqual(all_days['days'][0]['count'], 1)
         self.assertEqual(all_days['days'][0]['total'], '90.00')
         statuses = {card['key']: card for card in all_days['statuses']}
+        self.assertEqual(list(statuses), ['not_paid', 'draft'])
         self.assertEqual(statuses['not_paid']['count'], 1)
         self.assertEqual(statuses['not_paid']['total'], '90.00')
         self.assertEqual(statuses['draft']['count'], 1)
         self.assertEqual(statuses['draft']['total'], '80.00')
-        self.assertEqual(statuses['unapproved']['count'], 1)
-        self.assertEqual(statuses['unapproved']['total'], '80.00')
+        self.assertEqual(statuses['not_paid']['label'], 'Unpaid')
+        self.assertEqual(statuses['draft']['label'], 'Drafts')
+        self.env['res.lang']._activate_lang('ar_001')
+        arabic = report.with_context(lang='ar_001').get_days('2099-09-18', '2099-09-18', 'all')
+        arabic_statuses = {card['key']: card['label'] for card in arabic['statuses']}
+        self.assertEqual(arabic_statuses['not_paid'], 'لم تُسدَّد')
+        self.assertEqual(arabic_statuses['draft'], 'المسودات')
         drafts = report.get_days('2099-09-18', '2099-09-18', 'draft')
-        unapproved = report.get_days('2099-09-18', '2099-09-18', 'unapproved')
         self.assertEqual(drafts['days'][0]['count'], 1)
         self.assertEqual(drafts['days'][0]['total'], '80.00')
-        self.assertEqual(unapproved['days'][0]['count'], drafts['days'][0]['count'])
-        self.assertEqual(unapproved['days'][0]['total'], drafts['days'][0]['total'])
         self.assertEqual(report.get_day('2099-09-18', 'draft', 0)['rows'][0]['id'], draft.id)
-        self.assertEqual(report.get_day('2099-09-18', 'unapproved', 0)['rows'][0]['id'], draft.id)
         self.assertEqual(report.get_invoice(draft.id)['status'], 'draft')
-        self.assertNotIn(cancelled.id, [row['id'] for row in report.get_day('2099-09-18', 'unapproved', 0)['rows']])
-        self.assertNotIn(unpaid.id, [row['id'] for row in report.get_day('2099-09-18', 'unapproved', 0)['rows']])
-        # «لم تُعتمد» must stay identical to drafts even if a posted bill is unmarked as reviewed.
+        self.assertNotIn(cancelled.id, [row['id'] for row in report.get_day('2099-09-18', 'draft', 0)['rows']])
+        self.assertNotIn(unpaid.id, [row['id'] for row in report.get_day('2099-09-18', 'draft', 0)['rows']])
+        # A posted bill that is unmarked as reviewed is still unpaid, not a draft.
         unpaid.checked = False
         statuses = {card['key']: card for card in report.get_days('2099-09-18', '2099-09-18', 'all')['statuses']}
+        self.assertEqual(list(statuses), ['not_paid', 'draft'])
         self.assertEqual(statuses['draft']['count'], 1)
-        self.assertEqual(statuses['unapproved']['count'], 1)
         self.assertEqual(statuses['not_paid']['count'], 1)
-        self.assertEqual(
-            {row['id'] for row in report.get_day('2099-09-18', 'unapproved', 0)['rows']},
-            {row['id'] for row in report.get_day('2099-09-18', 'draft', 0)['rows']},
-        )
         self.assertEqual({row['id'] for row in report.get_day('2099-09-18', 'draft', 0)['rows']}, {draft.id})
+        with self.assertRaises(ValidationError):
+            report.get_days('2099-09-18', '2099-09-18', 'unapproved')
+        with self.assertRaises(ValidationError):
+            report.get_day('2099-09-18', 'unapproved', 0)
 
     def test_mixed_methods_appear_on_each_card(self):
         cash = self._cash_journal()

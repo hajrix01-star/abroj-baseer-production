@@ -525,6 +525,8 @@ msgstr "حالات الفاتورة"
 #. module: baseer_purchase_daily_report
 #. odoo-python
 #: code:addons/baseer_purchase_daily_report/models/daily_report.py:0
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
 msgid "Custody"
 msgstr "عهدة"
 
@@ -641,3 +643,100 @@ msgstr "تحويلات العهدة للاطلاع فقط ولا تدخل في �
 #: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
 msgid "Amounts in"
 msgstr "المبالغ بعملة"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Posted supplier bills, grouped by invoice date"
+msgstr "فواتير الموردين المرحّلة، مجمّعة حسب تاريخ الفاتورة"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Show"
+msgstr "عرض"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Transferred to custody"
+msgstr "المحوَّل للعهدة"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Total purchases"
+msgstr "إجمالي المشتريات"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "bills"
+msgstr "فاتورة"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Custody balance"
+msgstr "رصيد العهدة"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "All bills are paid"
+msgstr "كل الفواتير مسددة"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "No unpaid or draft bills"
+msgstr "لا توجد فواتير غير مسددة ولا مسودات"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Purchases by day"
+msgstr "المشتريات حسب اليوم"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Purchases"
+msgstr "المشتريات"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Bills"
+msgstr "عدد الفواتير"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Custody transfer only"
+msgstr "تحويل للعهدة فقط"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Date = invoice date · Balance counted from"
+msgstr "التاريخ = تاريخ الفاتورة · الرصيد تراكمي من"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+#, javascript-format
+msgid "Spent %s%% of the transferred amount"
+msgstr "صُرف %s%% من المحوَّل"
+
+#. module: baseer_purchase_daily_report
+#. odoo-python
+#: code:addons/baseer_purchase_daily_report/models/daily_report.py:0
+msgid "Bank"
+msgstr "بنك"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Custody fund"
+msgstr "العهدة"

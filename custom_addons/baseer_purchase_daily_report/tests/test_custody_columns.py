@@ -147,44 +147,57 @@ class DailyPurchaseCustodyColumnsCase(TransactionCase):
         self.assertEqual(available, Decimal('555.00'))
         self.assertEqual(custody['remaining'], '555.00')
 
+        self.assertEqual(custody['spent_percent'], 44)  # 420 / 950
+        self.assertEqual(custody['representatives'], self.representative.display_name)
+
         table = payload['table']
-        keys = [column['key'] for column in table['columns']]
-        bank_key = f'journal:{self.bank.id}'
-        self.assertEqual(keys, ['osama', 'cash', bank_key, 'unpaid'])
-        self.assertEqual(table['totals'], {'osama': '420.00', 'cash': '80.00', bank_key: '70.00', 'unpaid': '100.00'})
-        self.assertEqual(table['total'], '670.00')
+        # Fixed purchase columns (bank, custody, cash); unpaid only because it is present.
+        self.assertEqual([column['key'] for column in table['columns']], ['bank', 'osama', 'cash', 'unpaid'])
+        self.assertEqual(table['totals'], {'bank': '70.00', 'osama': '420.00', 'cash': '80.00', 'unpaid': '100.00'})
+        self.assertEqual((table['total'], table['count']), ('670.00', 4))
         self.assertEqual(sum(Decimal(value) for value in table['totals'].values()), Decimal(table['total']))
         # Consistency rules agreed for the report.
         self.assertEqual(table['totals']['osama'], custody['spent'])
         self.assertEqual(table['transfer_total'], custody['funded'])
-        self.assertTrue(table['has_transfers'])
-        transfers = [row for row in table['rows'] if row['kind'] == 'transfer']
-        self.assertEqual([(row['date'], row['transfer']) for row in transfers], [
-            ('2099-11-07', '-50.00'), ('2099-11-06', '-500.00'), ('2099-11-05', '500.00'), ('2099-11-02', '1,000.00'),
+        self.assertTrue(table['show_custody'] and table['has_transfers'])
+        # One row per date, newest first; transfer-only dates get their own rows.
+        self.assertEqual([(row['date'], row['kind'], row['transfer'], row['balance']) for row in table['rows']], [
+            ('2099-11-07', 'transfer', '-50.00', '530.00'),
+            ('2099-11-06', 'transfer', '-500.00', '580.00'),
+            ('2099-11-05', 'day', '500.00', '1,080.00'),
+            ('2099-11-04', 'day', '', '580.00'),
+            ('2099-11-03', 'day', '', '700.00'),
+            ('2099-11-02', 'transfer', '1,000.00', '1,000.00'),
         ])
+        # The closing running balance equals in − out of the cards.
+        self.assertEqual(table['balance'], '530.00')
+        transfers = [row for row in table['rows'] if row['kind'] == 'transfer']
         self.assertTrue(all('amounts' not in row and 'total' not in row for row in transfers))
         days = {row['date']: row for row in table['rows'] if row['kind'] == 'day'}
         self.assertEqual(days['2099-11-04']['amounts'], {'osama': '120.00', 'cash': '80.00', 'unpaid': '100.00'})
+        self.assertEqual(days['2099-11-05']['amounts'], {'bank': '70.00'})
         self.assertEqual(days['2099-11-04']['total'], '300.00')
-        # Day rows of the main table carry the existing day metrics too.
         self.assertEqual((days['2099-11-04']['count'], days['2099-11-04']['residual']), (2, '100.00'))
         self.assertEqual(set(days), {day['date'] for day in payload['days']})
-        # Transfer-only dates (2099-11-02, 06, 07) appear as transfer rows without purchase amounts.
-        self.assertNotIn('2099-11-02', days)
-        self.assertEqual([row['kind'] for row in table['rows'] if row['date'] == '2099-11-05'], ['day', 'transfer'])
-        # The existing day totals are unchanged by the transfer rows.
         self.assertEqual(sum(Decimal(day['total'].replace(',', '')) for day in payload['days']), Decimal('670.00'))
 
         rows = {row['id']: row for row in self._report().get_day('2099-11-04', 'all', 0)['rows']}
         self.assertEqual({part['key']: part['amount'] for part in rows[mixed.id]['method_amounts']},
                          {'osama': '120.00', 'cash': '80.00'})
+        self.assertEqual(rows[mixed.id]['table_amounts'], {'osama': '120.00', 'cash': '80.00'})
+        bank_row = self._report().get_day('2099-11-05', 'all', 0)['rows'][0]
+        self.assertEqual(bank_row['table_amounts'], {'bank': '70.00'})
+
+        # A later range carries the opening balance on the same invoice-date basis.
+        later = self._report().get_days('2099-11-05', '2099-11-30', 'all')['table']
+        self.assertEqual([row['balance'] for row in later['rows']], ['530.00', '580.00', '1,080.00'])
 
     def test_filters_period_start_and_labels(self):
         self._movements()
         self._pay(self._bill(40, '2099-11-03'), self.custody)
         report = self._report()
-        self.assertFalse(report.get_days('2099-11-01', '2099-11-30', 'not_paid')['table']['has_transfers'])
-        self.assertFalse(report.get_days('2099-11-01', '2099-11-30', 'all', 'cash')['table']['has_transfers'])
+        self.assertFalse(report.get_days('2099-11-01', '2099-11-30', 'not_paid')['table']['show_custody'])
+        self.assertFalse(report.get_days('2099-11-01', '2099-11-30', 'all', 'cash')['table']['show_custody'])
         self.assertTrue(report.get_days('2099-11-01', '2099-11-30', 'all', 'osama')['table']['has_transfers'])
         # The period cards start on 1 November 2026; earlier ranges have no period activity.
         october = report.get_days('2026-10-01', '2026-10-31', 'all')
@@ -199,8 +212,7 @@ class DailyPurchaseCustodyColumnsCase(TransactionCase):
         self.assertEqual(clipped['table']['transfer_total'], '30.00')
         self.env['res.lang']._activate_lang('ar_001')
         arabic = report.with_context(lang='ar_001').get_days('2099-11-01', '2099-11-30', 'all')['table']
-        self.assertEqual(arabic['columns'][0]['label'], 'عهدة')
-        self.assertIn('تحويل للعهدة', [row['label'] for row in arabic['rows'] if row['kind'] == 'transfer'])
+        self.assertEqual([column['label'] for column in arabic['columns']], ['بنك', 'عهدة', 'كاش'])
 
     def test_custody_screen_link_follows_procurement_access(self):
         accountant = self.env.ref('baseer_procurement_requests.group_procurement_accountant')

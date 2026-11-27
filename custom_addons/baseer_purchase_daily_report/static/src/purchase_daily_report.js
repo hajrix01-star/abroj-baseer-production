@@ -45,14 +45,14 @@ export class PurchaseDailyReport extends Component {
 
     get labels() {
         return {
-            eyebrow: _t("PURCHASE INSIGHTS"), title: _t("Daily purchases"),
-            subtitle: _t("Every supplier bill, organized by day."),
+            title: _t("Daily purchases"),
+            subtitle: _t("Posted supplier bills, grouped by invoice date"),
             from: _t("From"), to: _t("To"), payment: _t("Payment status"),
             all: _t("All statuses"), not_paid: _t("Unpaid"), partial: _t("Partially paid"),
             in_payment: _t("In payment"), paid: _t("Paid"), reversed: _t("Reversed"),
             blocked: _t("Blocked"), invoicing_legacy: _t("Legacy"),
             draft: _t("Draft"), drafts: _t("Drafts"),
-            apply: _t("Show purchases"), loading: _t("Loading purchases…"),
+            apply: _t("Show"), loading: _t("Loading purchases…"),
             error: _t("We could not load this report. Please try again."), retry: _t("Try again"),
             empty: _t("No purchases found for these filters."), emptyHint: _t("Try another date range or payment status."),
             dateNote: _t("Grouped by invoice date · Payment status is current"),
@@ -82,9 +82,17 @@ export class PurchaseDailyReport extends Component {
             custodySince: _t("Since"), custodyBalanceNow: _t("Current balance"),
             custodyOpen: _t("Open the custody screen"),
             tableDate: _t("Date"), currencyNote: _t("Amounts in"),
-            purchaseTotal: _t("Purchase total"), custodyTransfer: _t("Custody transfer"),
+            purchaseTotal: _t("Total"), custodyTransfer: _t("Transferred to custody"),
             tableTotals: _t("Totals"),
             transferNote: _t("Custody transfers are shown for reference and are not part of the purchase total."),
+            totalPurchases: _t("Total purchases"), invoices: _t("bills"),
+            custodyBalance: _t("Custody balance"), custodyBalanceCol: _t("Custody balance"),
+            paymentStatus: _t("Payment status"), allPaid: _t("All bills are paid"),
+            noOpenBills: _t("No unpaid or draft bills"),
+            byDay: _t("Purchases by day"), purchases: _t("Purchases"), custodyGroup: _t("Custody fund"),
+            invoiceCount: _t("Bills"), invoiceCountShort: _t("Bills"),
+            transferOnly: _t("Custody transfer only"),
+            dateBasis: _t("Date = invoice date · Balance counted from"),
         };
     }
 
@@ -231,10 +239,38 @@ export class PurchaseDailyReport extends Component {
         return this.action.doAction(action);
     }
 
-    get tableColspan() {
-        const table = this.state.payload?.table;
-        return 3 + (table?.columns.length || 0) + (table?.has_transfers ? 1 : 0);
+    get purchaseColspan() {
+        return 3 + (this.state.payload?.table?.columns.length || 0);
     }
+
+    get billRowspan() {
+        const data = this.state.dayData;
+        return (data?.rows.length || 0) + (data && (data.offset || data.has_more) ? 1 : 0);
+    }
+
+    get splitParts() {
+        const table = this.state.payload?.table;
+        if (!table) { return []; }
+        const number = (value) => Number(String(value || "0").replace(/,/g, "")) || 0;
+        const total = table.columns.reduce((sum, column) => sum + Math.max(number(table.totals[column.key]), 0), 0);
+        return table.columns
+            .filter((column) => number(table.totals[column.key]))
+            .map((column) => ({
+                key: column.key, label: column.label, amount: table.totals[column.key],
+                width: total ? (Math.max(number(table.totals[column.key]), 0) / total * 100).toFixed(2) : 0,
+            }));
+    }
+
+    get allSettled() {
+        return (this.state.payload?.statuses || []).every((card) => !card.count);
+    }
+
+    get spentPercentLabel() {
+        return _t("Spent %s%% of the transferred amount", this.state.payload?.custody?.spent_percent || 0);
+    }
+
+    shortDate(value) { return (value || "").slice(5); }
+    shortNumber(value) { return (value || "").split("/").pop(); }
 
     tableAmount(row, key) {
         return (row.amounts && row.amounts[key]) || "";

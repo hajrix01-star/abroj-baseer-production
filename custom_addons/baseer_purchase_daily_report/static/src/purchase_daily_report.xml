@@ -56,119 +56,146 @@
                     </t>
                 </t>
                 <t t-else="">
-                    <header class="bpr-header"><div class="bpr-heading"><span class="bpr-eyebrow"><span class="bpr-eyebrow-dot"/> <span t-esc="labels.eyebrow"/></span><h1 t-esc="labels.title"/><p t-esc="labels.subtitle"/></div><div t-if="state.payload" class="bpr-company"><span class="bpr-company-icon"><i class="fa fa-building-o" aria-hidden="true"/></span><div><small t-esc="labels.activeCompany"/><strong t-esc="state.payload.company.name"/></div></div></header>
-                    <nav class="bpr-presets" t-att-aria-label="labels.datePresets">
-                        <button type="button" t-foreach="presets" t-as="preset" t-key="preset" t-attf-class="bpr-preset {{isPresetActive(preset) ? 'bpr-preset--active' : ''}}" t-on-click="() => this.applyPreset(preset)" t-esc="presetLabels[preset]"/>
-                    </nav>
+                    <header class="bpr-header">
+                        <div class="bpr-heading"><h1 t-esc="labels.title"/><p t-esc="labels.subtitle"/></div>
+                        <div t-if="state.payload" class="bpr-company"><span class="bpr-company-icon"><i class="fa fa-building-o" aria-hidden="true"/></span><strong t-esc="state.payload.company.name"/></div>
+                    </header>
                     <form class="bpr-filter" t-on-submit.prevent="applyFilters">
-                        <label><span t-esc="labels.from"/><input type="date" t-model="state.from" t-on-change="onFromToChanged" required="required"/></label>
-                        <label><span t-esc="labels.to"/><input type="date" t-model="state.to" t-on-change="onFromToChanged" required="required"/></label>
-                        <label><span t-esc="labels.payment"/><select t-model="state.payment" t-on-change="onPaymentChanged"><option value="all" t-esc="labels.all"/><option value="not_paid" t-esc="labels.not_paid"/><option value="partial" t-esc="labels.partial"/><option value="in_payment" t-esc="labels.in_payment"/><option value="paid" t-esc="labels.paid"/><option value="reversed" t-esc="labels.reversed"/><option value="blocked" t-esc="labels.blocked"/><option value="draft" t-esc="labels.drafts"/></select></label>
-                        <button type="submit" class="bpr-apply" t-att-disabled="state.loading"><i class="fa fa-search" aria-hidden="true"/> <span t-esc="labels.apply"/></button>
+                        <nav class="bpr-presets" t-att-aria-label="labels.datePresets">
+                            <button type="button" t-foreach="presets" t-as="preset" t-key="preset" t-attf-class="bpr-preset {{isPresetActive(preset) ? 'bpr-preset--active' : ''}}" t-on-click="() => this.applyPreset(preset)" t-esc="presetLabels[preset]"/>
+                        </nav>
+                        <label class="bpr-field"><span t-esc="labels.from"/><input type="date" t-model="state.from" t-on-change="onFromToChanged" required="required"/></label>
+                        <label class="bpr-field"><span t-esc="labels.to"/><input type="date" t-model="state.to" t-on-change="onFromToChanged" required="required"/></label>
+                        <label class="bpr-field bpr-field--status"><span class="bpr-sr-only" t-esc="labels.payment"/><select t-model="state.payment" t-on-change="onPaymentChanged" t-att-aria-label="labels.payment"><option value="all" t-esc="labels.all"/><option value="not_paid" t-esc="labels.not_paid"/><option value="partial" t-esc="labels.partial"/><option value="in_payment" t-esc="labels.in_payment"/><option value="paid" t-esc="labels.paid"/><option value="reversed" t-esc="labels.reversed"/><option value="blocked" t-esc="labels.blocked"/><option value="draft" t-esc="labels.drafts"/></select></label>
+                        <button type="submit" class="bpr-apply" t-att-disabled="state.loading" t-esc="labels.apply"/>
                     </form>
-                    <section t-if="state.payload" class="bpr-cards" t-att-aria-label="labels.paymentMethods">
-                        <button type="button" t-foreach="state.payload.methods" t-as="card" t-key="card.key" t-attf-class="bpr-card {{isMethodActive(card.key) ? 'bpr-card--active' : ''}}" t-on-click="() => this.toggleMethod(card.key)">
-                            <small t-esc="card.label"/>
-                            <strong><bdi t-esc="card.total"/> <em t-esc="state.payload.company.currency"/></strong>
-                            <span><bdi t-esc="card.count"/> <t t-esc="labels.documents"/></span>
-                        </button>
+                    <section t-if="state.payload" t-attf-class="bpr-kpis {{state.payload.custody and state.payload.custody.active ? '' : 'bpr-kpis--two'}}">
+                        <article class="bpr-kpi bpr-kpi--total">
+                            <h2 t-esc="labels.totalPurchases"/>
+                            <div class="bpr-kpi-big"><strong><bdi t-esc="state.payload.table.total"/></strong> <small><t t-esc="state.payload.company.currency"/> · <bdi t-esc="state.payload.table.count"/> <t t-esc="labels.invoices"/></small></div>
+                            <div class="bpr-split" aria-hidden="true">
+                                <span t-foreach="splitParts" t-as="part" t-key="part.key" t-attf-class="bpr-split-part bpr-split-part--{{part.key}}" t-attf-style="width: {{part.width}}%"/>
+                            </div>
+                            <ul class="bpr-legend">
+                                <li t-foreach="splitParts" t-as="part" t-key="part.key"><span t-attf-class="bpr-dot bpr-split-part--{{part.key}}"/><t t-esc="part.label"/> <strong><bdi t-esc="part.amount"/></strong></li>
+                            </ul>
+                        </article>
+                        <article t-if="state.payload.custody and state.payload.custody.active" class="bpr-kpi bpr-kpi--custody">
+                            <h2><t t-esc="labels.custodyBalance"/><t t-if="state.payload.custody.representatives"> · <t t-esc="state.payload.custody.representatives"/></t></h2>
+                            <div class="bpr-custody-figures">
+                                <div><small t-esc="labels.custodyIn"/><strong><bdi t-esc="state.payload.custody.funded"/></strong></div>
+                                <div><small t-esc="labels.custodyOut"/><strong><bdi t-esc="state.payload.custody.spent"/></strong></div>
+                                <div class="bpr-custody-left"><small t-esc="labels.custodyRemaining"/><strong><bdi t-esc="state.payload.custody.remaining"/></strong></div>
+                            </div>
+                            <div class="bpr-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" t-att-aria-valuenow="state.payload.custody.spent_percent"><span t-attf-style="width: {{state.payload.custody.spent_percent}}%"/></div>
+                            <div class="bpr-kpi-foot">
+                                <span t-esc="spentPercentLabel"/>
+                                <button t-if="state.payload.custody.can_open" type="button" class="bpr-link" t-on-click="openCustody"><t t-esc="labels.custodyOpen"/> <i class="fa fa-angle-left" aria-hidden="true"/></button>
+                            </div>
+                        </article>
+                        <article class="bpr-kpi bpr-kpi--status">
+                            <h2 t-esc="labels.paymentStatus"/>
+                            <t t-if="allSettled">
+                                <span class="bpr-badge"><i class="fa fa-check-circle" aria-hidden="true"/> <t t-esc="labels.allPaid"/></span>
+                                <p class="bpr-kpi-note" t-esc="labels.noOpenBills"/>
+                            </t>
+                            <t t-else="">
+                                <button type="button" t-foreach="state.payload.statuses" t-as="card" t-key="card.key" t-attf-class="bpr-status-line {{isStatusActive(card.key) ? 'bpr-status-line--active' : ''}}" t-on-click="() => this.toggleStatus(card.key)">
+                                    <span t-esc="statusCardLabel(card)"/>
+                                    <span><bdi t-esc="card.count"/> · <strong><bdi t-esc="card.total"/></strong></span>
+                                </button>
+                            </t>
+                        </article>
                     </section>
-                    <section t-if="state.payload" class="bpr-cards bpr-cards--status" t-att-aria-label="labels.statusFilters">
-                        <button type="button" t-foreach="state.payload.statuses" t-as="card" t-key="card.key" t-attf-class="bpr-card bpr-card--status bpr-card--{{card.key}} {{isStatusActive(card.key) ? 'bpr-card--active' : ''}}" t-on-click="() => this.toggleStatus(card.key)">
-                            <small t-esc="statusCardLabel(card)"/>
-                            <strong><bdi t-esc="card.total"/> <em t-esc="state.payload.company.currency"/></strong>
-                            <span><bdi t-esc="card.count"/> <t t-esc="labels.documents"/></span>
-                        </button>
-                    </section>
-                    <section t-if="state.payload and state.payload.custody and state.payload.custody.active" class="bpr-cards bpr-cards--custody" t-att-aria-label="labels.custody">
-                        <div class="bpr-card bpr-card--custody bpr-card--custody-in">
-                            <small t-esc="labels.custodyIn"/>
-                            <strong><bdi t-esc="state.payload.custody.funded"/> <em t-esc="state.payload.company.currency"/></strong>
-                            <span><t t-esc="labels.custodySince"/> <bdi t-esc="state.payload.custody.start"/></span>
-                        </div>
-                        <div class="bpr-card bpr-card--custody bpr-card--custody-out">
-                            <small t-esc="labels.custodyOut"/>
-                            <strong><bdi t-esc="state.payload.custody.spent"/> <em t-esc="state.payload.company.currency"/></strong>
-                            <span><t t-esc="labels.custodySince"/> <bdi t-esc="state.payload.custody.start"/></span>
-                        </div>
-                        <button t-if="state.payload.custody.can_open" type="button" class="bpr-card bpr-card--custody bpr-card--custody-left" t-on-click="openCustody" t-att-title="labels.custodyOpen">
-                            <small t-esc="labels.custodyRemaining"/>
-                            <strong><bdi t-esc="state.payload.custody.remaining"/> <em t-esc="state.payload.company.currency"/></strong>
-                            <span><t t-esc="labels.custodyBalanceNow"/> · <t t-esc="labels.custodyOpen"/> <i class="fa fa-angle-left" aria-hidden="true"/></span>
-                        </button>
-                        <div t-else="" class="bpr-card bpr-card--custody bpr-card--custody-left">
-                            <small t-esc="labels.custodyRemaining"/>
-                            <strong><bdi t-esc="state.payload.custody.remaining"/> <em t-esc="state.payload.company.currency"/></strong>
-                            <span t-esc="labels.custodyBalanceNow"/>
-                        </div>
-                    </section>
-                    <div class="bpr-context"><span><i class="fa fa-calendar-o" aria-hidden="true"/> <span t-esc="labels.dateNote"/></span><span t-esc="labels.liveNote"/></div>
                     <div t-if="state.loading" class="bpr-feedback" role="status" aria-live="polite"><span class="bpr-spinner"/> <span t-esc="labels.loading"/></div>
                     <div t-elif="state.error" class="bpr-feedback bpr-feedback--error" role="alert"><span t-esc="state.error"/><button type="button" t-on-click="applyFilters" t-esc="labels.retry"/></div>
                     <div t-elif="!state.payload.table.rows.length" class="bpr-empty"><span class="bpr-empty-icon"><i class="fa fa-folder-open-o" aria-hidden="true"/></span><h2 t-esc="labels.empty"/><p t-esc="labels.emptyHint"/></div>
                     <section t-else="" class="bpr-panel bpr-main-table">
+                        <div class="bpr-panel-head">
+                            <h2 t-esc="labels.byDay"/>
+                            <span t-if="state.payload.table.show_custody and state.payload.custody"><t t-esc="labels.dateBasis"/> <bdi t-esc="state.payload.custody.start"/></span>
+                            <span t-else="" t-esc="labels.dateNote"/>
+                        </div>
                         <div class="bpr-table-scroll">
-                            <table class="bpr-table">
+                            <table class="bpr-grid">
                                 <thead>
+                                    <tr t-if="state.payload.table.show_custody" class="bpr-grid-groups">
+                                        <th t-att-colspan="purchaseColspan" t-esc="labels.purchases"/>
+                                        <th colspan="2" class="bpr-g2" t-esc="labels.custodyGroup"/>
+                                    </tr>
                                     <tr>
                                         <th t-esc="labels.tableDate"/>
-                                        <th class="bpr-num bpr-col--total" t-esc="labels.purchaseTotal"/>
-                                        <th t-foreach="state.payload.table.columns" t-as="column" t-key="column.key" t-attf-class="bpr-num bpr-col--{{column.key.split(':')[0]}}" t-esc="column.label"/>
-                                        <th t-if="state.payload.table.has_transfers" class="bpr-num bpr-col--transfer" t-esc="labels.custodyTransfer"/>
-                                        <th class="bpr-col--toggle"><span class="bpr-sr-only" t-esc="labels.show"/></th>
+                                        <th><span class="bpr-full" t-esc="labels.invoiceCount"/><span class="bpr-short" t-esc="labels.invoiceCountShort"/></th>
+                                        <th t-foreach="state.payload.table.columns" t-as="column" t-key="column.key" t-esc="column.label"/>
+                                        <th t-esc="labels.purchaseTotal"/>
+                                        <t t-if="state.payload.table.show_custody">
+                                            <th class="bpr-g2" t-esc="labels.custodyTransfer"/>
+                                            <th t-esc="labels.custodyBalanceCol"/>
+                                        </t>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <t t-foreach="state.payload.table.rows" t-as="row" t-key="row.key">
                                         <tr t-if="row.kind === 'day'" t-attf-class="bpr-row--day {{state.expanded === row.date ? 'bpr-row--open' : ''}}" t-on-click="() => this.toggleDay(row.date)">
-                                            <td class="bpr-cell-date"><strong><bdi t-esc="row.date"/></strong><small><bdi t-esc="row.count"/> <t t-esc="labels.documents"/></small></td>
-                                            <td class="bpr-num bpr-col--total"><bdi t-esc="row.total"/></td>
-                                            <td t-foreach="state.payload.table.columns" t-as="column" t-key="column.key" t-attf-class="bpr-num bpr-col--{{column.key.split(':')[0]}}"><bdi t-esc="tableAmount(row, column.key)"/></td>
-                                            <td t-if="state.payload.table.has_transfers" class="bpr-num bpr-col--transfer"/>
-                                            <td class="bpr-col--toggle"><button type="button" class="bpr-chevron" t-on-click.stop="() => this.toggleDay(row.date)" t-att-aria-expanded="state.expanded === row.date ? 'true' : 'false'" t-att-aria-controls="'bpr-day-' + row.date"><span class="bpr-sr-only" t-esc="state.expanded === row.date ? labels.hide : labels.show"/><i t-att-class="state.expanded === row.date ? 'fa fa-angle-up' : 'fa fa-angle-down'" aria-hidden="true"/></button></td>
-                                        </tr>
-                                        <tr t-if="row.kind === 'day' and state.expanded === row.date" class="bpr-row--detail">
-                                            <td t-att-colspan="tableColspan">
-                                                <section class="bpr-day-content" t-att-id="'bpr-day-' + row.date">
-                                <div t-if="state.dayLoading" class="bpr-feedback bpr-feedback--compact" role="status" aria-live="polite"><span class="bpr-spinner"/> <span t-esc="labels.loading"/></div>
-                                <div t-elif="state.dayError" class="bpr-feedback bpr-feedback--error bpr-feedback--compact" role="alert"><span t-esc="state.dayError"/><button type="button" t-on-click="() => this.loadDay(0)" t-esc="labels.retry"/></div>
-                                <t t-elif="state.dayData">
-                                    <button type="button" class="bpr-transaction" t-foreach="state.dayData.rows" t-as="row" t-key="row.id" t-on-click="() => this.openInvoice(row.id)">
-                                        <span class="bpr-transaction-icon"><i t-att-class="row.kind === 'in_refund' ? 'fa fa-reply' : 'fa fa-file-text-o'" aria-hidden="true"/></span>
-                                        <span class="bpr-transaction-main"><strong t-esc="row.vendor"/><small><span t-esc="kindLabel(row.kind)"/> <span aria-hidden="true"> · </span><bdi t-esc="row.number"/></small><small t-if="row.reference" t-esc="row.reference"/><small><span t-esc="labels.enteredBy"/>: <span t-esc="row.entered_by || labels.paidUnavailable"/><t t-if="row.entered_by"> · <span t-esc="row.entry_source === 'batch' ? labels.batchEntry : labels.invoiceEntry"/></t></small></span>
-                                        <span class="bpr-transaction-amount"><strong><bdi t-esc="row.total"/> <small t-esc="row.currency"/></strong><small><span t-esc="labels.paidAmount"/>: <bdi t-esc="row.paid_unavailable ? labels.paidUnavailable : row.paid"/> <span t-if="!row.paid_unavailable" t-esc="row.currency"/></small><small t-if="row.paid_pending" t-esc="labels.paidPending"/><small><span t-esc="labels.residual"/>: <bdi t-esc="row.residual"/> <span t-esc="row.currency"/></small><small t-foreach="row.method_amounts or []" t-as="part" t-key="part.key" class="bpr-method-part"><span t-esc="part.label"/>: <bdi t-esc="part.amount"/></small></span>
-                                        <span t-attf-class="bpr-status bpr-status--{{row.status}}" t-esc="statusLabel(row.status)"/>
-                                        <span class="bpr-open"><span class="bpr-sr-only" t-esc="labels.open"/><i class="fa fa-angle-left" aria-hidden="true"/></span>
-                                    </button>
-                                    <nav t-if="state.dayData.offset or state.dayData.has_more" class="bpr-pagination" t-att-aria-label="labels.page"><button type="button" t-on-click="previousPage" t-att-disabled="!state.dayData.offset" t-esc="labels.previous"/><span><span t-esc="labels.page"/> <bdi t-esc="pageNumber"/></span><button type="button" t-on-click="nextPage" t-att-disabled="!state.dayData.has_more" t-esc="labels.next"/></nav>
-                                </t>
-                            </section>
-                                            </td>
+                                            <td class="bpr-cell-date"><button type="button" class="bpr-chevron" t-on-click.stop="() => this.toggleDay(row.date)" t-att-aria-expanded="state.expanded === row.date ? 'true' : 'false'"><span class="bpr-sr-only" t-esc="state.expanded === row.date ? labels.hide : labels.show"/><i t-att-class="state.expanded === row.date ? 'fa fa-angle-down' : 'fa fa-angle-right'" aria-hidden="true"/></button><bdi class="bpr-full" t-esc="row.date"/><bdi class="bpr-short" t-esc="shortDate(row.date)"/></td>
+                                            <td><bdi t-esc="row.count"/></td>
+                                            <t t-foreach="state.payload.table.columns" t-as="column" t-key="column.key">
+                                                <td t-if="tableAmount(row, column.key)"><bdi t-esc="tableAmount(row, column.key)"/></td>
+                                                <td t-else="" class="bpr-empty-cell">—</td>
+                                            </t>
+                                            <td class="bpr-strong"><bdi t-esc="row.total"/></td>
+                                            <t t-if="state.payload.table.show_custody">
+                                                <td t-if="row.transfer" class="bpr-g2"><bdi t-esc="row.transfer"/></td>
+                                                <td t-else="" class="bpr-g2 bpr-empty-cell">—</td>
+                                                <td><bdi t-esc="row.balance"/></td>
+                                            </t>
                                         </tr>
                                         <tr t-if="row.kind === 'transfer'" class="bpr-row--transfer">
-                                            <td class="bpr-cell-date"><strong><bdi t-esc="row.date"/></strong><small><t t-esc="row.label"/><t t-if="row.representative"> · <t t-esc="row.representative"/></t></small></td>
-                                            <td class="bpr-num bpr-col--total"/>
-                                            <td t-foreach="state.payload.table.columns" t-as="column" t-key="column.key" class="bpr-num"/>
-                                            <td class="bpr-num bpr-col--transfer"><bdi t-esc="row.transfer"/></td>
-                                            <td class="bpr-col--toggle"/>
+                                            <td class="bpr-cell-date"><span class="bpr-chevron-space"/><bdi class="bpr-full" t-esc="row.date"/><bdi class="bpr-short" t-esc="shortDate(row.date)"/></td>
+                                            <td t-att-colspan="purchaseColspan - 1" class="bpr-muted" t-esc="labels.transferOnly"/>
+                                            <t t-if="state.payload.table.show_custody">
+                                                <td class="bpr-g2"><bdi t-esc="row.transfer"/></td>
+                                                <td><bdi t-esc="row.balance"/></td>
+                                            </t>
                                         </tr>
+                                        <t t-if="row.kind === 'day' and state.expanded === row.date">
+                                            <tr t-if="state.dayLoading or state.dayError or !state.dayData" class="bpr-row--bill">
+                                                <td t-att-colspan="purchaseColspan">
+                                                    <div t-if="state.dayError" class="bpr-feedback bpr-feedback--error bpr-feedback--compact" role="alert"><span t-esc="state.dayError"/><button type="button" t-on-click="() => this.loadDay(0)" t-esc="labels.retry"/></div>
+                                                    <div t-else="" class="bpr-feedback bpr-feedback--compact" role="status" aria-live="polite"><span class="bpr-spinner"/> <span t-esc="labels.loading"/></div>
+                                                </td>
+                                                <td t-if="state.payload.table.show_custody" colspan="2" class="bpr-g2 bpr-custody-gap"/>
+                                            </tr>
+                                            <t t-else="">
+                                                <tr t-foreach="state.dayData.rows" t-as="bill" t-key="bill.id" class="bpr-row--bill" t-on-click="() => this.openInvoice(bill.id)" t-att-title="labels.open">
+                                                    <td colspan="2" class="bpr-bill-name"><span class="bpr-bill-vendor" t-esc="bill.vendor"/><bdi class="bpr-bill-number bpr-full" t-esc="bill.number"/><bdi class="bpr-bill-number bpr-short" t-esc="shortNumber(bill.number)"/><span t-if="bill.status === 'draft'" class="bpr-bill-flag" t-esc="labels.draft"/></td>
+                                                    <td t-foreach="state.payload.table.columns" t-as="column" t-key="column.key"><bdi t-if="bill.table_amounts[column.key]" t-esc="bill.table_amounts[column.key]"/></td>
+                                                    <td><bdi t-esc="bill.company_total"/></td>
+                                                    <td t-if="state.payload.table.show_custody and bill_first" colspan="2" t-att-rowspan="billRowspan" class="bpr-g2 bpr-custody-gap"/>
+                                                </tr>
+                                                <tr t-if="state.dayData.offset or state.dayData.has_more" class="bpr-row--bill">
+                                                    <td t-att-colspan="purchaseColspan"><nav class="bpr-pagination" t-att-aria-label="labels.page"><button type="button" t-on-click.stop="previousPage" t-att-disabled="!state.dayData.offset" t-esc="labels.previous"/><span><span t-esc="labels.page"/> <bdi t-esc="pageNumber"/></span><button type="button" t-on-click.stop="nextPage" t-att-disabled="!state.dayData.has_more" t-esc="labels.next"/></nav></td>
+                                                </tr>
+                                            </t>
+                                        </t>
                                     </t>
                                 </tbody>
                                 <tfoot>
                                     <tr>
-                                        <th t-esc="labels.tableTotals"/>
-                                        <th class="bpr-num bpr-col--total"><bdi t-esc="state.payload.table.total"/></th>
-                                        <th t-foreach="state.payload.table.columns" t-as="column" t-key="column.key" class="bpr-num"><bdi t-esc="state.payload.table.totals[column.key]"/></th>
-                                        <th t-if="state.payload.table.has_transfers" class="bpr-num bpr-col--transfer"><bdi t-esc="state.payload.table.transfer_total"/></th>
-                                        <th class="bpr-col--toggle"/>
+                                        <td t-esc="labels.tableTotals"/>
+                                        <td><bdi t-esc="state.payload.table.count"/></td>
+                                        <td t-foreach="state.payload.table.columns" t-as="column" t-key="column.key"><bdi t-esc="state.payload.table.totals[column.key]"/></td>
+                                        <td><bdi t-esc="state.payload.table.total"/></td>
+                                        <t t-if="state.payload.table.show_custody">
+                                            <td class="bpr-g2"><bdi t-esc="state.payload.table.transfer_total"/></td>
+                                            <td><bdi t-esc="state.payload.table.balance"/></td>
+                                        </t>
                                     </tr>
                                 </tfoot>
                             </table>
                         </div>
-                        <p class="bpr-table-note"><t t-esc="labels.currencyNote"/> <bdi t-esc="state.payload.company.currency"/><t t-if="state.payload.table.has_transfers"> · <t t-esc="labels.transferNote"/></t></p>
+                        <p class="bpr-table-note"><t t-esc="labels.currencyNote"/> <bdi t-esc="state.payload.company.currency"/><t t-if="state.payload.table.show_custody"> · <t t-esc="labels.transferNote"/></t></p>
                     </section>
-                    <p class="bpr-footnote" t-esc="labels.paidNote"/>
-                    <p class="bpr-footnote" t-esc="labels.paidUnavailableNote"/>
                 </t>
             </div>
         </main>

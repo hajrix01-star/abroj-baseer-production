@@ -48,6 +48,16 @@
   --bd2-marketing: var(--bd2-gold);
   --bd2-commissions: var(--bd2-negative);
   --bd2-net-profit: var(--bd2-gold);
+  --bd2-control-border: #c9ccd2;
+  --bd2-menu-shadow: rgba(22, 27, 46, 0.14);
+  --bd2-gold-border: #ead9a8;
+  --bd2-gold-ring: rgba(217, 164, 43, 0.4);
+  --bd2-gold-ring-strong: rgba(217, 164, 43, 0.7);
+  --bd2-gold-halo: rgba(217, 164, 43, 0.35);
+  --bd2-gold-deep: #43391e;
+  --bd2-on-sidebar: #e4e2da;
+  --bd2-sidebar-border: #2a3150;
+  --bd2-negative-on-sidebar: #492c30;
 }
 .o_bd2[data-bd2-theme="navy-gold"][data-bd2-mode="dark"] {
   --bd2-transparent: transparent;
@@ -86,4 +96,14 @@
   --bd2-heat4: #bc902e;
   --bd2-heat5: #e8b84a;
   --bd2-shadow: rgba(0, 0, 0, 0.2);
+  --bd2-control-border: #2a3150;
+  --bd2-menu-shadow: rgba(0, 0, 0, 0.35);
+  --bd2-gold-border: #2a3150;
+  --bd2-gold-ring: rgba(232, 184, 74, 0.4);
+  --bd2-gold-ring-strong: rgba(232, 184, 74, 0.7);
+  --bd2-gold-halo: rgba(232, 184, 74, 0.35);
+  --bd2-gold-deep: #43391e;
+  --bd2-on-sidebar: #e4e2da;
+  --bd2-sidebar-border: #2a3150;
+  --bd2-negative-on-sidebar: #492c30;
 }

@@ -17,6 +17,7 @@ export class PurchaseDailyReport extends Component {
 
     setup() {
         this.orm = useService("orm");
+        this.action = useService("action");
         const initial = rangeForPreset("this_month");
         this.requestId = 0;
         this.state = useState({
@@ -76,6 +77,14 @@ export class PurchaseDailyReport extends Component {
             datePresets: _t("Date presets"),
             paymentMethods: _t("Payment methods"), statusFilters: _t("Status filters"),
             documentsShort: _t("documents"),
+            custody: _t("Representative custody"), custodyIn: _t("Custody in"),
+            custodyOut: _t("Spent from custody"), custodyRemaining: _t("Remaining"),
+            custodySince: _t("Since"), custodyBalanceNow: _t("Current balance"),
+            custodyOpen: _t("Open the custody screen"),
+            tableDate: _t("Date"), currencyNote: _t("Amounts in"),
+            purchaseTotal: _t("Purchase total"), custodyTransfer: _t("Custody transfer"),
+            tableTotals: _t("Totals"),
+            transferNote: _t("Custody transfers are shown for reference and are not part of the purchase total."),
         };
     }
 
@@ -214,6 +223,21 @@ export class PurchaseDailyReport extends Component {
         this.state.invoice = null;
         this.state.invoiceError = "";
         this.state.invoiceLoading = false;
+    }
+
+    async openCustody() {
+        if (!this.state.payload?.custody?.can_open) { return; }
+        const action = await this.orm.call(MODEL, "open_custody_screen", []);
+        return this.action.doAction(action);
+    }
+
+    get tableColspan() {
+        const table = this.state.payload?.table;
+        return 3 + (table?.columns.length || 0) + (table?.has_transfers ? 1 : 0);
+    }
+
+    tableAmount(row, key) {
+        return (row.amounts && row.amounts[key]) || "";
     }
 
     previousPage() { return this.loadDay(Math.max(0, this.state.dayData.offset - PAGE_SIZE)); }

@@ -1,7 +1,7 @@
 {
     'name': 'Baseer Daily Purchase Report',
     'summary': 'Company-scoped daily vendor bill reporting',
-    'version': '19.0.1.1.3',
+    'version': '19.0.1.1.4',
     'category': 'Accounting/Reporting',
     'author': 'Baseer',
     'license': 'LGPL-3',

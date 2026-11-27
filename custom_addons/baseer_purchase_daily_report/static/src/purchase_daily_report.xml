@@ -80,7 +80,71 @@
                             <span><bdi t-esc="card.count"/> <t t-esc="labels.documents"/></span>
                         </button>
                     </section>
+                    <section t-if="state.payload and state.payload.custody and state.payload.custody.active" class="bpr-cards bpr-cards--custody" t-att-aria-label="labels.custody">
+                        <div class="bpr-card bpr-card--custody bpr-card--custody-in">
+                            <small t-esc="labels.custodyIn"/>
+                            <strong><bdi t-esc="state.payload.custody.funded"/> <em t-esc="state.payload.company.currency"/></strong>
+                            <span><t t-esc="labels.custodySince"/> <bdi t-esc="state.payload.custody.start"/></span>
+                        </div>
+                        <div class="bpr-card bpr-card--custody bpr-card--custody-out">
+                            <small t-esc="labels.custodyOut"/>
+                            <strong><bdi t-esc="state.payload.custody.spent"/> <em t-esc="state.payload.company.currency"/></strong>
+                            <span><t t-esc="labels.custodySince"/> <bdi t-esc="state.payload.custody.start"/></span>
+                        </div>
+                        <button t-if="state.payload.custody.can_open" type="button" class="bpr-card bpr-card--custody bpr-card--custody-left" t-on-click="openCustody" t-att-title="labels.custodyOpen">
+                            <small t-esc="labels.custodyRemaining"/>
+                            <strong><bdi t-esc="state.payload.custody.remaining"/> <em t-esc="state.payload.company.currency"/></strong>
+                            <span><t t-esc="labels.custodyBalanceNow"/> · <t t-esc="labels.custodyOpen"/> <i class="fa fa-angle-left" aria-hidden="true"/></span>
+                        </button>
+                        <div t-else="" class="bpr-card bpr-card--custody bpr-card--custody-left">
+                            <small t-esc="labels.custodyRemaining"/>
+                            <strong><bdi t-esc="state.payload.custody.remaining"/> <em t-esc="state.payload.company.currency"/></strong>
+                            <span t-esc="labels.custodyBalanceNow"/>
+                        </div>
+                    </section>
                     <div class="bpr-context"><span><i class="fa fa-calendar-o" aria-hidden="true"/> <span t-esc="labels.dateNote"/></span><span t-esc="labels.liveNote"/></div>
+                    <section t-if="!state.loading and !state.error and state.payload and state.payload.table and state.payload.table.rows.length" class="bpr-panel bpr-method-table">
+                        <h2 t-esc="labels.methodTable"/>
+                        <div class="bpr-table-scroll">
+                            <table class="bpr-table">
+                                <thead>
+                                    <tr>
+                                        <th t-esc="labels.tableDate"/>
+                                        <th t-esc="labels.tableDescription"/>
+                                        <th t-foreach="state.payload.table.columns" t-as="column" t-key="column.key" t-attf-class="bpr-num bpr-col--{{column.key.split(':')[0]}}" t-esc="column.label"/>
+                                        <th class="bpr-num bpr-col--total" t-esc="labels.purchaseTotal"/>
+                                        <th t-if="state.payload.table.has_transfers" class="bpr-num bpr-col--transfer" t-esc="labels.custodyTransfer"/>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="state.payload.table.rows" t-as="row" t-key="row.key" t-attf-class="bpr-row--{{row.kind}}">
+                                        <td><bdi t-esc="row.date"/></td>
+                                        <t t-if="row.kind === 'day'">
+                                            <td><t t-esc="labels.purchasesRow"/> · <bdi t-esc="row.count"/> <t t-esc="labels.documents"/></td>
+                                            <td t-foreach="state.payload.table.columns" t-as="column" t-key="column.key" class="bpr-num"><bdi t-esc="tableAmount(row, column.key)"/></td>
+                                            <td class="bpr-num bpr-col--total"><bdi t-esc="row.total"/></td>
+                                            <td t-if="state.payload.table.has_transfers" class="bpr-num bpr-col--transfer"/>
+                                        </t>
+                                        <t t-else="">
+                                            <td><t t-esc="row.label"/><t t-if="row.representative"> · <t t-esc="row.representative"/></t></td>
+                                            <td t-foreach="state.payload.table.columns" t-as="column" t-key="column.key" class="bpr-num"/>
+                                            <td class="bpr-num bpr-col--total"/>
+                                            <td class="bpr-num bpr-col--transfer"><bdi t-esc="row.transfer"/></td>
+                                        </t>
+                                    </tr>
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <th colspan="2" t-esc="labels.tableTotals"/>
+                                        <th t-foreach="state.payload.table.columns" t-as="column" t-key="column.key" class="bpr-num"><bdi t-esc="state.payload.table.totals[column.key]"/></th>
+                                        <th class="bpr-num bpr-col--total"><bdi t-esc="state.payload.table.total"/></th>
+                                        <th t-if="state.payload.table.has_transfers" class="bpr-num bpr-col--transfer"><bdi t-esc="state.payload.table.transfer_total"/></th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                        <p t-if="state.payload.table.has_transfers" class="bpr-footnote" t-esc="labels.transferNote"/>
+                    </section>
                     <div t-if="state.loading" class="bpr-feedback" role="status" aria-live="polite"><span class="bpr-spinner"/> <span t-esc="labels.loading"/></div>
                     <div t-elif="state.error" class="bpr-feedback bpr-feedback--error" role="alert"><span t-esc="state.error"/><button type="button" t-on-click="applyFilters" t-esc="labels.retry"/></div>
                     <div t-elif="!state.payload.days.length" class="bpr-empty"><span class="bpr-empty-icon"><i class="fa fa-folder-open-o" aria-hidden="true"/></span><h2 t-esc="labels.empty"/><p t-esc="labels.emptyHint"/></div>
@@ -100,7 +164,7 @@
                                     <button type="button" class="bpr-transaction" t-foreach="state.dayData.rows" t-as="row" t-key="row.id" t-on-click="() => this.openInvoice(row.id)">
                                         <span class="bpr-transaction-icon"><i t-att-class="row.kind === 'in_refund' ? 'fa fa-reply' : 'fa fa-file-text-o'" aria-hidden="true"/></span>
                                         <span class="bpr-transaction-main"><strong t-esc="row.vendor"/><small><span t-esc="kindLabel(row.kind)"/> <span aria-hidden="true"> · </span><bdi t-esc="row.number"/></small><small t-if="row.reference" t-esc="row.reference"/><small><span t-esc="labels.enteredBy"/>: <span t-esc="row.entered_by || labels.paidUnavailable"/><t t-if="row.entered_by"> · <span t-esc="row.entry_source === 'batch' ? labels.batchEntry : labels.invoiceEntry"/></t></small></span>
-                                        <span class="bpr-transaction-amount"><strong><bdi t-esc="row.total"/> <small t-esc="row.currency"/></strong><small><span t-esc="labels.paidAmount"/>: <bdi t-esc="row.paid_unavailable ? labels.paidUnavailable : row.paid"/> <span t-if="!row.paid_unavailable" t-esc="row.currency"/></small><small t-if="row.paid_pending" t-esc="labels.paidPending"/><small><span t-esc="labels.residual"/>: <bdi t-esc="row.residual"/> <span t-esc="row.currency"/></small></span>
+                                        <span class="bpr-transaction-amount"><strong><bdi t-esc="row.total"/> <small t-esc="row.currency"/></strong><small><span t-esc="labels.paidAmount"/>: <bdi t-esc="row.paid_unavailable ? labels.paidUnavailable : row.paid"/> <span t-if="!row.paid_unavailable" t-esc="row.currency"/></small><small t-if="row.paid_pending" t-esc="labels.paidPending"/><small><span t-esc="labels.residual"/>: <bdi t-esc="row.residual"/> <span t-esc="row.currency"/></small><small t-foreach="row.method_amounts or []" t-as="part" t-key="part.key" class="bpr-method-part"><span t-esc="part.label"/>: <bdi t-esc="part.amount"/></small></span>
                                         <span t-attf-class="bpr-status bpr-status--{{row.status}}" t-esc="statusLabel(row.status)"/>
                                         <span class="bpr-open"><span class="bpr-sr-only" t-esc="labels.open"/><i class="fa fa-angle-left" aria-hidden="true"/></span>
                                     </button>

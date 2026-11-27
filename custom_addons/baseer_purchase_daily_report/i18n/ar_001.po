@@ -522,3 +522,135 @@ msgstr "طرق الدفع"
 #: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
 msgid "Status filters"
 msgstr "حالات الفاتورة"
+
+#. module: baseer_purchase_daily_report
+#. odoo-python
+#: code:addons/baseer_purchase_daily_report/models/daily_report.py:0
+msgid "Custody"
+msgstr "عهدة"
+
+#. module: baseer_purchase_daily_report
+#. odoo-python
+#: code:addons/baseer_purchase_daily_report/models/daily_report.py:0
+msgid "Cash"
+msgstr "كاش"
+
+#. module: baseer_purchase_daily_report
+#. odoo-python
+#: code:addons/baseer_purchase_daily_report/models/daily_report.py:0
+msgid "Other settlements"
+msgstr "تسويات أخرى"
+
+#. module: baseer_purchase_daily_report
+#. odoo-python
+#: code:addons/baseer_purchase_daily_report/models/daily_report.py:0
+msgid "Transfer to custody"
+msgstr "تحويل للعهدة"
+
+#. module: baseer_purchase_daily_report
+#. odoo-python
+#: code:addons/baseer_purchase_daily_report/models/daily_report.py:0
+msgid "Returned from custody"
+msgstr "مرتجع من العهدة"
+
+#. module: baseer_purchase_daily_report
+#. odoo-python
+#: code:addons/baseer_purchase_daily_report/models/daily_report.py:0
+msgid "Transfer reversal"
+msgstr "عكس تحويل"
+
+#. module: baseer_purchase_daily_report
+#. odoo-python
+#: code:addons/baseer_purchase_daily_report/models/daily_report.py:0
+msgid "You do not have access to the custody screen."
+msgstr "ليست لديك صلاحية فتح شاشة العهدة."
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Representative custody"
+msgstr "عهدة المندوب"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Custody in"
+msgstr "دخل للعهدة"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Spent from custody"
+msgstr "صُرف منها"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Remaining"
+msgstr "المتبقي"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Since"
+msgstr "من"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Current balance"
+msgstr "الرصيد الحالي"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Open the custody screen"
+msgstr "فتح شاشة العهدة"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Payment methods by day"
+msgstr "طرق الدفع حسب اليوم"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Date"
+msgstr "التاريخ"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Description"
+msgstr "البيان"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Purchases"
+msgstr "مشتريات"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Purchase total"
+msgstr "إجمالي المشتريات"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Custody transfer"
+msgstr "تحويل للعهدة"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Totals"
+msgstr "الإجمالي"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Custody transfers are shown for reference and are not part of the purchase total."
+msgstr "تحويلات العهدة للاطلاع فقط ولا تدخل في إجمالي المشتريات."

@@ -41,5 +41,6 @@ class TestZatcaPosScope(TransactionCase):
                 'baseer_summary_only': True,
             })
         self.assertFalse(config.baseer_zatca_phase2_enabled)
-        with self.assertRaises(AccessError):
-            config.open_ui()
+        # baseer_pos_summary's own guard must answer, not a later session check.
+        with self.assertRaisesRegex(AccessError, 'External Sales Summaries'):
+            config.with_context(lang='en_US').open_ui()

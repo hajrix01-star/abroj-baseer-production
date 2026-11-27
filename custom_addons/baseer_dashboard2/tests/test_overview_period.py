@@ -95,3 +95,17 @@ class TestOverviewPeriod(TransactionCase):
     def test_english_month_labels_stay_english(self):
         self.assertEqual(month_label(date(2026, 11, 1)), 'November')
         self.assertEqual(month_label('2026-11', short=True), 'Nov')
+
+
+    def test_xml_templates_avoid_string_number_globals(self):
+        import re
+        from pathlib import Path
+        root = Path(__file__).resolve().parents[1] / 'static' / 'src'
+        # OWL does not expose String/Number on the template ctx (unlike Math/Date).
+        forbidden = re.compile(r'(?<![\w.])(?:String|Number)\s*\(')
+        offenders = []
+        for path in root.rglob('*.xml'):
+            for number, line in enumerate(path.read_text(encoding='utf-8').splitlines(), 1):
+                if forbidden.search(line):
+                    offenders.append('%s:%s: %s' % (path.name, number, line.strip()))
+        self.assertFalse(offenders, '\n'.join(offenders))

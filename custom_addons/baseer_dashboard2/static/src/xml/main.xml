@@ -832,8 +832,8 @@
                     <select t-if="state.period?.mode==='month'" class="bd2-odoo-select" t-att-value="state.period.month" t-on-change="(e)=&gt;this.selectPeriodMode('month', e.target.value)">
                         <option t-foreach="periodMonths()" t-as="m" t-key="m" t-att-value="m" t-att-selected="m===state.period.month" t-esc="monthName(m)"/>
                     </select>
-                    <select t-if="state.period?.mode==='year'" class="bd2-odoo-select" t-att-value="String(state.period.year)" t-on-change="(e)=&gt;this.selectPeriodMode('year', e.target.value)">
-                        <option t-foreach="periodYears()" t-as="y" t-key="y" t-att-value="y" t-att-selected="Number(y)===Number(state.period.year)" t-esc="y"/>
+                    <select t-if="state.period?.mode==='year'" class="bd2-odoo-select" t-att-value="periodYearValue()" t-on-change="(e)=&gt;this.selectPeriodMode('year', e.target.value)">
+                        <option t-foreach="periodYears()" t-as="y" t-key="y" t-att-value="y" t-att-selected="isPeriodYear(y)" t-esc="y"/>
                     </select>
                     <input t-if="state.period?.mode==='date'" class="bd2-odoo-select" type="date" t-att-value="state.period.date" t-on-change="(e)=&gt;this.selectPeriodMode('date', e.target.value)"/>
                 </div>

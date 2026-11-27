@@ -931,6 +931,13 @@ export class Dashboard2 extends Component {
     if (this.state.period?.year && !years.includes(Number(this.state.period.year))) years.unshift(Number(this.state.period.year));
     return [...new Set(years)].sort((a, b) => b - a);
   }
+  periodYearValue() {
+    const year = this.state.period?.year;
+    return year == null ? "" : String(year);
+  }
+  isPeriodYear(year) {
+    return Number(year) === Number(this.state.period?.year);
+  }
   togglePeriodMenu() { this.state.periodMenu = !this.state.periodMenu; }
   async selectComparison(kind) {
     this.state.comparison = kind;

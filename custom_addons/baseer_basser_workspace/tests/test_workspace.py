@@ -3,7 +3,7 @@ from uuid import uuid4
 from odoo import Command
 from odoo.exceptions import AccessError, ValidationError
 from odoo.tests.common import TransactionCase
-from odoo.addons.baseer_basser_workspace.models.workspace import MAX_WORKSPACE_ITEMS
+from odoo.addons.baseer_basser_workspace.models.workspace import BASEER_WORKSPACE_TARGET_POLICY, MAX_WORKSPACE_ITEMS
 
 
 class BasserWorkspaceCase(TransactionCase):
@@ -272,14 +272,20 @@ class BasserWorkspaceCase(TransactionCase):
             custody_opened['action']['tag'],
             'baseer_procurement_requests.representative_petty_cash',
         )
+        accountant_policy = BASEER_WORKSPACE_TARGET_POLICY['accountant']
+        self.assertNotIn('baseer_procurement_requests.menu_procurement_custody', accountant_policy)
+        self.assertNotIn('baseer_procurement_requests.menu_procurement_custody_monthly_statement', accountant_policy)
         for xmlid in (
             'workspace_item_accountant_procurement_custody',
             'workspace_item_accountant_monthly_custody_reconciliation',
         ):
+            item = self.env.ref('baseer_basser_workspace.' + xmlid)
+            self.assertFalse(item.active, xmlid)
             with self.assertRaises(AccessError):
-                self.env['baseer.basser.workspace.section'].with_user(accountant).open_workspace_item(
-                    self.env.ref('baseer_basser_workspace.' + xmlid).id,
-                )
+                self.env['baseer.basser.workspace.section'].with_user(accountant).open_workspace_item(item.id)
+            with self.assertRaises(ValidationError), self.env.cr.savepoint():
+                item.write({'active': True})
+            self.assertFalse(item.active, xmlid)
 
     def test_purchase_batch_shortcuts_are_hidden_without_removing_native_history(self):
         action = self.env.ref('baseer_purchase_batch.action_purchase_batches')

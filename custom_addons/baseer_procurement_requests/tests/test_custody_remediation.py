@@ -2,6 +2,8 @@ from odoo import Command, fields
 from odoo.exceptions import UserError, ValidationError
 from odoo.tests.common import TransactionCase
 
+from odoo.addons.baseer_procurement_requests.models.legacy_custody_freeze import legacy_fixture_context
+
 
 INTERNAL = 'baseer_procurement_custody_internal'
 
@@ -95,6 +97,9 @@ class CustodyRemediationCase(TransactionCase):
             'name': 'Remediation buyer',
             'company_id': self.company.id,
         })
+        # Legacy PCUST is frozen; these regressions cover historical records,
+        # which can only be built in-process.
+        self.env = legacy_fixture_context(self.env)
         self.custody = self.env['baseer.procurement.custody'].create({
             'company_id': self.company.id,
             'employee_id': self.employee.id,
@@ -165,9 +170,10 @@ class CustodyRemediationCase(TransactionCase):
                 'entry_type': 'purchase',
                 'gross_amount': 40,
                 'is_credit': True,
-                'procurement_custody_id': self.custody.id,
             })],
         })
+        # Batch creation resets its context, so link the historical custody afterwards.
+        batch.line_ids.with_env(self.env).write({'procurement_custody_id': self.custody.id})
         return batch.line_ids
 
     def test_vendor_payments_reduce_custody_balance_without_double_counting(self):

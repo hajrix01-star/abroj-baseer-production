@@ -37,6 +37,16 @@ def change(value, previous):
     return round((value - previous) / abs(previous) * 100, 2) if value is not None and previous else None
 
 
+EXPENSE_KEYS_EX_PURCHASES = (
+    'salaries', 'rent', 'utilities', 'marketing', 'commissions',
+    'other_opex', 'depreciation', 'non_operating', 'zakat_tax',
+)
+
+
+def expenses_ex_purchases(data):
+    return sum(data['categories'].get(key, 0) for key in EXPENSE_KEYS_EX_PURCHASES)
+
+
 def low_salaries(current, history):
     return bool(len(history) == 3 and sum(history) > 0 and current < 0.7 * sum(history) / 3)
 
@@ -463,7 +473,12 @@ class DashboardSections(models.AbstractModel):
         result = []
         for cid, label, name in companies:
             data = self._accounting_gross([cid], start, end)
-            result.append({'key': str(cid), 'label': label, 'name': name, 'sales_net': data['sales_net'], 'targets': self._targets([cid], data), **data['ratios']})
+            posted = self._posted_months([cid])
+            covered = any(start.strftime('%Y-%m') <= month <= end.strftime('%Y-%m') for month in posted)
+            prior_months = sorted((m for m in posted if m < start.strftime('%Y-%m')), reverse=True)[:3]
+            prior_salaries = [self._accounting([cid], *month_bounds(date.fromisoformat(m + '-01')))['categories'].get('salaries', 0) for m in prior_months] if len(prior_months) == 3 else []
+            result.append({'key': str(cid), 'label': label, 'name': name, 'sales_net': data['sales_net'], 'targets': self._targets([cid], data),
+                           'salaries_warning': covered and low_salaries(data['categories'].get('salaries', 0), prior_salaries), **data['ratios']})
         return result
 
     def _targets(self, ids, current):
@@ -636,6 +651,7 @@ class DashboardSections(models.AbstractModel):
             result['sales']['customers_change_pct'] = change(sales['customers']['value'], prior_sales['customers']['value'])
             result['sales']['trend'] = sales_trend
             result['timeline'] = self._timeline(ids, end, params.get('timeline_mode', 'monthly'))
+            result.update(self._overview_layout(ids, start, end, params['period']['mode'], current, previous, result, days, covered, first_data, last_data, companies))
         if section in ('overview', 'ratios'):
             if section == 'ratios':
                 sales, days, _, _ = self._sales_summary(ids, start, end)
@@ -965,6 +981,220 @@ class DashboardSections(models.AbstractModel):
                 'hours': {'available': bool(hours), 'reason': False if hours else 'no_pos_days', 'matrix': matrix,
                           'period': {'date_from': str(first), 'date_to': str(hours_end)}, 'partial': hours_end < last}}
 
+
+    def _snapshot(self, ids, start, end, sales_net=None):
+        accounting = self._accounting_gross(ids, start, end)
+        sales, days, _channels, _hours = self._sales_summary(ids, start, end)
+        purchases = self._purchases(ids, start, end, sales_net if sales_net is not None else accounting['sales_net'])
+        expenses = expenses_ex_purchases(accounting)
+        return {
+            'sales_net': accounting['sales_net'],
+            'sales_gross': sales['gross'],
+            'apps': sales['apps'],
+            'apps_pct': percent(sales['apps'], accounting['sales_net']),
+            'customers': sales['customers'],
+            'purchases': purchases['value'] if purchases.get('available', True) else None,
+            'purchases_pct': purchases.get('pct'),
+            'expenses': expenses,
+            'expenses_pct': percent(expenses, accounting['sales_net']),
+            'net_profit': accounting['net_profit'],
+            'days': days,
+            'has_sales_days': bool(days),
+        }
+
+    def _compare_metric(self, current, previous, previous_year, previous_year_ok):
+        return {
+            'previous': previous,
+            'previous_change_pct': change(current, previous),
+            'previous_year': previous_year if previous_year_ok else None,
+            'previous_year_change_pct': change(current, previous_year) if previous_year_ok else None,
+            'previous_year_label': None if previous_year_ok else ('بيانات ناقصة' if previous_year else 'لا بيانات'),
+        }
+
+    def _window_covered(self, ids, start, end):
+        posted = self._posted_months(ids)
+        return any(start.strftime('%Y-%m') <= month <= end.strftime('%Y-%m') for month in posted)
+
+    def _overview_layout(self, ids, start, end, mode, current, previous, result, days, covered, first_data, last_data, companies):
+        today = fields.Date.context_today(self)
+        year_start, year_end = self._comparison_bounds(start, end, mode, 'previous_year')
+        year_ok = self._window_covered(ids, year_start, year_end)
+        month_start, month_last = month_bounds(end if mode != 'year' else today)
+        month_end = min(month_last, today) if (month_start.year, month_start.month) == (today.year, today.month) else month_last
+        if mode in ('today', 'date'):
+            focus = start
+        elif mode != 'year' and start <= today <= end:
+            focus = today
+        else:
+            focus = min(end, today) if today.year == end.year and today.month == end.month else end
+
+        def pack(snapshot, key, comparisons, extra=None):
+            payload = {'value': snapshot[key], **comparisons}
+            if extra:
+                payload.update(extra)
+            return payload
+
+        period_snap = {
+            'sales_net': current['sales_net'],
+            'purchases': result['purchases']['value'],
+            'purchases_pct': result['purchases'].get('pct'),
+            'expenses': expenses_ex_purchases(current),
+            'expenses_pct': percent(expenses_ex_purchases(current), current['sales_net']),
+            'net_profit': current['net_profit'],
+        }
+        prev_snap = {
+            'sales_net': previous['sales_net'],
+            'purchases': result['purchases']['previous']['value'] if result['purchases'].get('previous') else None,
+            'expenses': expenses_ex_purchases(previous),
+            'net_profit': previous['net_profit'],
+        }
+        year_snap = self._snapshot(ids, year_start, year_end)
+        year_ok = year_ok and (year_snap['sales_net'] or year_snap['has_sales_days'])
+
+        cards = {
+            'mode': mode,
+            'date_from': str(start),
+            'date_to': str(end),
+            'partial': bool(mode == 'month' and end < month_last) or bool(mode == 'year' and end < date(end.year, 12, 31)),
+        }
+
+        if mode != 'year':
+            day_snap = self._snapshot(ids, focus, focus)
+            day_value = day_snap['sales_gross'] if day_snap['has_sales_days'] else (day_snap['sales_net'] or 0)
+            prev_day = self._snapshot(ids, *self._comparison_bounds(focus, focus, 'date', 'previous_period'))
+            year_day_start, year_day_end = self._comparison_bounds(focus, focus, 'date', 'previous_year')
+            year_day = self._snapshot(ids, year_day_start, year_day_end)
+            year_day_ok = self._window_covered(ids, year_day_start, year_day_end) and (year_day['sales_gross'] or year_day['sales_net'])
+            cards['today_sales'] = pack(
+                {'today_sales': day_value},
+                'today_sales',
+                self._compare_metric(day_value, prev_day['sales_gross'] if prev_day['has_sales_days'] else (prev_day['sales_net'] or None),
+                                     year_day['sales_gross'] if year_day['has_sales_days'] else (year_day['sales_net'] or None), year_day_ok),
+                {'date': str(focus)},
+            )
+            mtd = self._snapshot(ids, month_start, month_end) if (start, end) != (month_start, month_end) or mode != 'month' else None
+            mtd_sales = (mtd or {'sales_net': current['sales_net']})['sales_net']
+            prev_mtd_start, prev_mtd_end = self._comparison_bounds(month_start, month_end, 'month', 'previous_period')
+            year_mtd_start, year_mtd_end = self._comparison_bounds(month_start, month_end, 'month', 'previous_year')
+            prev_mtd = self._snapshot(ids, prev_mtd_start, prev_mtd_end)
+            year_mtd = self._snapshot(ids, year_mtd_start, year_mtd_end)
+            year_mtd_ok = self._window_covered(ids, year_mtd_start, year_mtd_end) and (year_mtd['sales_net'] or year_mtd['has_sales_days'])
+            cards['period_sales'] = pack(
+                {'period_sales': mtd_sales},
+                'period_sales',
+                self._compare_metric(mtd_sales, prev_mtd['sales_net'] or None, year_mtd['sales_net'] or None, year_mtd_ok),
+                {'date_from': str(month_start), 'date_to': str(month_end), 'kind': 'mtd'},
+            )
+        else:
+            cards['period_sales'] = pack(
+                {'period_sales': current['sales_net']},
+                'period_sales',
+                self._compare_metric(current['sales_net'], previous['sales_net'] if self._window_covered(ids, *self._comparison_bounds(start, end, mode, 'previous_period')) else None,
+                                     year_snap['sales_net'] or None, year_ok),
+                {'date_from': str(start), 'date_to': str(end), 'kind': 'ytd'},
+            )
+
+        purchases = period_snap['purchases']
+        expenses = period_snap['expenses']
+        net = period_snap['net_profit']
+        prev_purchases = prev_snap['purchases']
+        prev_expenses = prev_snap['expenses']
+        prev_net = prev_snap['net_profit']
+        cards['net'] = pack(
+            {'net': net}, 'net',
+            self._compare_metric(net, prev_net, year_snap['net_profit'], year_ok),
+            {
+                'salaries_warning': result.get('salaries_warning'),
+                'equation': {'sales': period_snap['sales_net'], 'purchases': purchases or 0, 'expenses': expenses},
+            },
+        )
+        cards['purchases'] = pack(
+            {'purchases': purchases}, 'purchases',
+            self._compare_metric(purchases, prev_purchases, year_snap['purchases'], year_ok),
+            {'pct': period_snap['purchases_pct']},
+        )
+        cards['expenses'] = pack(
+            {'expenses': expenses}, 'expenses',
+            self._compare_metric(expenses, prev_expenses, year_snap['expenses'], year_ok),
+            {'pct': period_snap['expenses_pct']},
+        )
+
+        sales_line = self._sales_line(ids, start, end, mode, days, today, result)
+        sales = result.get('sales')
+        if sales is not None:
+            prior_apps = year_snap['apps'] if year_ok else None
+            prior_customers = (year_snap.get('customers') or {}) if year_ok else {}
+            sales['previous_year'] = {
+                'apps': prior_apps,
+                'customers': year_snap.get('customers') if year_ok else None,
+            }
+            sales['apps_previous_year_change_pct'] = change(sales.get('apps'), prior_apps) if year_ok else None
+            current_customers = (sales.get('customers') or {}).get('value')
+            sales['customers_previous_year_change_pct'] = (
+                change(current_customers, prior_customers.get('value')) if year_ok else None
+            )
+            sales['previous_year_label'] = None if year_ok else (
+                'بيانات ناقصة' if (year_snap.get('sales_net') or year_snap.get('has_sales_days')) else 'لا بيانات'
+            )
+        return {'cards': cards, 'sales_line': sales_line}
+
+    def _sales_line(self, ids, start, end, mode, days, today, result):
+        if mode == 'year':
+            points = []
+            peak = None
+            for month in range(1, 13):
+                first, last = month_bounds(date(end.year, month, 1))
+                key = first.strftime('%Y-%m')
+                month_end = min(last, end)
+                future = first > end
+                value = self._accounting_gross(ids, first, month_end)['sales_net'] if not future and self._window_covered(ids, first, month_end) else None
+                row = next((item for item in result['sales']['trend'] if item['month'] == key), None)
+                prior = row.get('previous_year') if row else None
+                prior_value = prior.get('gross') if isinstance(prior, dict) else prior
+                if prior_value is None and not future:
+                    prior_first, prior_last = month_bounds(date(end.year - 1, month, 1))
+                    prior_value = self._accounting_gross(ids, prior_first, prior_last)['sales_net'] if self._window_covered(ids, prior_first, prior_last) else None
+                point = {
+                    'key': key,
+                    'label': month_label(key, short=True),
+                    'value': None if future else value,
+                    'previous_year': None if future else prior_value,
+                    'empty': future or value is None,
+                    'current': first.month == end.month,
+                    'partial': (not future) and month_end < last,
+                }
+                points.append(point)
+                if point['value'] is not None and (peak is None or point['value'] > peak['value']):
+                    peak = {'key': key, 'label': month_label(key), 'value': point['value']}
+            return {'granularity': 'month', 'points': points, 'peak': peak, 'year': end.year}
+        # Daily line for the month containing the selected period.
+        month_start, month_last = month_bounds(end)
+        month_end = min(month_last, today, end if end >= month_start else month_last)
+        # Load the whole month so today/date still show the month curve.
+        sales, month_days, _channels, _hours = self._sales_summary(ids, month_start, min(month_last, today))
+        totals = {}
+        for (_cid, day), data in month_days.items():
+            totals[day] = totals.get(day, 0.0) + sum(data['channels'].values())
+        points = []
+        peak = None
+        cursor = month_start
+        while cursor <= month_last:
+            future = cursor > today
+            value = round(totals[cursor], 2) if cursor in totals else None
+            point = {
+                'key': str(cursor),
+                'label': str(cursor.day),
+                'value': None if future else value,
+                'empty': future or value is None,
+                'current': cursor == min(end, today),
+                'partial': False,
+            }
+            points.append(point)
+            if point['value'] is not None and (peak is None or point['value'] > peak['value']):
+                peak = {'key': str(cursor), 'label': month_label(cursor), 'value': point['value'], 'day': cursor.day}
+            cursor += timedelta(days=1)
+        return {'granularity': 'day', 'points': points, 'peak': peak, 'month': month_start.strftime('%Y-%m')}
+
     @api.model
     def get_section(self, section, params=None):
         self._check_reader()
@@ -978,11 +1208,14 @@ class DashboardSections(models.AbstractModel):
         if not companies:
             return {'available': False, 'reason': 'empty_company_scope'}
         ids = self._scope(params.get('company_key'))
-        start, end = self._period(params.get('period') or {})
-        previous_end = start - timedelta(days=1)
-        previous_start = previous_end.replace(day=1) if params['period']['mode'] == 'month' else previous_end - (end - start)
+        period = params.get('period') or {}
+        start, end = self._period(period)
+        mode = period.get('mode') or 'today'
+        previous_start, previous_end = self._comparison_bounds(start, end, mode, 'previous_period')
+        params = dict(params, period=dict(period, mode=mode))
+        year_start, year_end = self._comparison_bounds(start, end, mode, 'previous_year')
         if section in ('overview', 'revenue', 'expenses', 'ratios'):
-            self = self.with_context(_bd2_tax_window=(min(start, previous_start, date(max(1, end.year - 5), 1, 1)), end),
+            self = self.with_context(_bd2_tax_window=(min(start, previous_start, year_start, date(max(1, end.year - 5), 1, 1)), end),
                                      _bd2_tax_companies=[cid for cid, _, _ in companies])
         if section in ('overview', 'expenses', 'ratios', 'pnl'):
             return self._accounting_sections(ids, section, start, end, previous_start, previous_end, companies, params)

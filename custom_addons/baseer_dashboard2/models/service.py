@@ -147,18 +147,46 @@ class DashboardService(models.AbstractModel):
         today = fields.Date.context_today(self)
         previous_month = (today.replace(day=1) - timedelta(days=1)).strftime('%Y-%m')
         default_month = previous_month
-        return {'pnl_default_view': PNL_DEFAULT_VIEW, 'default_month': default_month, 'companies': options, 'default_company_key': str(self.env.company.id if self.env.company.id in ids else ids[0]) if ids else False,
-                'months_available': months, 'today': fields.Date.to_string(fields.Date.context_today(self)),
+        today_str = fields.Date.to_string(today)
+        default_period = {'mode': 'today', 'date': today_str, 'month': today_str[:7], 'year': today.year,
+                          'date_from': today_str, 'date_to': today_str}
+        return {'pnl_default_view': PNL_DEFAULT_VIEW, 'default_month': default_month, 'default_period': default_period,
+                'companies': options, 'default_company_key': str(self.env.company.id if self.env.company.id in ids else ids[0]) if ids else False,
+                'months_available': months, 'years_available': sorted({int(m[:4]) for m in months}, reverse=True) or [today.year],
+                'today': today_str,
                 'last_data_date': fields.Date.to_string(last) if last else False,
                 'can_edit': self.env.user.has_group('account.group_account_manager'), 'tz': self.env.user.tz or 'Asia/Riyadh',
                 'currency_symbol': 'ر.س', 'flags': {'empty_scope': not bool(ids)}}
 
+    def _shift_months(self, day, months):
+        index = day.year * 12 + day.month - 1 + months
+        year, month = divmod(index, 12)
+        last = calendar.monthrange(year, month + 1)[1]
+        return date(year, month + 1, min(day.day, last))
+
+    def _shift_years(self, day, years):
+        year = day.year + years
+        last = calendar.monthrange(year, day.month)[1]
+        return date(year, day.month, min(day.day, last))
+
     def _period(self, period):
         try:
-            if period.get('mode') == 'month':
+            today = fields.Date.context_today(self)
+            mode = period.get('mode') or 'today'
+            if mode == 'today':
+                start = end = today
+            elif mode == 'date':
+                start = end = date.fromisoformat(period['date'])
+            elif mode == 'month':
                 start = date.fromisoformat(period['month'] + '-01')
-                end = start.replace(day=calendar.monthrange(start.year, start.month)[1])
-            elif period.get('mode') == 'range':
+                last = start.replace(day=calendar.monthrange(start.year, start.month)[1])
+                end = min(last, today) if (start.year, start.month) == (today.year, today.month) else last
+            elif mode == 'year':
+                year = int(period.get('year') or today.year)
+                start = date(year, 1, 1)
+                last = date(year, 12, 31)
+                end = min(last, today) if year == today.year else last
+            elif mode == 'range':
                 start, end = date.fromisoformat(period['date_from']), date.fromisoformat(period['date_to'])
             else:
                 raise ValueError()
@@ -167,6 +195,16 @@ class DashboardService(models.AbstractModel):
             return start, end
         except (ValueError, KeyError, TypeError):
             raise UserError(_('Invalid dashboard period.'))
+
+    def _comparison_bounds(self, start, end, mode, kind):
+        if kind == 'previous_year':
+            return self._shift_years(start, -1), self._shift_years(end, -1)
+        if mode in ('today', 'date'):
+            day = self._shift_months(start, -1)
+            return day, day
+        if mode == 'year':
+            return self._shift_years(start, -1), self._shift_years(end, -1)
+        return self._shift_months(start, -1), self._shift_months(end, -1)
 
     def _category(self, account, categories):
         cache = self.env.context.get('_bd2_request_cache')

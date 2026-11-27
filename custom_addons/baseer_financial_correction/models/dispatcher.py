@@ -122,6 +122,13 @@ class CorrectionMoveDispatcher(models.Model):
         require_access(self)
         return True
 
+    def _baseer_correction_purchase_order(self):
+        """Purchase order that owns this invoice through purchase_line_id, if any."""
+        self.ensure_one()
+        if 'purchase_line_id' not in self.invoice_line_ids._fields:
+            return self.env['purchase.order']
+        return self.invoice_line_ids.mapped('purchase_line_id').order_id
+
     def _baseer_correction_owner(self):
         """Fixed source fields only. Never accept a client model or source ID."""
         self.ensure_one()
@@ -145,11 +152,11 @@ class CorrectionMoveDispatcher(models.Model):
                     return lines.order_id, None
         return False, None
 
-    def _baseer_assert_correction_eligible(self):
+    def _baseer_assert_correction_eligible(self, ignore_purchase_owner=False):
         self.ensure_one()
         self._baseer_correction_require_access()
         source, _action = self._baseer_correction_owner()
-        if source:
+        if source and not (ignore_purchase_owner and source._name == 'purchase.order'):
             raise UserError(_('This operation belongs to another workflow. Correct it from its original document.'))
         reject_hr_accounts(self, self.line_ids.account_id)
         if self.move_type not in ('out_invoice', 'out_refund', 'out_receipt', 'in_invoice', 'in_refund', 'in_receipt') and not self.origin_payment_id:
@@ -167,14 +174,20 @@ class CorrectionMoveDispatcher(models.Model):
         self.ensure_one()
         self._baseer_correction_require_access()
         source, action = self._baseer_correction_owner()
-        if source:
+        # A purchase-order-owned bill may still open a payment-journal-only
+        # correction: the invoice and PO stay untouched. Any other owner still
+        # routes to its original document. Cancel keeps the existing PO routing.
+        purchase_payment_only = (
+            source and source._name == 'purchase.order' and self._baseer_linked_posted_payments()
+        )
+        if source and not purchase_payment_only:
             source.check_access('read')
             return getattr(source, action)() if action and len(source) == 1 else open_source(source)
         if self.origin_payment_id:
             return self.origin_payment_id.action_baseer_correct_operation()
         if self.move_type == 'entry':
             return self.action_reverse()
-        self._baseer_assert_correction_eligible()
+        self._baseer_assert_correction_eligible(ignore_purchase_owner=bool(purchase_payment_only))
         batch_line = self._baseer_correction_batch_line()
         return self.env['baseer.financial.correction']._open_for_source(move=self, batch_line=batch_line)
 

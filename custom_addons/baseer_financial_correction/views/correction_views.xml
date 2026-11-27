@@ -9,18 +9,22 @@
                 <field name="operation" invisible="True"/>
                 <field name="company_id" invisible="True"/>
                 <field name="batch_line_id" invisible="True"/>
+                <field name="purchase_source_locked" invisible="True"/>
+                <div class="alert alert-info" role="status" invisible="not purchase_source_locked or operation == 'cancel'">
+                    This invoice belongs to a purchase order. You can correct the payment journal or method; the invoice and purchase order stay unchanged.
+                </div>
                 <group>
                     <group>
                         <field name="move_id" string="Invoice" readonly="True" invisible="not move_id" options="{'no_open': True}"/>
                         <field name="payment_id" string="Payment" readonly="True" invisible="not payment_id" options="{'no_open': True}"/>
-                        <field name="partner_id" string="Correct partner" readonly="completed or operation == 'cancel'" required="True" options="{'no_create': True, 'no_open': True}" domain="[('active', '=', True), ('company_id', 'in', [False, company_id])]"/>
+                        <field name="partner_id" string="Correct partner" readonly="completed or operation == 'cancel' or purchase_source_locked" required="True" options="{'no_create': True, 'no_open': True}" domain="[('active', '=', True), ('company_id', 'in', [False, company_id])]"/>
                     </group>
                     <group>
                         <field name="gross_amount_input" string="Correct amount incl. tax" invisible="not batch_line_id or operation == 'cancel'" readonly="completed" required="batch_line_id and operation == 'edit'"/>
                         <field name="reason" string="Correction reason" placeholder="What was entered incorrectly?" required="True" readonly="completed"/>
                     </group>
                 </group>
-                <field name="line_ids" invisible="not move_id or batch_line_id or operation == 'cancel'" readonly="completed" mode="list,kanban">
+                <field name="line_ids" invisible="not move_id or batch_line_id or operation == 'cancel'" readonly="completed or purchase_source_locked" mode="list,kanban">
                     <list editable="bottom" create="false" delete="false">
                         <field name="name" string="Description"/>
                         <field name="quantity_input" string="Quantity"/>
@@ -49,7 +53,7 @@
                     </form>
                 </field>
                 <group string="Payment correction" invisible="not payment_id or operation == 'cancel'">
-                    <field name="correct_payment" string="Correct the payment record too" readonly="completed or not move_id"/>
+                    <field name="correct_payment" string="Correct the payment record too" readonly="completed or not move_id or purchase_source_locked"/>
                     <group invisible="not correct_payment">
                         <field name="payment_amount_input" string="Actual paid amount" readonly="completed" required="correct_payment"/>
                     </group>

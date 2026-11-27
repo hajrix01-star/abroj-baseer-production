@@ -41,19 +41,16 @@ class TestZatcaPosScope(TransactionCase):
         open_ui.assert_called_once_with()
 
     def test_disabled_scope_preserves_other_pos_opening_guards(self):
-        if 'baseer_summary_only' not in self.env['pos.config']._fields:
+        config = self._new_config()
+        if 'baseer_summary_only' not in config._fields:
             self.skipTest('baseer_pos_summary is not installed in this test database')
-        # Only one summary-only POS is allowed per company, and a copied
-        # database already has one, so use a fresh company for this check.
-        company = self.env['res.company'].create({
-            'name': 'ZATCA scope summary test',
-            'country_id': self.env.ref('base.sa').id,
-        })
-        self.env.user.company_ids |= company
-        config = self.env['pos.config'].with_company(company).create({
-            'name': 'ZATCA scope test',
-            'company_id': company.id,
-        })
+        # Only one summary-only POS is allowed per company (archived ones
+        # count). A database copied from Live already has it.
+        if self.env['pos.config'].with_context(active_test=False).search_count([
+            ('company_id', '=', config.company_id.id),
+            ('baseer_summary_only', '=', True),
+        ]):
+            self.skipTest('this company already has its summary-only POS')
 
         config.write({
             'baseer_zatca_phase2_enabled': False,

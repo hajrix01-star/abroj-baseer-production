@@ -17,6 +17,9 @@ CUSTODY_START = date(2026, 11, 1)
 CUSTODY_KEY = 'osama'
 UNPAID_KEY = 'unpaid'
 OTHER_KEY = 'other'
+BANK_KEY = 'bank'
+# Fixed purchase columns of the main table, in display order.
+TABLE_COLUMNS = (BANK_KEY, CUSTODY_KEY, 'cash')
 ALLOWED_ROLES = (
     'baseer_access_roles.group_owner',
     'baseer_access_roles.group_accountant',
@@ -276,11 +279,38 @@ class PurchaseDailyReport(models.AbstractModel):
     def _method_column_label(self, key, label):
         """Short table heading for a payment-method column."""
         return {
+            BANK_KEY: self.env._('Bank'),
             CUSTODY_KEY: self.env._('Custody'),
             'cash': self.env._('Cash'),
             UNPAID_KEY: self.env._('Unpaid'),
             OTHER_KEY: self.env._('Other settlements'),
         }.get(key, label)
+
+    @api.model
+    def _table_column(self, key, cache=None):
+        """Main-table column of a payment-method key.
+
+        Bank journals share one «Bank» column; settlements through any other
+        non-cash journal are «Other settlements», so nothing is hidden.
+        """
+        if not key.startswith('journal:'):
+            return key
+        if cache is not None and key in cache:
+            return cache[key]
+        journal = self.env['account.journal'].sudo().browse(int(key[8:])).exists()
+        column = BANK_KEY if journal.type == 'bank' else OTHER_KEY
+        if cache is not None:
+            cache[key] = column
+        return column
+
+    @api.model
+    def _table_amounts(self, bill, custody_accounts=None, cache=None):
+        """One bill's company-currency total split over the main-table columns."""
+        result = {}
+        for key, (_label, amount) in self._bill_method_amounts(bill, custody_accounts).items():
+            column = self._table_column(key, cache)
+            result[column] = result.get(column, ZERO) + amount
+        return {key: value for key, value in result.items() if value}
 
     @api.model
     def _bill_method_amounts(self, bill, custody_accounts=None):
@@ -448,12 +478,18 @@ class PurchaseDailyReport(models.AbstractModel):
                 + total(self.env['baseer.procurement.representative.petty.cash.invoice.settlement'], settlements)
                 + legacy_spent + native_spend
             )
-        remaining = sum((
-            Decimal(str(Advance._baseer_representative_available_amount(company, partner)))
-            for partner in self._custody_representatives(company)
-        ), ZERO)
+        remaining = ZERO
+        holders = []
+        for partner in self._custody_representatives(company):
+            available = Decimal(str(Advance._baseer_representative_available_amount(company, partner)))
+            remaining += available
+            if available:
+                holders.append(partner.display_name or '')
         currency = company.currency_id
+        used = int(min(max(spent / funded * 100, ZERO), Decimal('100')).quantize(Decimal('1'))) if funded > 0 else 0
         return {
+            'representatives': ' · '.join(sorted(name for name in holders if name)),
+            'spent_percent': used,
             'active': bool(period),
             'start': (period[0] if period else CUSTODY_START).isoformat(),
             'end': last.isoformat(),
@@ -527,7 +563,7 @@ class PurchaseDailyReport(models.AbstractModel):
             return key
 
         table_days = {}
-        columns = {}
+        column_cache = {}
         custody_accounts = self._custody_accounts(company)
         last_id = 0
         Move = self.env['account.move'].sudo()
@@ -552,9 +588,8 @@ class PurchaseDailyReport(models.AbstractModel):
                 paid, pending, unavailable = self._cash_allocation(bill)
                 paid_totals[key] += paid
                 table_day = table_days.setdefault(key, {})
-                for method_key, (label, amount) in self._bill_method_amounts(bill, custody_accounts).items():
-                    columns.setdefault(method_key, label)
-                    table_day[method_key] = table_day.get(method_key, ZERO) + amount
+                for column, amount in self._table_amounts(bill, custody_accounts, column_cache).items():
+                    table_day[column] = table_day.get(column, ZERO) + amount
                 by_date[key]['paid_pending'] |= pending
                 by_date[key]['paid_unavailable'] |= unavailable
             last_id = batch[-1].id
@@ -576,64 +611,108 @@ class PurchaseDailyReport(models.AbstractModel):
         method_cards.extend(sorted(methods_acc.values(), key=lambda item: (-item['count'], item['label'])))
         for card in method_cards:
             card['total'] = _money(card['total'], currency)
+        custody = self._custody_summary(company, first, last)
         return {
             'company': {'id': company.id, 'name': company.name, 'currency': currency.name},
             'days': days,
             'methods': method_cards,
             'statuses': self._status_card_rows(company, first, last, method),
-            'custody': self._custody_summary(company, first, last),
-            'table': self._method_table(company, first, last, status, method, by_date, table_days, columns, days),
+            'custody': custody,
+            'table': self._method_table(company, first, last, status, method, by_date, table_days, days,
+                                       custody is not None, column_cache),
         }
 
     @api.model
-    def _method_table(self, company, first, last, status, method, by_date, table_days, columns, days=()):
-        """Main table rows: one per invoice day with a column per payment method, plus custody transfer rows.
+    def _custody_opening(self, company, start, cache=None):
+        """Custody balance at the start of ``start``, counted from CUSTODY_START.
 
-        Transfer rows carry only the custody transfer amount and are never part
-        of the purchase totals. They follow the custody cards, so they are shown
-        for the default status and for the custody method filter.
+        Same basis as the table: transfers on their movement date minus custody
+        payments on the bill's invoice date.
+        """
+        if start <= CUSTODY_START:
+            return ZERO
+        before = start - timedelta(days=1)
+        opening = sum((row['amount'] for row in self._custody_transfers(company, CUSTODY_START, before)), ZERO)
+        custody_accounts = self._custody_accounts(company)
+        Move = self.env['account.move'].sudo()
+        domain = self._domain(company, CUSTODY_START, before, 'all')
+        last_id = 0
+        while True:
+            batch = Move.search(domain + [('id', '>', last_id)], order='id', limit=200)
+            if not batch:
+                break
+            self._prefetch_cash_allocation(batch)
+            for bill in batch:
+                opening -= self._table_amounts(bill, custody_accounts, cache).get(CUSTODY_KEY, ZERO)
+            last_id = batch[-1].id
+        return opening
+
+    @api.model
+    def _method_table(self, company, first, last, status, method, by_date, table_days, days=(),
+                      custody_active=False, cache=None):
+        """Main table: purchase columns (bank, custody, cash) and a custody group.
+
+        One row per date, newest first. A date with bills carries its purchase
+        amounts; a date with only custody transfers gets its own row without
+        purchase amounts. The custody group shows the transfer of that date and
+        the running custody balance: transfers on their movement date minus
+        custody payments on the bill's invoice date, counted from CUSTODY_START.
+        Transfers are never part of the purchase totals. The custody group is
+        shown for the default status and for the custody method filter only.
         """
         currency = company.currency_id
         formatted_days = {day['date']: day for day in days}
-        order = [key for key in (CUSTODY_KEY, 'cash') if key in columns]
-        order += sorted(
-            (key for key in columns if key not in (CUSTODY_KEY, 'cash', UNPAID_KEY, OTHER_KEY)),
-            key=lambda key: (-abs(sum((day.get(key, ZERO) for day in table_days.values()), ZERO)), columns[key]),
-        )
-        order += [key for key in (UNPAID_KEY, OTHER_KEY) if key in columns]
+        present = set()
+        for amounts in table_days.values():
+            present.update(amounts)
+        order = list(TABLE_COLUMNS) + [key for key in (UNPAID_KEY, OTHER_KEY) if key in present]
         totals = {key: ZERO for key in order}
+        show_custody = bool(custody_active and status == 'all' and method in ('all', CUSTODY_KEY))
+        transfers = self._custody_transfers(company, first, last) if show_custody else []
+        transfer_by_date = {}
+        for transfer in transfers:
+            key = fields.Date.to_string(transfer['date'])
+            transfer_by_date[key] = transfer_by_date.get(key, ZERO) + transfer['amount']
+        period = self._custody_period(first, last) if show_custody else None
+        balance = self._custody_opening(company, period[0], cache) if period else ZERO
+        start_key = fields.Date.to_string(period[0]) if period else None
         rows = []
-        for key in sorted(by_date):
+        for key in sorted(set(by_date) | set(transfer_by_date)):
             amounts = table_days.get(key, {})
             for column in order:
                 totals[column] += amounts.get(column, ZERO)
+            transfer = transfer_by_date.get(key)
             row = dict(formatted_days.get(key, {}))
-            row.update({
-                'kind': 'day', 'key': f'day:{key}', 'date': key, 'count': by_date[key]['count'],
-                'amounts': {column: _money(amounts[column], currency) for column in order if column in amounts},
-                'total': _money(by_date[key]['total'], currency),
-            })
+            row.update({'key': f'day:{key}', 'date': key, 'has_bills': key in by_date})
+            if key in by_date:
+                row.update({
+                    'kind': 'day', 'count': by_date[key]['count'],
+                    'amounts': {column: _money(amounts[column], currency) for column in order if amounts.get(column)},
+                    'total': _money(by_date[key]['total'], currency),
+                })
+            else:
+                row['kind'] = 'transfer'
+            if show_custody:
+                row['transfer'] = _money(transfer, currency) if transfer else ''
+                if period and key >= start_key:
+                    balance += (transfer or ZERO) - amounts.get(CUSTODY_KEY, ZERO)
+                    row['balance'] = _money(balance, currency)
+                    row['balance_negative'] = balance < 0
+                else:
+                    row['balance'] = ''
             rows.append(row)
-        transfers = []
-        if status == 'all' and method in ('all', CUSTODY_KEY):
-            transfers = self._custody_transfers(company, first, last)
-        transfer_total = ZERO
-        for transfer in transfers:
-            transfer_total += transfer['amount']
-            rows.append({
-                'kind': 'transfer', 'key': transfer['key'], 'date': fields.Date.to_string(transfer['date']),
-                'label': transfer['label'], 'representative': transfer['representative'],
-                'transfer': _money(transfer['amount'], currency),
-            })
-        # Newest first; on the same date the purchases row precedes its transfers.
-        rows.sort(key=lambda row: (row['date'], row['kind'] == 'day', row['key']), reverse=True)
+        rows.reverse()
+        transfer_total = sum(transfer_by_date.values(), ZERO)
         return {
-            'columns': [{'key': key, 'label': self._method_column_label(key, columns[key])} for key in order],
+            'columns': [{'key': key, 'label': self._method_column_label(key, key)} for key in order],
             'rows': rows,
             'totals': {key: _money(value, currency) for key, value in totals.items()},
             'total': _money(sum((day['total'] for day in by_date.values()), ZERO), currency),
+            'count': sum(day['count'] for day in by_date.values()),
+            'show_custody': show_custody,
             'has_transfers': bool(transfers),
             'transfer_total': _money(transfer_total, currency),
+            'balance': _money(balance, currency) if period else '',
         }
 
     @api.model
@@ -684,6 +763,9 @@ class PurchaseDailyReport(models.AbstractModel):
                 'key': key, 'label': self._method_column_label(key, label),
                 'amount': _money(amount, company_currency),
             } for key, (label, amount) in self._bill_method_amounts(move).items()],
+            'table_amounts': {
+                key: _money(amount, company_currency) for key, amount in self._table_amounts(move).items()
+            },
         }
 
     @api.model

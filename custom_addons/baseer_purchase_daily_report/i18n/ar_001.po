@@ -312,7 +312,6 @@ msgstr "قد تشمل المبالغ المسوّاة التسويات والم�
 msgid "The default view shows posted bills. Use Drafts to include unposted bills."
 msgstr "العرض الافتراضي للفواتير المرحلة. استخدم المسودات لعرض الفواتير غير المرحلة."
 
-
 #. module: baseer_purchase_daily_report
 #. odoo-python
 #: code:addons/baseer_purchase_daily_report/models/daily_report.py:0
@@ -610,26 +609,8 @@ msgstr "فتح شاشة العهدة"
 #. module: baseer_purchase_daily_report
 #. odoo-javascript
 #: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
-msgid "Payment methods by day"
-msgstr "طرق الدفع حسب اليوم"
-
-#. module: baseer_purchase_daily_report
-#. odoo-javascript
-#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
 msgid "Date"
 msgstr "التاريخ"
-
-#. module: baseer_purchase_daily_report
-#. odoo-javascript
-#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
-msgid "Description"
-msgstr "البيان"
-
-#. module: baseer_purchase_daily_report
-#. odoo-javascript
-#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
-msgid "Purchases"
-msgstr "مشتريات"
 
 #. module: baseer_purchase_daily_report
 #. odoo-javascript
@@ -654,3 +635,9 @@ msgstr "الإجمالي"
 #: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
 msgid "Custody transfers are shown for reference and are not part of the purchase total."
 msgstr "تحويلات العهدة للاطلاع فقط ولا تدخل في إجمالي المشتريات."
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Amounts in"
+msgstr "المبالغ بعملة"

@@ -103,61 +103,33 @@
                         </div>
                     </section>
                     <div class="bpr-context"><span><i class="fa fa-calendar-o" aria-hidden="true"/> <span t-esc="labels.dateNote"/></span><span t-esc="labels.liveNote"/></div>
-                    <section t-if="!state.loading and !state.error and state.payload and state.payload.table and state.payload.table.rows.length" class="bpr-panel bpr-method-table">
-                        <h2 t-esc="labels.methodTable"/>
+                    <div t-if="state.loading" class="bpr-feedback" role="status" aria-live="polite"><span class="bpr-spinner"/> <span t-esc="labels.loading"/></div>
+                    <div t-elif="state.error" class="bpr-feedback bpr-feedback--error" role="alert"><span t-esc="state.error"/><button type="button" t-on-click="applyFilters" t-esc="labels.retry"/></div>
+                    <div t-elif="!state.payload.table.rows.length" class="bpr-empty"><span class="bpr-empty-icon"><i class="fa fa-folder-open-o" aria-hidden="true"/></span><h2 t-esc="labels.empty"/><p t-esc="labels.emptyHint"/></div>
+                    <section t-else="" class="bpr-panel bpr-main-table">
                         <div class="bpr-table-scroll">
                             <table class="bpr-table">
                                 <thead>
                                     <tr>
                                         <th t-esc="labels.tableDate"/>
-                                        <th t-esc="labels.tableDescription"/>
-                                        <th t-foreach="state.payload.table.columns" t-as="column" t-key="column.key" t-attf-class="bpr-num bpr-col--{{column.key.split(':')[0]}}" t-esc="column.label"/>
                                         <th class="bpr-num bpr-col--total" t-esc="labels.purchaseTotal"/>
+                                        <th t-foreach="state.payload.table.columns" t-as="column" t-key="column.key" t-attf-class="bpr-num bpr-col--{{column.key.split(':')[0]}}" t-esc="column.label"/>
                                         <th t-if="state.payload.table.has_transfers" class="bpr-num bpr-col--transfer" t-esc="labels.custodyTransfer"/>
+                                        <th class="bpr-col--toggle"><span class="bpr-sr-only" t-esc="labels.show"/></th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr t-foreach="state.payload.table.rows" t-as="row" t-key="row.key" t-attf-class="bpr-row--{{row.kind}}">
-                                        <td><bdi t-esc="row.date"/></td>
-                                        <t t-if="row.kind === 'day'">
-                                            <td><t t-esc="labels.purchasesRow"/> · <bdi t-esc="row.count"/> <t t-esc="labels.documents"/></td>
-                                            <td t-foreach="state.payload.table.columns" t-as="column" t-key="column.key" class="bpr-num"><bdi t-esc="tableAmount(row, column.key)"/></td>
+                                    <t t-foreach="state.payload.table.rows" t-as="row" t-key="row.key">
+                                        <tr t-if="row.kind === 'day'" t-attf-class="bpr-row--day {{state.expanded === row.date ? 'bpr-row--open' : ''}}" t-on-click="() => this.toggleDay(row.date)">
+                                            <td class="bpr-cell-date"><strong><bdi t-esc="row.date"/></strong><small><bdi t-esc="row.count"/> <t t-esc="labels.documents"/></small></td>
                                             <td class="bpr-num bpr-col--total"><bdi t-esc="row.total"/></td>
+                                            <td t-foreach="state.payload.table.columns" t-as="column" t-key="column.key" t-attf-class="bpr-num bpr-col--{{column.key.split(':')[0]}}"><bdi t-esc="tableAmount(row, column.key)"/></td>
                                             <td t-if="state.payload.table.has_transfers" class="bpr-num bpr-col--transfer"/>
-                                        </t>
-                                        <t t-else="">
-                                            <td><t t-esc="row.label"/><t t-if="row.representative"> · <t t-esc="row.representative"/></t></td>
-                                            <td t-foreach="state.payload.table.columns" t-as="column" t-key="column.key" class="bpr-num"/>
-                                            <td class="bpr-num bpr-col--total"/>
-                                            <td class="bpr-num bpr-col--transfer"><bdi t-esc="row.transfer"/></td>
-                                        </t>
-                                    </tr>
-                                </tbody>
-                                <tfoot>
-                                    <tr>
-                                        <th colspan="2" t-esc="labels.tableTotals"/>
-                                        <th t-foreach="state.payload.table.columns" t-as="column" t-key="column.key" class="bpr-num"><bdi t-esc="state.payload.table.totals[column.key]"/></th>
-                                        <th class="bpr-num bpr-col--total"><bdi t-esc="state.payload.table.total"/></th>
-                                        <th t-if="state.payload.table.has_transfers" class="bpr-num bpr-col--transfer"><bdi t-esc="state.payload.table.transfer_total"/></th>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </div>
-                        <p t-if="state.payload.table.has_transfers" class="bpr-footnote" t-esc="labels.transferNote"/>
-                    </section>
-                    <div t-if="state.loading" class="bpr-feedback" role="status" aria-live="polite"><span class="bpr-spinner"/> <span t-esc="labels.loading"/></div>
-                    <div t-elif="state.error" class="bpr-feedback bpr-feedback--error" role="alert"><span t-esc="state.error"/><button type="button" t-on-click="applyFilters" t-esc="labels.retry"/></div>
-                    <div t-elif="!state.payload.days.length" class="bpr-empty"><span class="bpr-empty-icon"><i class="fa fa-folder-open-o" aria-hidden="true"/></span><h2 t-esc="labels.empty"/><p t-esc="labels.emptyHint"/></div>
-                    <div t-else="" class="bpr-days">
-                        <article t-foreach="state.payload.days" t-as="day" t-key="day.date" t-attf-class="bpr-day {{state.expanded === day.date ? 'bpr-day--open' : ''}}">
-                            <button type="button" class="bpr-day-button" t-on-click="() => this.toggleDay(day.date)" t-att-aria-expanded="state.expanded === day.date ? 'true' : 'false'" t-att-aria-controls="'bpr-day-' + day.date">
-                                <span class="bpr-day-title"><span class="bpr-calendar"><i class="fa fa-calendar-o" aria-hidden="true"/></span><span><strong><bdi t-esc="day.date"/></strong><small><bdi t-esc="day.count"/> <span t-esc="labels.documents"/></small></span></span>
-                                <span class="bpr-day-metric"><small t-esc="labels.total"/><strong><bdi t-esc="day.total"/> <em t-esc="state.payload.company.currency"/></strong></span>
-                                <span class="bpr-day-metric bpr-day-metric--paid"><small t-esc="labels.paidAmount"/><strong><bdi t-esc="day.paid_unavailable ? labels.paidUnavailable : day.paid"/> <em t-if="!day.paid_unavailable" t-esc="state.payload.company.currency"/></strong><small t-if="day.paid_pending" t-esc="labels.paidPending"/></span>
-                                <span class="bpr-day-metric bpr-day-metric--due"><small t-esc="labels.residual"/><strong><bdi t-esc="day.residual"/> <em t-esc="state.payload.company.currency"/></strong></span>
-                                <span class="bpr-chevron"><span class="bpr-sr-only" t-esc="state.expanded === day.date ? labels.hide : labels.show"/><i t-att-class="state.expanded === day.date ? 'fa fa-angle-up' : 'fa fa-angle-down'" aria-hidden="true"/></span>
-                            </button>
-                            <section t-if="state.expanded === day.date" class="bpr-day-content" t-att-id="'bpr-day-' + day.date">
+                                            <td class="bpr-col--toggle"><button type="button" class="bpr-chevron" t-on-click.stop="() => this.toggleDay(row.date)" t-att-aria-expanded="state.expanded === row.date ? 'true' : 'false'" t-att-aria-controls="'bpr-day-' + row.date"><span class="bpr-sr-only" t-esc="state.expanded === row.date ? labels.hide : labels.show"/><i t-att-class="state.expanded === row.date ? 'fa fa-angle-up' : 'fa fa-angle-down'" aria-hidden="true"/></button></td>
+                                        </tr>
+                                        <tr t-if="row.kind === 'day' and state.expanded === row.date" class="bpr-row--detail">
+                                            <td t-att-colspan="tableColspan">
+                                                <section class="bpr-day-content" t-att-id="'bpr-day-' + row.date">
                                 <div t-if="state.dayLoading" class="bpr-feedback bpr-feedback--compact" role="status" aria-live="polite"><span class="bpr-spinner"/> <span t-esc="labels.loading"/></div>
                                 <div t-elif="state.dayError" class="bpr-feedback bpr-feedback--error bpr-feedback--compact" role="alert"><span t-esc="state.dayError"/><button type="button" t-on-click="() => this.loadDay(0)" t-esc="labels.retry"/></div>
                                 <t t-elif="state.dayData">
@@ -171,8 +143,30 @@
                                     <nav t-if="state.dayData.offset or state.dayData.has_more" class="bpr-pagination" t-att-aria-label="labels.page"><button type="button" t-on-click="previousPage" t-att-disabled="!state.dayData.offset" t-esc="labels.previous"/><span><span t-esc="labels.page"/> <bdi t-esc="pageNumber"/></span><button type="button" t-on-click="nextPage" t-att-disabled="!state.dayData.has_more" t-esc="labels.next"/></nav>
                                 </t>
                             </section>
-                        </article>
-                    </div>
+                                            </td>
+                                        </tr>
+                                        <tr t-if="row.kind === 'transfer'" class="bpr-row--transfer">
+                                            <td class="bpr-cell-date"><strong><bdi t-esc="row.date"/></strong><small><t t-esc="row.label"/><t t-if="row.representative"> · <t t-esc="row.representative"/></t></small></td>
+                                            <td class="bpr-num bpr-col--total"/>
+                                            <td t-foreach="state.payload.table.columns" t-as="column" t-key="column.key" class="bpr-num"/>
+                                            <td class="bpr-num bpr-col--transfer"><bdi t-esc="row.transfer"/></td>
+                                            <td class="bpr-col--toggle"/>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <th t-esc="labels.tableTotals"/>
+                                        <th class="bpr-num bpr-col--total"><bdi t-esc="state.payload.table.total"/></th>
+                                        <th t-foreach="state.payload.table.columns" t-as="column" t-key="column.key" class="bpr-num"><bdi t-esc="state.payload.table.totals[column.key]"/></th>
+                                        <th t-if="state.payload.table.has_transfers" class="bpr-num bpr-col--transfer"><bdi t-esc="state.payload.table.transfer_total"/></th>
+                                        <th class="bpr-col--toggle"/>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                        <p class="bpr-table-note"><t t-esc="labels.currencyNote"/> <bdi t-esc="state.payload.company.currency"/><t t-if="state.payload.table.has_transfers"> · <t t-esc="labels.transferNote"/></t></p>
+                    </section>
                     <p class="bpr-footnote" t-esc="labels.paidNote"/>
                     <p class="bpr-footnote" t-esc="labels.paidUnavailableNote"/>
                 </t>

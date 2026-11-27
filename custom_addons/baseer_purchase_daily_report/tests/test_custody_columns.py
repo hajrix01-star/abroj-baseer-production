@@ -166,6 +166,12 @@ class DailyPurchaseCustodyColumnsCase(TransactionCase):
         days = {row['date']: row for row in table['rows'] if row['kind'] == 'day'}
         self.assertEqual(days['2099-11-04']['amounts'], {'osama': '120.00', 'cash': '80.00', 'unpaid': '100.00'})
         self.assertEqual(days['2099-11-04']['total'], '300.00')
+        # Day rows of the main table carry the existing day metrics too.
+        self.assertEqual((days['2099-11-04']['count'], days['2099-11-04']['residual']), (2, '100.00'))
+        self.assertEqual(set(days), {day['date'] for day in payload['days']})
+        # Transfer-only dates (2099-11-02, 06, 07) appear as transfer rows without purchase amounts.
+        self.assertNotIn('2099-11-02', days)
+        self.assertEqual([row['kind'] for row in table['rows'] if row['date'] == '2099-11-05'], ['day', 'transfer'])
         # The existing day totals are unchanged by the transfer rows.
         self.assertEqual(sum(Decimal(day['total'].replace(',', '')) for day in payload['days']), Decimal('670.00'))
 

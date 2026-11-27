@@ -582,18 +582,19 @@ class PurchaseDailyReport(models.AbstractModel):
             'methods': method_cards,
             'statuses': self._status_card_rows(company, first, last, method),
             'custody': self._custody_summary(company, first, last),
-            'table': self._method_table(company, first, last, status, method, by_date, table_days, columns),
+            'table': self._method_table(company, first, last, status, method, by_date, table_days, columns, days),
         }
 
     @api.model
-    def _method_table(self, company, first, last, status, method, by_date, table_days, columns):
-        """Rows per invoice day with one column per payment method, plus custody transfer rows.
+    def _method_table(self, company, first, last, status, method, by_date, table_days, columns, days=()):
+        """Main table rows: one per invoice day with a column per payment method, plus custody transfer rows.
 
         Transfer rows carry only the custody transfer amount and are never part
         of the purchase totals. They follow the custody cards, so they are shown
         for the default status and for the custody method filter.
         """
         currency = company.currency_id
+        formatted_days = {day['date']: day for day in days}
         order = [key for key in (CUSTODY_KEY, 'cash') if key in columns]
         order += sorted(
             (key for key in columns if key not in (CUSTODY_KEY, 'cash', UNPAID_KEY, OTHER_KEY)),
@@ -606,11 +607,13 @@ class PurchaseDailyReport(models.AbstractModel):
             amounts = table_days.get(key, {})
             for column in order:
                 totals[column] += amounts.get(column, ZERO)
-            rows.append({
+            row = dict(formatted_days.get(key, {}))
+            row.update({
                 'kind': 'day', 'key': f'day:{key}', 'date': key, 'count': by_date[key]['count'],
                 'amounts': {column: _money(amounts[column], currency) for column in order if column in amounts},
                 'total': _money(by_date[key]['total'], currency),
             })
+            rows.append(row)
         transfers = []
         if status == 'all' and method in ('all', CUSTODY_KEY):
             transfers = self._custody_transfers(company, first, last)

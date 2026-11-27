@@ -81,8 +81,7 @@ export class PurchaseDailyReport extends Component {
             custodyOut: _t("Spent from custody"), custodyRemaining: _t("Remaining"),
             custodySince: _t("Since"), custodyBalanceNow: _t("Current balance"),
             custodyOpen: _t("Open the custody screen"),
-            methodTable: _t("Payment methods by day"), tableDate: _t("Date"),
-            tableDescription: _t("Description"), purchasesRow: _t("Purchases"),
+            tableDate: _t("Date"), currencyNote: _t("Amounts in"),
             purchaseTotal: _t("Purchase total"), custodyTransfer: _t("Custody transfer"),
             tableTotals: _t("Totals"),
             transferNote: _t("Custody transfers are shown for reference and are not part of the purchase total."),
@@ -230,6 +229,11 @@ export class PurchaseDailyReport extends Component {
         if (!this.state.payload?.custody?.can_open) { return; }
         const action = await this.orm.call(MODEL, "open_custody_screen", []);
         return this.action.doAction(action);
+    }
+
+    get tableColspan() {
+        const table = this.state.payload?.table;
+        return 3 + (table?.columns.length || 0) + (table?.has_transfers ? 1 : 0);
     }
 
     tableAmount(row, key) {

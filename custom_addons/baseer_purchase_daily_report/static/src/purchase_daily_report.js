@@ -91,7 +91,6 @@ export class PurchaseDailyReport extends Component {
             noOpenBills: _t("No unpaid or draft bills"),
             byDay: _t("Purchases by day"), purchases: _t("Purchases"), custodyGroup: _t("Custody fund"),
             invoiceCount: _t("Bills"), invoiceCountShort: _t("Bills"),
-            transferOnly: _t("Custody transfer only"),
             dateBasis: _t("Date = invoice date · Balance counted from"),
         };
     }

@@ -491,16 +491,30 @@ class DailyPurchaseReportCase(TransactionCase):
         self.assertEqual(payment.state, 'paid')
         return payment
 
-    def _osama_journal(self):
+    def _custody_account(self):
         account = self.env['account.account'].create({
-            'name': 'Representative Petty Cash | عهدة مندوبي المشتريات',
-            'code': 'DPR199', 'account_type': 'asset_current',
-            'company_ids': [Command.set(self.company.ids)],
+            'name': 'Daily report custody ledger', 'code': 'DPR199', 'account_type': 'asset_current',
+            'reconcile': True, 'company_ids': [Command.set(self.company.ids)],
         })
-        journal = self.env['account.journal'].create({
-            'name': 'عهدة أسامة', 'code': 'OSMC', 'type': 'cash',
-            'company_id': self.company.id, 'default_account_id': account.id,
+        self.company.sudo().baseer_procurement_representative_petty_cash_account_id = account
+        return account
+
+    def _osama_journal(self):
+        """A representative custody journal mapped by configuration, with a neutral name."""
+        account = self._custody_account()
+        representative = self.env['res.partner'].with_company(self.company).create({
+            'name': 'Daily report representative',
         })
+        representative.with_company(self.company).is_purchase_representative = True
+        journal = self.env['account.journal'].search([
+            ('company_id', '=', self.company.id), ('baseer_custody_representative_id', '=', representative.id),
+        ], limit=1)
+        if not journal:
+            journal = self.env['account.journal'].create({
+                'name': 'Representative ledger', 'code': 'DPRC', 'type': 'cash',
+                'company_id': self.company.id, 'default_account_id': account.id,
+                'baseer_custody_representative_id': representative.id,
+            })
         (journal.outbound_payment_method_line_ids | journal.inbound_payment_method_line_ids).write({
             'payment_account_id': account.id,
         })
@@ -557,20 +571,17 @@ class DailyPurchaseReportCase(TransactionCase):
         with self.assertRaises(ValidationError):
             report.get_days('2099-09-15', '2099-09-15', 'all', 'made_up')
 
-    def test_osama_settlement_entry_and_1994_account(self):
+    def test_custody_settlement_entry_uses_configured_custody_account(self):
         bill = self._bill(25, day='2099-09-16')
-        custody = self.env['account.account'].create({
-            'name': 'Custody 1994', 'code': 'DPR194', 'account_type': 'asset_current',
-            'company_ids': [Command.set(self.company.ids)],
-        })
+        custody = self._custody_account()
         entry = self.env['account.move'].create({
             'move_type': 'entry', 'company_id': self.company.id,
             'journal_id': self.settlement_journal.id, 'date': bill.invoice_date,
-            'ref': 'تسوية عهدة أسامة',
+            'ref': 'Neutral settlement reference',
             'line_ids': [
                 Command.create({'name': 'Supplier payable', 'account_id': self.payable.id,
                                 'partner_id': self.partner.id, 'debit': 25, 'credit': 0}),
-                Command.create({'name': 'عهدة أسامة', 'account_id': custody.id,
+                Command.create({'name': 'Representative custody', 'account_id': custody.id,
                                 'debit': 0, 'credit': 25}),
             ],
         })
@@ -583,12 +594,34 @@ class DailyPurchaseReportCase(TransactionCase):
         self.assertEqual(payload['methods'][0]['key'], 'osama')
         self.assertEqual(payload['methods'][0]['count'], 1)
 
-        numbered = self._bill(15, day='2099-09-17')
-        journal = self._bank_journal('Personal custody', 'PERS', acc_number='SA0000000000000000001994')
-        self._pay(numbered, journal)
-        card = report.get_days('2099-09-17', '2099-09-17', 'all')['methods'][0]
-        self.assertEqual(card['key'], 'osama')
-        self.assertEqual(card['total'], '15.00')
+    def test_custody_names_references_and_1994_numbers_are_not_custody(self):
+        """Only configuration identifies custody; look-alike text never does."""
+        named = self._bank_journal('عهدة أسامة', 'DPRN')
+        numbered = self._bank_journal('Personal custody', 'PERS', acc_number='SA0000000000000000001994')
+        cash = self._cash_journal()
+        named_bill = self._bill(10, day='2099-09-17')
+        numbered_bill = self._bill(15, day='2099-09-17')
+        ref_bill = self._bill(20, day='2099-09-17')
+        self._pay(named_bill, named)
+        self._pay(numbered_bill, numbered)
+        payment = self._pay(ref_bill, cash)
+        payment.move_id.ref = 'OSAMA 123 عهدة مندوبي المشتريات'
+        report = self._report('cashier')
+        methods = {card['key']: card for card in report.get_days('2099-09-17', '2099-09-17', 'all')['methods']}
+        self.assertNotIn('osama', methods)
+        self.assertEqual(methods[f'journal:{named.id}']['total'], '10.00')
+        self.assertEqual(methods[f'journal:{numbered.id}']['total'], '15.00')
+        self.assertEqual(methods['cash']['total'], '20.00')
+
+    def test_custody_journal_is_recognised_for_roles_without_journal_field_access(self):
+        osama = self._osama_journal()
+        bill = self._bill(30, day='2099-09-20')
+        self._pay(bill, osama)
+        for role in ('cashier', 'accountant', 'owner'):
+            methods = {card['key']: card for card in self._report(role).get_days(
+                '2099-09-20', '2099-09-20', 'all')['methods']}
+            self.assertEqual(methods['osama']['count'], 1, role)
+            self.assertEqual(methods['osama']['total'], '30.00', role)
 
     def test_draft_card_excludes_unpaid_and_drops_unapproved(self):
         draft = self._bill(80, day='2099-09-18', post=False)

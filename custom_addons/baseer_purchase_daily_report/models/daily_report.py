@@ -194,8 +194,7 @@ class PurchaseDailyReport(models.AbstractModel):
         counterparts = partials.mapped('debit_move_id') | partials.mapped('credit_move_id')
         moves = counterparts.mapped('move_id')
         moves.mapped('line_ids.account_id')
-        moves.mapped('line_ids.partner_id')
-        moves.mapped('journal_id.bank_account_id')
+        moves.mapped('journal_id')
 
     @api.model
     def _method_key_valid(self, key):
@@ -209,31 +208,26 @@ class PurchaseDailyReport(models.AbstractModel):
         return False
 
     @api.model
-    def _text_blob(self, *parts):
-        return ' '.join(str(part or '') for part in parts)
+    def _custody_accounts(self, company):
+        """Representative custody ledger accounts configured on the bill's company."""
+        company = company.sudo()
+        return (company.baseer_procurement_representative_petty_cash_account_id
+                | company.baseer_procurement_custody_account_id)
 
     @api.model
-    def _is_osama_settlement(self, journal, move, accounts, line_partners):
-        """Osama custody: his journal/account, account ending 1994, or a settlement in his name."""
-        bank = journal.bank_account_id
-        numbers = self._text_blob(getattr(bank, 'acc_number', ''), getattr(bank, 'sanitized_acc_number', ''))
-        names = self._text_blob(
-            journal.display_name, journal.name, journal.code,
-            move.ref, move.narration if 'narration' in move._fields else '',
-            *[account.display_name for account in accounts],
-            *[account.name for account in accounts],
-            *[partner.display_name for partner in line_partners],
-            *[partner.name for partner in line_partners],
-        )
-        lowered = names.casefold()
-        if 'عهدة أسامة' in names or 'أسامة' in names or 'osama' in lowered:
+    def _is_custody_settlement(self, journal, accounts, custody_accounts):
+        """Representative custody, identified from configuration rather than names.
+
+        A bill is paid from custody when its counterpart is posted in a cash/bank
+        journal assigned to a purchase representative
+        (``account.journal.baseer_custody_representative_id``), or when the
+        counterpart entry uses the company's representative custody account
+        (custody settlements). Journal names, references, partner names, and bank
+        account numbers are not used.
+        """
+        if journal.sudo().baseer_custody_representative_id:
             return True
-        if 'عهدة مندوبي' in names or 'representative petty cash' in lowered:
-            return True
-        compact = ''.join(character for character in numbers if character.isdigit())
-        if compact.endswith('1994') or '1994' in numbers:
-            return True
-        return False
+        return bool(custody_accounts and accounts & custody_accounts)
 
     @api.model
     def _settlement_counterparts(self, bill):
@@ -262,13 +256,11 @@ class PurchaseDailyReport(models.AbstractModel):
                 seen.add(key)
                 methods.append({'key': key, 'label': label})
 
+        custody_accounts = self._custody_accounts(bill.company_id)
         for other in self._settlement_counterparts(bill):
             journal = other.journal_id
             accounts = other.line_ids.mapped('account_id')
-            liquidity_partners = other.line_ids.filtered(
-                lambda line: line.account_id.account_type in ('asset_cash', 'asset_current')
-            ).mapped('partner_id')
-            if self._is_osama_settlement(journal, other, accounts, liquidity_partners):
+            if self._is_custody_settlement(journal, accounts, custody_accounts):
                 add('osama', osama_label)
                 continue
             if journal.type == 'cash':

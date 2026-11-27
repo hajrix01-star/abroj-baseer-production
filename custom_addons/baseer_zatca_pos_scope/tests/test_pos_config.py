@@ -1,7 +1,4 @@
-from unittest.mock import patch
-
-from odoo.addons.l10n_sa_edi_pos.models.pos_config import PosConfig as L10nSaEdiPosConfig
-from odoo.addons.l10n_sa_pos.models.pos_config import PosConfig as L10nSaPosConfig
+from odoo.addons.baseer_zatca_pos_scope.models.pos_config import PosConfig as ScopePosConfig
 from odoo.exceptions import AccessError
 from odoo.tests.common import TransactionCase, tagged
 
@@ -19,35 +16,31 @@ class TestZatcaPosScope(TransactionCase):
         payload = config._load_pos_data_read(config, config)
         self.assertTrue(payload[0]['baseer_zatca_phase2_enabled'])
 
-    def test_disabled_scope_bypasses_only_the_native_zatca_opening_gate(self):
-        config = self._new_config()
-        config.baseer_zatca_phase2_enabled = False
-        expected_action = {'type': 'ir.actions.act_url', 'url': '/pos/test'}
-
-        # The method immediately below Odoo's EDI guard is patched so this
-        # regression test proves the disabled path reaches the normal POS
-        # opening chain without opening a real session.
-        with patch.object(L10nSaPosConfig, 'open_ui', return_value=expected_action) as open_ui:
-            self.assertEqual(config.open_ui(), expected_action)
-        open_ui.assert_called_once_with()
-
-    def test_enabled_scope_keeps_the_native_zatca_opening_gate(self):
-        config = self._new_config()
-        config.baseer_zatca_phase2_enabled = True
-        expected_action = {'type': 'ir.actions.act_url', 'url': '/pos/test'}
-
-        with patch.object(L10nSaEdiPosConfig, 'open_ui', return_value=expected_action) as open_ui:
-            self.assertEqual(config.open_ui(), expected_action)
-        open_ui.assert_called_once_with()
+    def test_scope_does_not_override_pos_opening(self):
+        # Opening a POS goes through the full native MRO: Odoo's own ZATCA
+        # journal gate (only for journals with the sa_zatca format) and every
+        # other module's guard, e.g. baseer_pos_summary.
+        self.assertNotIn('open_ui', vars(ScopePosConfig))
 
     def test_disabled_scope_preserves_other_pos_opening_guards(self):
         config = self._new_config()
         if 'baseer_summary_only' not in config._fields:
             self.skipTest('baseer_pos_summary is not installed in this test database')
-
-        config.write({
-            'baseer_zatca_phase2_enabled': False,
-            'baseer_summary_only': True,
-        })
-        with self.assertRaises(AccessError):
-            config.open_ui()
+        # Only one summary-only POS may exist per company (archived ones
+        # count). A database copied from Live already has it: use that one.
+        summary = self.env['pos.config'].with_context(active_test=False).search([
+            ('company_id', '=', config.company_id.id),
+            ('baseer_summary_only', '=', True),
+        ], limit=1)
+        if summary:
+            config = summary
+            config.write({'baseer_zatca_phase2_enabled': False})
+        else:
+            config.write({
+                'baseer_zatca_phase2_enabled': False,
+                'baseer_summary_only': True,
+            })
+        self.assertFalse(config.baseer_zatca_phase2_enabled)
+        # baseer_pos_summary's own guard must answer, not a later session check.
+        with self.assertRaisesRegex(AccessError, 'External Sales Summaries'):
+            config.with_context(lang='en_US').open_ui()

@@ -58,6 +58,7 @@ jobs:
           pos=/usr/lib/python3/dist-packages/odoo/addons/point_of_sale/static/src
           docker cp "$container_id:$pos/app/models/related_models/." tmp/odoo_related_models/
           docker cp "$container_id:$pos/proxy_trap.js" tmp/odoo_proxy_trap.js
+          docker cp "$container_id:/usr/lib/python3/dist-packages/odoo/addons/web/static/lib/luxon/luxon.js" tmp/odoo_luxon.js
           docker cp "$container_id:$pos/lazy_getter.js" tmp/odoo_lazy_getter.js
           docker cp "$container_id:$pos/app/models/related_models/index.js" tmp/pos-discount-native-related-models.js
           docker cp "$container_id:$pos/app/services/pos_store.js" tmp/pos-discount-native-pos-store.js
@@ -71,7 +72,7 @@ jobs:
           node --test tests/receipt_image.test.mjs
           node --test custom_addons/baseer_pos_print_bridge/static/tests/session_report.test.mjs custom_addons/baseer_pos_print_bridge/tests/session_ticket.test.mjs
           node --test custom_addons/baseer_pos_cache_resilience/static/tests/cache_resilience.test.mjs
-          node --test custom_addons/baseer_zatca_pos_scope/static/tests/pos_scope.test.mjs custom_addons/baseer_zatca_pos_scope/static/tests/phase1_qr.test.mjs
+          node --test custom_addons/baseer_zatca_pos_scope/static/tests/pos_scope.test.mjs custom_addons/baseer_zatca_pos_scope/static/tests/phase1_qr.test.mjs custom_addons/baseer_zatca_pos_scope/static/tests/phase1_qr_luxon.test.mjs
       - name: Test native synchronization, kitchen, payment and merge boundaries
         shell: bash
         run: |

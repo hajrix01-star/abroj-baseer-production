@@ -533,7 +533,7 @@ export class Dashboard2 extends Component {
       if (!m.companies.some((c) => c.key === this.state.company))
         this.state.company = m.default_company_key;
       if (!this.state.period || !["today", "yesterday", "month", "year", "date", "range"].includes(this.state.period.mode)) {
-        this.state.period = m.default_period || { mode: "today", date: m.today, month: m.today.slice(0, 7), year: Number(m.today.slice(0, 4)), date_from: m.today, date_to: m.today };
+        this.state.period = this.normalizePeriod(m.default_period || { mode: "yesterday" }, m);
       } else {
         this.state.period = this.normalizePeriod(this.state.period, m);
       }

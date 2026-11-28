@@ -145,11 +145,13 @@ class DashboardService(models.AbstractModel):
             months = [fields.Date.to_string(row[0])[:7] for row in rows if row[0]]
             last = max((row[1] for row in rows if row[1]), default=False)
         today = fields.Date.context_today(self)
+        yesterday = today - timedelta(days=1)
         previous_month = (today.replace(day=1) - timedelta(days=1)).strftime('%Y-%m')
         default_month = previous_month
         today_str = fields.Date.to_string(today)
-        default_period = {'mode': 'today', 'date': today_str, 'month': today_str[:7], 'year': today.year,
-                          'date_from': today_str, 'date_to': today_str}
+        yesterday_str = fields.Date.to_string(yesterday)
+        default_period = {'mode': 'yesterday', 'date': yesterday_str, 'month': yesterday_str[:7], 'year': yesterday.year,
+                          'date_from': yesterday_str, 'date_to': yesterday_str}
         return {'pnl_default_view': PNL_DEFAULT_VIEW, 'default_month': default_month, 'default_period': default_period,
                 'companies': options, 'default_company_key': str(self.env.company.id if self.env.company.id in ids else ids[0]) if ids else False,
                 'months_available': months, 'years_available': sorted({int(m[:4]) for m in months}, reverse=True) or [today.year],

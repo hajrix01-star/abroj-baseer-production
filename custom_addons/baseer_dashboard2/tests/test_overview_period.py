@@ -16,15 +16,22 @@ class TestOverviewPeriod(TransactionCase):
         self.env['ir.config_parameter'].set_param('baseer_dashboard2.company_map', '%s:Test' % company.id)
         return service, company
 
-    def test_default_period_is_today(self):
+    def test_default_period_is_yesterday(self):
         service, company = self._service()
         meta = service.get_meta()
-        today = fields.Date.to_string(fields.Date.context_today(service))
-        previous = (fields.Date.context_today(service).replace(day=1) - timedelta(days=1)).strftime('%Y-%m')
+        today = fields.Date.context_today(service)
+        today_str = fields.Date.to_string(today)
+        yesterday = today - timedelta(days=1)
+        yesterday_str = fields.Date.to_string(yesterday)
+        previous = (today.replace(day=1) - timedelta(days=1)).strftime('%Y-%m')
         self.assertEqual(meta['default_month'], previous)
-        self.assertEqual(meta['default_period']['mode'], 'today')
-        self.assertEqual(meta['default_period']['date'], today)
-        self.assertEqual(meta['today'], today)
+        self.assertEqual(meta['default_period']['mode'], 'yesterday')
+        self.assertEqual(meta['default_period']['date'], yesterday_str)
+        self.assertEqual(meta['default_period']['date_from'], yesterday_str)
+        self.assertEqual(meta['default_period']['date_to'], yesterday_str)
+        self.assertEqual(meta['default_period']['month'], yesterday_str[:7])
+        self.assertEqual(meta['default_period']['year'], yesterday.year)
+        self.assertEqual(meta['today'], today_str)
         self.assertNotIn(54, [c.get('id') for c in meta['companies']])
         self.assertNotIn(56, [c.get('id') for c in meta['companies']])
 

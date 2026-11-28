@@ -4,6 +4,8 @@
         <field name="name">baseer.pos.daily.report.form</field><field name="model">baseer.pos.daily.report</field>
         <field name="arch" type="xml"><form string="Daily sales and customers" delete="0" duplicate="0">
             <header><button name="action_generate" type="object" string="Show report" class="oe_highlight"/>
+                <button name="action_export_pdf" type="object" string="Export PDF" icon="fa-file-pdf-o"/>
+                <button name="action_export_xlsx" type="object" string="Export Excel" icon="fa-file-excel-o"/>
                 <button name="action_timeline" type="object" string="Daily timeline" icon="fa-line-chart" invisible="not generated or not operating_days"/>
             </header><sheet>
                 <field name="currency_id" invisible="1"/><field name="generated" invisible="1"/>

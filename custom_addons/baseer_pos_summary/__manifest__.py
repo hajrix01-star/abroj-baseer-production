@@ -1,11 +1,12 @@
 {
     'name': 'Baseer POS Sales Summaries',
     'author': 'Baseer',
-    'version': '19.0.1.6.4',
+    'version': '19.0.1.7.0',
     'summary': 'External sales summaries with native POS accounting and manual WhatsApp sharing',
     'category': 'Sales/Point of Sale',
     'license': 'LGPL-3',
     'depends': ['point_of_sale', 'baseer_cash_categories', 'baseer_company_setup'],
+    'external_dependencies': {'python': ['xlsxwriter']},
     'data': [
         'security/security.xml',
         'security/ir.model.access.csv',
@@ -14,6 +15,7 @@
         'views/allocation_views.xml',
         'views/operations_views.xml',
         'views/daily_report_views.xml',
+        'report/daily_sales_report.xml',
         'views/day_entry_views.xml',
         'views/day_archive_views.xml',
         'views/correction_views.xml',

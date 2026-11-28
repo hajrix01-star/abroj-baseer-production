@@ -21,14 +21,68 @@ class DashboardSales(models.AbstractModel):
                 return channel
         return {'key': 'other', 'kind': 'hall', 'name': 'أخرى', 'color_token': False, 'commission_rate': 0}
 
+    def _summary_config_ids(self, ids):
+        """POS configs that only carry daily sales summaries (not real tickets)."""
+        context = {'allowed_company_ids': ids, 'active_test': False}
+        settings = self.env['baseer.dashboard2.settings'].with_context(**context).search([('company_id', 'in', ids)])
+        configs = self.env['pos.config'].with_context(**context).search([('company_id', 'in', ids)])
+        summary_ids = set(settings.mapped('summary_pos_config_ids').ids)
+        summary_ids.update(c.id for c in configs if any(word in (c.name or '').casefold() for word in ('ملخص المبيعات', 'sales summaries', 'ملخصات')))
+        return summary_ids
+
+    def _riyadh_window(self, start, end):
+        """UTC bounds of the Riyadh calendar days start..end (inclusive)."""
+        tz = pytz.timezone('Asia/Riyadh')
+        return (tz.localize(datetime.combine(start, time.min)).astimezone(pytz.UTC).replace(tzinfo=None),
+                tz.localize(datetime.combine(end + timedelta(days=1), time.min)).astimezone(pytz.UTC).replace(tzinfo=None))
+
+    def _session_day_domain(self, first, last):
+        """POS orders whose session was opened on Riyadh day first..last.
+
+        A session without an opening time (never opened through the POS) falls back to the order time.
+        """
+        utc_first, utc_end = self._riyadh_window(first, last)
+        return ['|',
+                '&', ('session_id.start_at', '>=', utc_first), ('session_id.start_at', '<', utc_end),
+                '&', ('session_id.start_at', '=', False), '&', ('date_order', '>=', utc_first), ('date_order', '<', utc_end)]
+
+    @request_memo
+    def _posted_pos_sessions(self, ids, start, end):
+        """Real POS sessions with a posted closing entry, keyed by their opening day (Asia/Riyadh).
+
+        Returns {session_id: (company_id, day, move_id)}. The day is the Riyadh calendar day of
+        pos.session.start_at, so a shift closed after midnight stays entirely on the day it opened.
+        Sessions without start_at fall back to the closing entry date.
+        """
+        tz = pytz.timezone('Asia/Riyadh')
+        utc_start, utc_end = self._riyadh_window(start, end)
+        summary_ids = self._summary_config_ids(ids)
+        sessions = self.env['pos.session'].with_context(allowed_company_ids=ids, tz='Asia/Riyadh').search([
+            ('company_id', 'in', ids), ('move_id.state', '=', 'posted'), ('config_id', 'not in', list(summary_ids)),
+            '|',
+            '&', ('start_at', '>=', utc_start), ('start_at', '<', utc_end),
+            '&', ('start_at', '=', False), '&', ('move_id.date', '>=', start), ('move_id.date', '<=', end)])
+        result = {}
+        for session in sessions:
+            if session.start_at:
+                day = session.start_at.replace(tzinfo=pytz.UTC).astimezone(tz).date()
+            else:
+                day = session.move_id.date
+            result[session.id] = (session.company_id.id, day, session.move_id.id)
+        return result
+
+    def _has_pos_session_closings(self, ids, start, end):
+        """True when a real POS session has its closing entry posted in start..end (by entry date)."""
+        summary_ids = self._summary_config_ids(ids)
+        return bool(self.env['pos.session'].with_context(allowed_company_ids=ids).search_count([
+            ('company_id', 'in', ids), ('move_id.state', '=', 'posted'), ('config_id', 'not in', list(summary_ids)),
+            ('move_id.date', '>=', start), ('move_id.date', '<=', end)]))
+
     def _customer_orders_domain(self, ids, start, end):
         context = {'allowed_company_ids': ids, 'active_test': False}
         settings = self.env['baseer.dashboard2.settings'].with_context(**context).search([('company_id', 'in', ids)])
         by_company = {s.company_id.id: s for s in settings}
-        configs = self.env['pos.config'].with_context(**context).search([('company_id', 'in', ids)])
-        summary_ids = set(settings.mapped('summary_pos_config_ids').ids)
-        summary_ids.update(c.id for c in configs if any(word in (c.name or '').casefold() for word in ('ملخص المبيعات', 'sales summaries', 'ملخصات')))
-        tz = pytz.timezone('Asia/Riyadh')
+        summary_ids = self._summary_config_ids(ids)
         branches = []
         for cid in ids:
             setting = by_company.get(cid)
@@ -36,10 +90,7 @@ class DashboardSales(models.AbstractModel):
             if first > end:
                 continue
             threshold = setting.min_order_amount if setting else 1.5
-            utc_first = tz.localize(datetime.combine(first, time.min)).astimezone(pytz.UTC).replace(tzinfo=None)
-            utc_end = tz.localize(datetime.combine(end + timedelta(days=1), time.min)).astimezone(pytz.UTC).replace(tzinfo=None)
-            branches.append(expression.AND([[('company_id', '=', cid), ('date_order', '>=', utc_first),
-                                              ('date_order', '<', utc_end)],
+            branches.append(expression.AND([[('company_id', '=', cid)], self._session_day_domain(first, end),
                                              expression.OR([[('amount_total', '>', threshold)], [('amount_total', '<', -threshold)]])]))
         return expression.AND([[('company_id', 'in', ids), ('state', 'in', ('paid', 'done', 'invoiced')),
                                 ('config_id', 'not in', list(summary_ids))],
@@ -48,8 +99,9 @@ class DashboardSales(models.AbstractModel):
     def _customer_hour_domain(self, ids, start, end, weekday, hour):
         tz = pytz.timezone('Asia/Riyadh')
         intervals = []
+        # An overnight shift opened on `end` has tickets on the next clock day; the order domain keeps them.
         day = start
-        while day <= end:
+        while day <= end + timedelta(days=1):
             if day.weekday() == weekday:
                 local_start = tz.localize(datetime.combine(day, time(hour)))
                 first = local_start.astimezone(pytz.UTC).replace(tzinfo=None)
@@ -63,8 +115,6 @@ class DashboardSales(models.AbstractModel):
         """Select revenue by cutover; retain qualifying real POS orders for metrics."""
         context = dict(allowed_company_ids=ids, tz='Asia/Riyadh')
         tz = pytz.timezone(context['tz'])
-        utc_start = tz.localize(datetime.combine(start, time.min)).astimezone(pytz.UTC).replace(tzinfo=None)
-        utc_end = tz.localize(datetime.combine(end + timedelta(days=1), time.min)).astimezone(pytz.UTC).replace(tzinfo=None)
         arabic_lang = 'ar_001' if self.env['res.lang']._get_data(code='ar_001').code else self.env.lang
         channels = self.env['baseer.dashboard2.channel'].with_context(**dict(context, lang=arabic_lang)).search_read([], ['name', 'key', 'kind', 'color_token', 'line_keywords', 'pos_method_keywords', 'commission_rate'], order='sequence,id')
         defaults = {'cash': 'cash,نقد,نقدي,كاش', 'card': 'bank,card,mada,مدى,شبكة,بنك',
@@ -83,10 +133,13 @@ class DashboardSales(models.AbstractModel):
         configs = self.env['pos.config'].with_context(**dict(context, active_test=False)).search([('company_id', 'in', ids)])
         summary_ids = set(settings.mapped('summary_pos_config_ids').ids)
         summary_ids.update(c.id for c in configs if any(word in (c.name or '').casefold() for word in ('ملخص المبيعات', 'sales summaries', 'ملخصات')))
+        # Tickets belong to the day their POS session was opened (Asia/Riyadh), not to their own clock day.
         orders = raw_rows(self.env['pos.order'].with_context(**context), [
-            ('company_id', 'in', ids), ('state', 'in', ('paid', 'done', 'invoiced')),
-            ('date_order', '>=', utc_start), ('date_order', '<', utc_end)],
-            ['company_id', 'date_order', 'amount_total', 'config_id'], limit=200001)
+            ('company_id', 'in', ids), ('state', 'in', ('paid', 'done', 'invoiced'))] + self._session_day_domain(start, end),
+            ['company_id', 'date_order', 'amount_total', 'config_id', 'session_id'], limit=200001)
+        session_open = {row['id']: row['start_at'] for row in raw_rows(
+            self.env['pos.session'].with_context(**context), [('id', 'in', list({o['session_id'] for o in orders if o['session_id']}))],
+            ['start_at'])} if orders else {}
         qualifying_ids = set(self.env['pos.order'].with_context(**context).search(self._customer_orders_domain(ids, start, end)).ids)
         if len(orders) > 200000:
             raise UserError(_('The selected period contains more than 200,000 POS orders.'))
@@ -99,7 +152,8 @@ class DashboardSales(models.AbstractModel):
         hours = defaultdict(lambda: {'orders': 0, 'gross': 0.0})
         for order in orders:
             local = fields.Datetime.to_datetime(order['date_order']).replace(tzinfo=pytz.UTC).astimezone(tz)
-            key = (order['company_id'], local.date())
+            opened = session_open.get(order['session_id'])
+            key = (order['company_id'], fields.Datetime.to_datetime(opened).replace(tzinfo=pytz.UTC).astimezone(tz).date() if opened else local.date())
             if order['config_id'] and order['config_id'] in summary_ids:
                 continue
             day = pos_days.setdefault(key, {'source': 'pos', 'channels': defaultdict(float), 'customers': 0, 'pos_gross': 0.0})
@@ -124,7 +178,9 @@ class DashboardSales(models.AbstractModel):
         real_order_moves = {row['account_move'] for row in raw_rows(self.env['pos.order'].with_context(**context), [
             ('company_id', 'in', ids), ('account_move', 'in', list(move_map)),
             ('config_id', 'not in', list(summary_ids))], ['account_move']) if row['account_move']} if move_map else set()
-        session_keys = {session.id: (session.company_id.id, session.move_id.date) for session in real_sessions}
+        # Sales of a posted session land entirely on the day it was opened, even when it closed after midnight.
+        dated_sessions = self._posted_pos_sessions(ids, start, end)
+        session_keys = {session_id: (company_id, day) for session_id, (company_id, day, _move_id) in dated_sessions.items()}
         posted_days = set(session_keys.values())
         posted_orders = raw_rows(self.env['pos.order'].with_context(**context), [
             ('session_id', 'in', list(session_keys)), ('state', 'in', ('paid', 'done', 'invoiced'))],

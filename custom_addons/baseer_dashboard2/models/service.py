@@ -175,6 +175,8 @@ class DashboardService(models.AbstractModel):
             mode = period.get('mode') or 'today'
             if mode == 'today':
                 start = end = today
+            elif mode == 'yesterday':
+                start = end = today - timedelta(days=1)
             elif mode == 'date':
                 start = end = date.fromisoformat(period['date'])
             elif mode == 'month':
@@ -199,7 +201,7 @@ class DashboardService(models.AbstractModel):
     def _comparison_bounds(self, start, end, mode, kind):
         if kind == 'previous_year':
             return self._shift_years(start, -1), self._shift_years(end, -1)
-        if mode in ('today', 'date'):
+        if mode in ('today', 'date', 'yesterday'):
             day = self._shift_months(start, -1)
             return day, day
         if mode == 'year':

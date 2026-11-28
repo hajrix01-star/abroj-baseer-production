@@ -735,3 +735,27 @@ msgstr "بنك"
 #: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
 msgid "Custody fund"
 msgstr "العهدة"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Export PDF"
+msgstr "تصدير PDF"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Export Excel"
+msgstr "تصدير Excel"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Preparing the file…"
+msgstr "جاري تجهيز الملف…"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "We could not export this report. Please try again."
+msgstr "ما قدرنا نصدّر التقرير. حاول مرة ثانية."

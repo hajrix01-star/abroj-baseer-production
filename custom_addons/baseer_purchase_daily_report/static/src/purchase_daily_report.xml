@@ -58,8 +58,20 @@
                 <t t-else="">
                     <header class="bpr-header">
                         <div class="bpr-heading"><h1 t-esc="labels.title"/><p t-esc="labels.subtitle"/></div>
-                        <div t-if="state.payload" class="bpr-company"><span class="bpr-company-icon"><i class="fa fa-building-o" aria-hidden="true"/></span><strong t-esc="state.payload.company.name"/></div>
+                        <div class="bpr-header-side">
+                            <div t-if="state.payload" class="bpr-company"><span class="bpr-company-icon"><i class="fa fa-building-o" aria-hidden="true"/></span><strong t-esc="state.payload.company.name"/></div>
+                            <div t-if="state.applied" class="bpr-export">
+                                <button type="button" class="bpr-export-btn" t-on-click="exportPdf" t-att-disabled="state.loading or state.exporting">
+                                    <i class="fa fa-file-pdf-o" aria-hidden="true"/> <span t-esc="labels.exportPdf"/>
+                                </button>
+                                <button type="button" class="bpr-export-btn" t-on-click="exportXlsx" t-att-disabled="state.loading or state.exporting">
+                                    <i class="fa fa-file-excel-o" aria-hidden="true"/> <span t-esc="labels.exportExcel"/>
+                                </button>
+                            </div>
+                        </div>
                     </header>
+                    <div t-if="state.exporting" class="bpr-feedback bpr-feedback--compact" role="status" aria-live="polite"><span class="bpr-spinner"/> <span t-esc="labels.exporting"/></div>
+                    <div t-if="state.exportError" class="bpr-feedback bpr-feedback--error bpr-feedback--compact" role="alert"><span t-esc="state.exportError"/></div>
                     <form class="bpr-filter" t-on-submit.prevent="applyFilters">
                         <nav class="bpr-presets" t-att-aria-label="labels.datePresets">
                             <button type="button" t-foreach="presets" t-as="preset" t-key="preset" t-attf-class="bpr-preset {{isPresetActive(preset) ? 'bpr-preset--active' : ''}}" t-on-click="() => this.applyPreset(preset)" t-esc="presetLabels[preset]"/>

@@ -4,6 +4,7 @@ from . import pos_native
 from . import cash_report
 from . import operations
 from . import daily_report
+from . import daily_report_export
 from . import day_entry
 from . import day_archive
 from . import accounting

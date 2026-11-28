@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="paperformat_daily_purchases_landscape" model="report.paperformat">
+        <field name="name">Baseer Daily Purchases A4 Portrait</field>
+        <field name="default" eval="False"/>
+        <field name="format">A4</field>
+        <field name="orientation">Portrait</field>
+        <field name="margin_top">10</field>
+        <field name="margin_bottom">12</field>
+        <field name="margin_left">8</field>
+        <field name="margin_right">8</field>
+        <field name="header_line" eval="False"/>
+        <field name="header_spacing">0</field>
+    </record>
+
+    <record id="action_daily_purchases_pdf" model="ir.actions.report">
+        <field name="name">Daily purchases / تقرير المشتريات اليومي</field>
+        <field name="model">baseer.purchase.daily.report</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">baseer_purchase_daily_report.daily_purchases_pdf</field>
+        <field name="report_file">baseer_purchase_daily_report.daily_purchases_pdf</field>
+        <field name="print_report_name">'daily-purchases'</field>
+        <field name="paperformat_id" ref="paperformat_daily_purchases_landscape"/>
+        <field name="binding_model_id" eval="False"/>
+    </record>
+
+    <template id="daily_purchases_pdf">
+        <t t-foreach="documents" t-as="snapshot">
+            <t t-set="arabic" t-value="snapshot['arabic']"/>
+            <main t-att-dir="'rtl' if arabic else 'ltr'">
+                <div class="article" t-att-data-oe-lang="'ar_001' if arabic else 'en_US'">
+                    <div class="page bpr-pdf" t-att-dir="'rtl' if arabic else 'ltr'">
+                        <style type="text/css">
+                            @font-face {
+                                font-family: 'Baseer Plex Arabic';
+                                src: url("<t t-esc="snapshot['font_regular']"/>") format('truetype');
+                                font-weight: 400;
+                                font-style: normal;
+                            }
+                            @font-face {
+                                font-family: 'Baseer Plex Arabic';
+                                src: url("<t t-esc="snapshot['font_bold']"/>") format('truetype');
+                                font-weight: 700;
+                                font-style: normal;
+                            }
+                            .bpr-pdf {font-family: 'Baseer Plex Arabic', 'DejaVu Sans', Arial, sans-serif; color: #25364b; font-size: 7px; letter-spacing: normal;}
+                            .bpr-pdf h1 {font-size: 14px; margin: 0 0 5px; font-weight: 700;}
+                            .bpr-pdf h2 {font-size: 10px; margin: 12px 0 6px; font-weight: 700;}
+                            .bpr-pdf .meta {color: #657487; line-height: 1.5; margin-bottom: 6px; border-bottom: 1px solid #d7dde2; padding-bottom: 5px;}
+                            .bpr-pdf .meta .filter {display: inline-block; margin-inline-end: 12px; margin-bottom: 2px;}
+                            .bpr-pdf .notice {color: #566a75; background: #f3effa; padding: 5px 6px; margin: 6px 0 8px;}
+                            .bpr-pdf .kpis {width: 100%; border-collapse: collapse; margin: 0 0 8px; table-layout: fixed;}
+                            .bpr-pdf .kpis th, .bpr-pdf .kpis td {padding: 3px 5px; border-bottom: 1px solid #e1e5e9; vertical-align: middle;}
+                            .bpr-pdf .kpis th {font-weight: 400; color: #566a75; width: 25%;}
+                            .bpr-pdf table.lines {width: 100%; border-collapse: collapse; table-layout: fixed;}
+                            .bpr-pdf thead {display: table-header-group;}
+                            .bpr-pdf tfoot {display: table-row-group;}
+                            .bpr-pdf tr {page-break-inside: avoid;}
+                            .bpr-pdf .lines th, .bpr-pdf .lines td {padding: 3px 3px; border-bottom: 1px solid #e1e5e9; vertical-align: top; white-space: normal; overflow-wrap: anywhere; word-wrap: break-word; word-break: break-word;}
+                            .bpr-pdf .lines th {font-weight: 600; background: #25364b; color: #fff; line-height: 1.25;}
+                            .bpr-pdf .lines .groups th {background: #3b4b5e; font-weight: 700;}
+                            .bpr-pdf .lines .groups th.custody {background: #6b3f68;}
+                            .bpr-pdf .col-date {width: 8%;}
+                            .bpr-pdf .col-count {width: 6%;}
+                            .bpr-pdf .col-number {width: 12%;}
+                            .bpr-pdf .col-vendor {width: 18%;}
+                            .bpr-pdf .col-status {width: 10%;}
+                            .bpr-pdf .col-money {width: 9%;}
+                            .bpr-pdf .text {white-space: normal; overflow-wrap: anywhere; word-wrap: break-word; word-break: break-word;}
+                            .bpr-pdf .numeric {direction: ltr; unicode-bidi: isolate; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums;}
+                            .bpr-pdf .empty {color: #b8c1ca;}
+                            .bpr-pdf .totals th, .bpr-pdf .totals td {background: #d9dde0; font-weight: 700; border-top: 1px solid #b6bfc7;}
+                            .bpr-pdf .transfer-row td {color: #566a75;}
+                            .bpr-pdf .bills {margin-top: 12px;}
+                            .footer {font-family: 'Baseer Plex Arabic', 'DejaVu Sans', Arial, sans-serif; font-size: 7px; color: #657487; border-top: 1px solid #d9dfe4; padding-top: 4px; letter-spacing: normal;}
+                        </style>
+                        <h1 t-esc="snapshot['title']"/>
+                        <div class="meta">
+                            <t t-foreach="snapshot['filters']" t-as="item">
+                                <span class="filter">
+                                    <t t-esc="item['label']"/>:
+                                    <bdi t-esc="item['value']"/>
+                                </span>
+                            </t>
+                            <div>
+                                <t t-esc="'أُنشئ في' if arabic else 'Generated at'"/>:
+                                <bdi t-esc="snapshot['generated_at']"/>
+                            </div>
+                        </div>
+                        <table class="kpis">
+                            <t t-foreach="snapshot['kpi_rows']" t-as="kpi_row">
+                                <tr>
+                                    <t t-foreach="kpi_row" t-as="kpi">
+                                        <th t-esc="kpi['label']"/>
+                                        <td class="numeric">
+                                            <t t-if="kpi['value'] is None">—</t>
+                                            <t t-elif="kpi['kind'] == 'money'">
+                                                <bdi t-esc="'{:,.2f}'.format(kpi['value'])"/>
+                                            </t>
+                                            <t t-else="">
+                                                <bdi t-esc="'{:,}'.format(kpi['value'])"/>
+                                            </t>
+                                        </td>
+                                    </t>
+                                </tr>
+                            </t>
+                        </table>
+                        <table class="lines">
+                            <colgroup>
+                                <col t-foreach="snapshot['columns']" t-as="column" t-att-class="'col-%s' % ('money' if column['kind'] == 'money' else column['key'])"/>
+                            </colgroup>
+                            <thead>
+                                <tr t-if="snapshot['show_custody']" class="groups">
+                                    <th t-att-colspan="snapshot['purchase_colspan']" t-esc="snapshot['group_purchases']"/>
+                                    <th colspan="2" class="custody" t-esc="snapshot['group_custody']"/>
+                                </tr>
+                                <tr>
+                                    <th t-foreach="snapshot['columns']" t-as="column" t-att-class="'col-%s%s' % ('money' if column['kind'] == 'money' else column['key'], ' numeric' if column['kind'] in ('money', 'count') else ' text')" t-esc="column['label']"/>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="snapshot['rows']" t-as="line" t-att-class="'transfer-row' if line['kind'] == 'transfer' else None">
+                                    <td class="col-date text"><bdi t-esc="line['date']"/></td>
+                                    <td t-if="line['count'] is not None" class="col-count numeric"><bdi t-esc="'{:,}'.format(line['count'])"/></td>
+                                    <td t-else="" class="col-count numeric empty">—</td>
+                                    <t t-foreach="snapshot['method_columns']" t-as="column">
+                                        <td t-if="line['amounts'].get(column['key']) is not None" class="col-money numeric">
+                                            <bdi t-esc="'{:,.2f}'.format(line['amounts'][column['key']])"/>
+                                        </td>
+                                        <td t-else="" class="col-money numeric empty">—</td>
+                                    </t>
+                                    <td t-if="line['total'] is not None" class="col-money numeric"><bdi t-esc="'{:,.2f}'.format(line['total'])"/></td>
+                                    <td t-else="" class="col-money numeric empty">—</td>
+                                    <t t-if="snapshot['show_custody']">
+                                        <td t-if="line['transfer'] is not None" class="col-money numeric"><bdi t-esc="'{:,.2f}'.format(line['transfer'])"/></td>
+                                        <td t-else="" class="col-money numeric empty">—</td>
+                                        <td t-if="line['balance'] is not None" class="col-money numeric"><bdi t-esc="'{:,.2f}'.format(line['balance'])"/></td>
+                                        <td t-else="" class="col-money numeric empty">—</td>
+                                    </t>
+                                </tr>
+                                <tr class="totals">
+                                    <td class="col-date text" t-esc="snapshot['totals']['label']"/>
+                                    <td class="col-count numeric"><bdi t-esc="'{:,}'.format(snapshot['totals']['count'])"/></td>
+                                    <t t-foreach="snapshot['method_columns']" t-as="column">
+                                        <td class="col-money numeric"><bdi t-esc="'{:,.2f}'.format(snapshot['totals']['amounts'].get(column['key']) or 0)"/></td>
+                                    </t>
+                                    <td class="col-money numeric"><bdi t-esc="'{:,.2f}'.format(snapshot['totals']['total'])"/></td>
+                                    <t t-if="snapshot['show_custody']">
+                                        <td t-if="snapshot['totals']['transfer'] is not None" class="col-money numeric"><bdi t-esc="'{:,.2f}'.format(snapshot['totals']['transfer'])"/></td>
+                                        <td t-else="" class="col-money numeric empty">—</td>
+                                        <td t-if="snapshot['totals']['balance'] is not None" class="col-money numeric"><bdi t-esc="'{:,.2f}'.format(snapshot['totals']['balance'])"/></td>
+                                        <td t-else="" class="col-money numeric empty">—</td>
+                                    </t>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="notice" t-esc="snapshot['note']"/>
+                        <t t-if="snapshot['bills']">
+                            <div class="bills">
+                                <h2 t-esc="snapshot['bills_title']"/>
+                                <table class="lines bills-table">
+                                    <colgroup>
+                                        <col t-foreach="snapshot['bill_columns']" t-as="column" t-att-class="'col-%s' % ('money' if column['kind'] == 'money' else column['key'])"/>
+                                    </colgroup>
+                                    <thead>
+                                        <tr>
+                                            <th t-foreach="snapshot['bill_columns']" t-as="column" t-att-class="'col-%s%s' % ('money' if column['kind'] == 'money' else column['key'], ' numeric' if column['kind'] in ('money', 'count') else ' text')" t-esc="column['label']"/>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr t-foreach="snapshot['bills']" t-as="bill">
+                                            <td class="col-date text"><bdi t-esc="bill['date']"/></td>
+                                            <td class="col-number text"><bdi t-esc="bill['number'] or '—'"/></td>
+                                            <td class="col-vendor text" t-esc="bill['vendor']"/>
+                                            <td class="col-status text" t-esc="bill['status_label']"/>
+                                            <t t-foreach="snapshot['method_columns']" t-as="column">
+                                                <td t-if="bill['amounts'].get(column['key']) is not None" class="col-money numeric">
+                                                    <bdi t-esc="'{:,.2f}'.format(bill['amounts'][column['key']])"/>
+                                                </td>
+                                                <td t-else="" class="col-money numeric empty">—</td>
+                                            </t>
+                                            <td t-if="bill['total'] is not None" class="col-money numeric"><bdi t-esc="'{:,.2f}'.format(bill['total'])"/></td>
+                                            <td t-else="" class="col-money numeric empty">—</td>
+                                        </tr>
+                                        <tr class="totals">
+                                            <td class="col-date text" t-esc="snapshot['totals']['label']"/>
+                                            <td class="col-number"/>
+                                            <td class="col-vendor"/>
+                                            <td class="col-status numeric"><bdi t-esc="'{:,}'.format(snapshot['totals']['count'])"/></td>
+                                            <t t-foreach="snapshot['method_columns']" t-as="column">
+                                                <td class="col-money numeric"><bdi t-esc="'{:,.2f}'.format(snapshot['totals']['amounts'].get(column['key']) or 0)"/></td>
+                                            </t>
+                                            <td class="col-money numeric"><bdi t-esc="'{:,.2f}'.format(snapshot['totals']['total'])"/></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </t>
+                    </div>
+                </div>
+                <div class="footer">
+                    <span t-esc="snapshot['company']"/> · <span t-esc="snapshot['currency']"/> · <span t-esc="snapshot['period']"/>
+                    <span t-att-style="'float: left;' if arabic else 'float: right;'" dir="ltr">
+                        <span class="page"/> / <span class="topage"/>
+                    </span>
+                </div>
+            </main>
+        </t>
+    </template>
+</odoo>

@@ -1,12 +1,16 @@
 {
     'name': 'Baseer Daily Purchase Report',
     'summary': 'Company-scoped daily vendor bill reporting',
-    'version': '19.0.1.2.1',
+    'version': '19.0.1.3.1',
     'category': 'Accounting/Reporting',
     'author': 'Baseer',
     'license': 'LGPL-3',
     'depends': ['account', 'baseer_access_roles', 'baseer_procurement_requests'],
-    'data': ['views/report_action.xml'],
+    'external_dependencies': {'python': ['xlsxwriter']},
+    'data': [
+        'views/report_action.xml',
+        'report/daily_purchases_report.xml',
+    ],
     'assets': {
         'web.assets_backend': [
             'baseer_purchase_daily_report/static/src/date_range.js',

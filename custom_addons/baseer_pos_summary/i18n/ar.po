@@ -2971,3 +2971,45 @@ msgstr "تاريخ السداد"
 #: model:ir.model.fields,help:baseer_pos_summary.field_pos_payment__baseer_payment_category_id
 msgid "Current configured settlement category; not proof of bank collection."
 msgstr "فئة السداد المضبوطة حاليًا؛ لا تُثبت وصول المبلغ إلى البنك."
+
+#. module: baseer_pos_summary
+#: model_terms:ir.ui.view,arch_db:baseer_pos_summary.view_pos_daily_report_form
+#: code:addons/baseer_pos_summary/models/daily_report_export.py:0
+msgid "Export PDF"
+msgstr "تصدير PDF"
+
+#. module: baseer_pos_summary
+#: model_terms:ir.ui.view,arch_db:baseer_pos_summary.view_pos_daily_report_form
+#: code:addons/baseer_pos_summary/models/daily_report_export.py:0
+msgid "Export Excel"
+msgstr "تصدير Excel"
+
+#. module: baseer_pos_summary
+#: code:addons/baseer_pos_summary/models/daily_report_export.py:0
+msgid "Period"
+msgstr "الفترة"
+
+#. module: baseer_pos_summary
+#: code:addons/baseer_pos_summary/models/daily_report_export.py:0
+msgid "Generated at"
+msgstr "أُنشئ في"
+
+#. module: baseer_pos_summary
+#: code:addons/baseer_pos_summary/models/daily_report_export.py:0
+msgid "Totals"
+msgstr "الإجماليات"
+
+#. module: baseer_pos_summary
+#: code:addons/baseer_pos_summary/models/daily_report_export.py:0
+msgid "Date"
+msgstr "التاريخ"
+
+#. module: baseer_pos_summary
+#: code:addons/baseer_pos_summary/models/daily_report_export.py:0
+msgid "The report could not be generated for these filters."
+msgstr "تعذر إنشاء التقرير بهذه عوامل التصفية."
+
+#. module: baseer_pos_summary
+#: code:addons/baseer_pos_summary/models/daily_report_export.py:0
+msgid "Choose a daily sales report to export."
+msgstr "اختر تقرير المبيعات اليومي للتصدير."

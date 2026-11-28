@@ -166,6 +166,8 @@ const getStored = (key, fallback) => {
   }
 };
 
+const rpcErrorMessage = (error) => (error && (error.data?.message || error.message)) || (error ? String(error) : "");
+
 export const niceStep = (range, count = 4) => {
   const raw = Math.max(range, 1e-12) / count;
   const power = 10 ** Math.floor(Math.log10(raw));
@@ -542,7 +544,7 @@ export class Dashboard2 extends Component {
       this.resetPnlRange();
       await this.load();
     } catch (e) {
-      this.state.error = e.message;
+      this.state.error = rpcErrorMessage(e);
       this.state.loading = false;
     }
   }
@@ -633,7 +635,7 @@ export class Dashboard2 extends Component {
         loadCashDrills = this.state.page === "pnl" && this.state.view === "inout";
       }
     } catch (e) {
-      if (token === this.loadToken) this.state.error = e.message || String(e);
+      if (token === this.loadToken) this.state.error = rpcErrorMessage(e);
     } finally {
       if (token === this.loadToken) this.state.loading = false;
     }

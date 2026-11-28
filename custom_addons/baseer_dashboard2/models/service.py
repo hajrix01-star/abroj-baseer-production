@@ -107,7 +107,8 @@ class DashboardService(models.AbstractModel):
         # The private system-parameter accessor reads this fixed key without granting
         # users access to the rest of ir.config_parameter.
         raw = self.env['ir.config_parameter']._get_param('baseer_dashboard2.company_map') or '1:أرز,2:الشامي,3:الدوحة'
-        allowed = set(self.env.user.company_ids.ids) & {1, 2, 3}
+        # Membership is independent of the navbar switcher (allowed_company_ids).
+        allowed = set(self.env.user.sudo().company_ids.ids) - FORBIDDEN_COMPANY_IDS
         pairs = []
         for item in raw.split(','):
             number, sep, label = item.partition(':')
@@ -115,7 +116,7 @@ class DashboardService(models.AbstractModel):
                 cid = int(number.strip())
                 if cid in allowed and cid not in [p[0] for p in pairs]:
                     pairs.append((cid, label.strip()))
-        existing = self.env['res.company'].browse([p[0] for p in pairs]).exists()
+        existing = self.env['res.company'].sudo().browse([p[0] for p in pairs]).exists()
         settings = self.env['baseer.dashboard2.settings'].search([('company_id', 'in', existing.ids)])
         configured = {setting.company_id.id: setting.display_name_override for setting in settings}
         defaults = {'أرز': 'أرز لاونج', 'الشامي': 'المعلم الشامي', 'الدوحة': 'دوحة المستهلك'}
@@ -129,6 +130,19 @@ class DashboardService(models.AbstractModel):
         if str(key).isdigit() and int(key) in ids:
             return [int(key)]
         raise AccessError(_('The selected company is not available.'))
+
+    def _activate_scope(self, ids):
+        """Use the dashboard-selected companies as the active companies for this call.
+
+        The company tab is independent of the navbar company switcher. A user can open
+        دوحة المستهلك while the switcher still has only أرز or الشامي checked. Record rules
+        on account.move then raise AccessError, and the UI shows only «Odoo Server Error».
+        The companies must already belong to the user (see ``_companies`` / ``_scope``).
+        """
+        allowed = [cid for cid in ids if cid in self.env.user.sudo().company_ids.ids]
+        if not allowed:
+            raise AccessError(_('The selected company is not available.'))
+        return self.with_context(allowed_company_ids=allowed)
 
     @api.model
     def get_meta(self):
@@ -299,6 +313,7 @@ class DashboardService(models.AbstractModel):
         if not self.env.user.has_group('account.group_account_manager'):
             raise AccessError(_('Only accounting managers can edit targets.'))
         ids = self._scope(company_key)
+        self = self._activate_scope(ids)
         if key not in ('food_pct', 'salaries_pct', 'prime_pct', 'net_margin_pct'):
             raise UserError(_('Unknown target.'))
         try:

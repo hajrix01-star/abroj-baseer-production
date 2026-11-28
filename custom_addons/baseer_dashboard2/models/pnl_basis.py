@@ -135,6 +135,7 @@ class DashboardPnlBasis(models.AbstractModel):
             raise UserError(_('Unknown dashboard figure.'))
         self._check_reader()
         ids = self._scope(descriptor.get('company_key'))
+        self = self._activate_scope(ids)
         tax = self._pnl_tax_inclusive(descriptor)
         start, end = self._period(descriptor.get('period') or {})
         first, last = self._pnl_bounds(start, end, descriptor)

@@ -94,6 +94,7 @@ class DashboardSections(models.AbstractModel):
     def get_cash_drill_availability(self, params):
         self._check_reader()
         ids = self._scope((params or {}).get('company_key'))
+        self = self._activate_scope(ids)
         _start, end = self._period((params or {}).get('period') or {})
         candidates = self._cash_drill_candidates(ids, end)
         return {field: {month: list(keys) for month, keys in months.items()} for field, months in candidates.items()}
@@ -153,6 +154,7 @@ class DashboardSections(models.AbstractModel):
         if not isinstance(descriptor, dict):
             raise UserError(_('Unknown dashboard figure.'))
         ids = self._scope(descriptor.get('company_key'))
+        self = self._activate_scope(ids)
         start, end = self._period(descriptor.get('period') or {})
         section, key = descriptor.get('section'), descriptor.get('key')
         context = {'allowed_company_ids': ids, 'create': False, 'edit': False,
@@ -385,7 +387,7 @@ class DashboardSections(models.AbstractModel):
         accounts = expression.OR([[('company_id', '=', setting.company_id.id), ('account_id', 'in', setting.food_purchase_account_ids.ids)] for setting in settings])
         lines = self.env['account.move.line'].with_context(allowed_company_ids=ids)
         rows = lines._read_group(expression.AND([self._aml_domain(ids, start, end), accounts]), ['date:month', 'move_id'], ['balance:sum'])
-        moves = self.env['account.move'].browse([move.id for _, move, _ in rows])
+        moves = self.env['account.move'].with_context(allowed_company_ids=ids).browse([move.id for _, move, _ in rows])
         moves.fetch(['ref', 'move_type'])
         excluded = set(self._reset_move_ids(ids, end, start)) | set(self.env['res.company'].browse(ids).mapped('account_opening_move_id').ids)
         amounts, bill_months = defaultdict(float), set()
@@ -1225,6 +1227,7 @@ class DashboardSections(models.AbstractModel):
         if not companies:
             return {'available': False, 'reason': 'empty_company_scope'}
         ids = self._scope(params.get('company_key'))
+        self = self._activate_scope(ids)
         period = params.get('period') or {}
         start, end = self._period(period)
         mode = period.get('mode') or 'today'

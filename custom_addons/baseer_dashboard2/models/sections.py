@@ -222,7 +222,7 @@ class DashboardSections(models.AbstractModel):
         elif section == 'inout' and key == 'sales_vat':
             vat_trace = set()
             self.with_context(_bd2_vat_trace=vat_trace, _bd2_request_cache=None)._sales_vat(ids, start, end)
-            domain = expression.AND([self._aml_domain(ids, start, end), [('id', 'in', list(vat_trace))]])
+            domain = [('company_id', 'in', ids), ('parent_state', '=', 'posted'), ('id', 'in', list(vat_trace))]
             label = 'ضريبة المبيعات'
         elif section == 'heatmap' and key == 'hours':
             weekday, hour = descriptor.get('weekday'), descriptor.get('hour')
@@ -1015,6 +1015,17 @@ class DashboardSections(models.AbstractModel):
         posted = self._posted_months(ids)
         return any(start.strftime('%Y-%m') <= month <= end.strftime('%Y-%m') for month in posted)
 
+    def _single_day_sales(self, ids, snapshot, day, default):
+        """Day sales for a one-day card.
+
+        Sales come from the dated sales sources (POS sessions by opening day, Noorix summaries). Accounting revenue
+        is only a fallback when the day has no source at all; a POS session closing entry booked on this day belongs
+        to the day the session was opened, so it must not be read back as this day's sales.
+        """
+        if snapshot['has_sales_days'] or self._has_pos_session_closings(ids, day, day):
+            return snapshot['sales_gross']
+        return snapshot['sales_net'] or default
+
     def _overview_layout(self, ids, start, end, mode, current, previous, result, days, covered, first_data, last_data, companies):
         today = fields.Date.context_today(self)
         year_start, year_end = self._comparison_bounds(start, end, mode, 'previous_year')
@@ -1060,16 +1071,17 @@ class DashboardSections(models.AbstractModel):
 
         if mode != 'year':
             day_snap = self._snapshot(ids, focus, focus)
-            day_value = day_snap['sales_gross'] if day_snap['has_sales_days'] else (day_snap['sales_net'] or 0)
-            prev_day = self._snapshot(ids, *self._comparison_bounds(focus, focus, 'date', 'previous_period'))
+            day_value = self._single_day_sales(ids, day_snap, focus, 0)
+            prev_day_start, prev_day_end = self._comparison_bounds(focus, focus, 'date', 'previous_period')
+            prev_day = self._snapshot(ids, prev_day_start, prev_day_end)
             year_day_start, year_day_end = self._comparison_bounds(focus, focus, 'date', 'previous_year')
             year_day = self._snapshot(ids, year_day_start, year_day_end)
             year_day_ok = self._window_covered(ids, year_day_start, year_day_end) and (year_day['sales_gross'] or year_day['sales_net'])
             cards['today_sales'] = pack(
                 {'today_sales': day_value},
                 'today_sales',
-                self._compare_metric(day_value, prev_day['sales_gross'] if prev_day['has_sales_days'] else (prev_day['sales_net'] or None),
-                                     year_day['sales_gross'] if year_day['has_sales_days'] else (year_day['sales_net'] or None), year_day_ok),
+                self._compare_metric(day_value, self._single_day_sales(ids, prev_day, prev_day_start, None),
+                                     self._single_day_sales(ids, year_day, year_day_start, None), year_day_ok),
                 {'date': str(focus)},
             )
             mtd = self._snapshot(ids, month_start, month_end) if (start, end) != (month_start, month_end) or mode != 'month' else None

@@ -166,37 +166,26 @@ class DashboardCash(models.AbstractModel):
     def _sales_vat(self, ids, start, end):
         ctx = dict(allowed_company_ids=ids)
         sales_days, _, _, _ = self._sales_days(ids, start, end)
-        sessions = raw_rows(self.env['pos.session'].with_context(**ctx), [
-            ('company_id', 'in', ids), ('move_id.state', '=', 'posted'),
-            ('move_id.date', '>=', start), ('move_id.date', '<=', end)], ['move_id', 'config_id'])
-        settings = self.env['baseer.dashboard2.settings'].with_context(**ctx).search([('company_id', 'in', ids)])
-        summary_ids = set(settings.mapped('summary_pos_config_ids').ids)
-        configs = self.env['pos.config'].with_context(**dict(ctx, active_test=False)).search([('company_id', 'in', ids)])
-        summary_ids.update(config.id for config in configs if any(word in (config.name or '').casefold() for word in ('ملخص المبيعات', 'sales summaries', 'ملخصات')))
-        session_move_ids = [s['move_id'] for s in sessions if s['move_id'] and (not s['config_id'] or s['config_id'] not in summary_ids)]
-        orders = raw_rows(self.env['pos.order'].with_context(**ctx), [
-            ('company_id', 'in', ids), ('account_move.state', '=', 'posted'),
-            ('account_move.date', '>=', start), ('account_move.date', '<=', end)], ['account_move', 'config_id'], limit=200001)
-        if len(orders) > 200000:
-            raise UserError(_('The selected period contains more than 200,000 POS orders.'))
-        pos_moves = set(session_move_ids + [o['account_move'] for o in orders if o['account_move'] and (not o['config_id'] or o['config_id'] not in summary_ids)])
+        # POS sales VAT follows the session opening day, the same day _sales_days books the session sales on.
+        sessions = self._posted_pos_sessions(ids, start, end)
+        session_by_move = {move_id: (company_id, day) for company_id, day, move_id in sessions.values()}
         domain = [
-            ('company_id', 'in', ids), ('parent_state', '=', 'posted'), ('date', '>=', start), ('date', '<=', end),
-            ('account_id.account_type', '=', 'liability_current'), ('tax_line_id', '!=', False), ('move_id', 'not in', self._reset_move_ids(ids, end, start)),
-            '|', '|', ('move_id.ref', 'ilike', 'NOORIX-SALES'), ('move_id.reversed_entry_id.ref', 'ilike', 'NOORIX-SALES'), ('move_id', 'in', list(pos_moves))]
-        rows = self.env['account.move.line'].with_context(**ctx)._read_group(domain,
-            ['company_id', 'date:day', 'move_id'], ['credit:sum', 'debit:sum'])
+            ('company_id', 'in', ids), ('parent_state', '=', 'posted'), ('move_id', 'in', list(session_by_move)),
+            ('account_id.account_type', '=', 'liability_current'), ('tax_line_id', '!=', False),
+            ('move_id', 'not in', self._reset_move_ids(ids, end, start))]
         amount = sum(day.get('sales_vat', 0) for day in sales_days.values() if day['source'] in ('summary', 'mixed'))
-        for company, day, move, credit, debit in rows:
-            source = sales_days.get((company.id, day), {}).get('source')
-            if (source in ('pos', 'mixed') and move.id in session_move_ids):
-                amount += (credit or 0) - (debit or 0)
-        trace = self.env.context.get('_bd2_vat_trace')
-        if trace is not None:
-            for line in raw_rows(self.env['account.move.line'].with_context(**ctx), domain, ['company_id', 'date', 'move_id']):
-                source = sales_days.get((line['company_id'], line['date']), {}).get('source')
-                if source in ('pos', 'mixed') and line['move_id'] in session_move_ids:
-                    trace.add(line['id'])
+        if session_by_move:
+            rows = self.env['account.move.line'].with_context(**ctx)._read_group(domain, ['company_id', 'move_id'], ['credit:sum', 'debit:sum'])
+            for company, move, credit, debit in rows:
+                source = sales_days.get(session_by_move[move.id], {}).get('source')
+                if source in ('pos', 'mixed'):
+                    amount += (credit or 0) - (debit or 0)
+            trace = self.env.context.get('_bd2_vat_trace')
+            if trace is not None:
+                for line in raw_rows(self.env['account.move.line'].with_context(**ctx), domain, ['company_id', 'date', 'move_id']):
+                    source = sales_days.get(session_by_move[line['move_id']], {}).get('source')
+                    if source in ('pos', 'mixed'):
+                        trace.add(line['id'])
         return {'available': True, 'value': round(amount, 2)}
 
     @request_memo

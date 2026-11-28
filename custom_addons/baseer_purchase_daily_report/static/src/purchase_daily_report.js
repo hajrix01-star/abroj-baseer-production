@@ -37,6 +37,8 @@ export class PurchaseDailyReport extends Component {
             invoice: null,
             invoiceLoading: false,
             invoiceError: "",
+            exporting: false,
+            exportError: "",
         });
         onWillStart(() => this.applyFilters());
         onWillUnmount(() => { this.requestId++; });
@@ -92,6 +94,10 @@ export class PurchaseDailyReport extends Component {
             byDay: _t("Purchases by day"), purchases: _t("Purchases"), custodyGroup: _t("Custody fund"),
             invoiceCount: _t("Bills"), invoiceCountShort: _t("Bills"),
             dateBasis: _t("Date = invoice date · Balance counted from"),
+            exportPdf: _t("Export PDF"),
+            exportExcel: _t("Export Excel"),
+            exporting: _t("Preparing the file…"),
+            exportError: _t("We could not export this report. Please try again."),
         };
     }
 
@@ -266,6 +272,35 @@ export class PurchaseDailyReport extends Component {
 
     get spentPercentLabel() {
         return _t("Spent %s%% of the transferred amount", this.state.payload?.custody?.spent_percent || 0);
+    }
+
+    async exportPdf() {
+        return this.exportReport("action_export_pdf");
+    }
+
+    async exportXlsx() {
+        return this.exportReport("action_export_xlsx");
+    }
+
+    async exportReport(methodName) {
+        if (!this.state.applied || this.state.exporting) { return; }
+        this.state.exporting = true;
+        this.state.exportError = "";
+        try {
+            const action = await this.orm.call(MODEL, methodName, [
+                this.state.applied.from,
+                this.state.applied.to,
+                this.state.applied.payment,
+                this.state.applied.method,
+            ]);
+            if (action) {
+                return this.action.doAction(action);
+            }
+        } catch (error) {
+            this.state.exportError = this.errorMessage(error);
+        } finally {
+            this.state.exporting = false;
+        }
     }
 
     shortDate(value) { return (value || "").slice(5); }

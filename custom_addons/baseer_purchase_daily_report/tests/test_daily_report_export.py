@@ -319,6 +319,64 @@ class TestDailyPurchaseReportExport(TransactionCase):
         self.assertIn('العهدة', html_text)
         self.assertIn(self.vendor.display_name, html_text)
 
+    def test_pdf_uses_a4_portrait_and_fits_the_full_table(self):
+        long_name = 'مؤسسة التوريدات المتحدة لمواد البناء والصيانة والتشغيل المحدودة'
+        vendor = self.env['res.partner'].create({'name': long_name})
+        vendor.with_company(self.company).property_account_payable_id = self.payable
+        self._seed_period()
+        self._bill(55, '2099-11-06', vendor=vendor)
+        self.env['res.lang'].sudo()._activate_lang('ar_001')
+        report = self._report().with_context(lang='ar_001')
+        document = report._export_document('2099-11-01', '2099-11-30', 'all')
+
+        action = self.env.ref('baseer_purchase_daily_report.action_daily_purchases_pdf')
+        paper = action.paperformat_id
+        self.assertEqual(paper.format, 'A4')
+        self.assertEqual(paper.orientation, 'Portrait')
+        self.assertLessEqual(paper.margin_left, 8)
+        self.assertLessEqual(paper.margin_right, 8)
+
+        qweb = QWEB_XML.read_text()
+        self.assertIn('<field name="orientation">Portrait</field>', qweb)
+        self.assertNotIn('<field name="orientation">Landscape</field>', qweb)
+        self.assertIn('table-layout: fixed', qweb)
+        self.assertIn('overflow-wrap: anywhere', qweb)
+        self.assertIn('word-wrap: break-word', qweb)
+        self.assertIn('col-vendor', qweb)
+        self.assertNotIn('text-overflow', qweb)
+        self.assertNotIn('overflow: hidden', qweb)
+        self.assertNotIn('ellipsis', qweb)
+
+        pdf_action = report.action_export_pdf('2099-11-01', '2099-11-30', 'all')
+        reports = report.env['ir.actions.report'].with_context(force_report_rendering=True)
+        html, _type = reports._render_qweb_html(
+            'baseer_purchase_daily_report.daily_purchases_pdf',
+            [],
+            data=pdf_action['data'],
+        )
+        html_text = html.decode() if isinstance(html, (bytes, bytearray)) else html
+        self.assertIn('dir="rtl"', html_text)
+        self.assertIn('Baseer Plex Arabic', html_text)
+        self.assertIn('table-layout: fixed', html_text)
+        self.assertIn('overflow-wrap: anywhere', html_text)
+        self.assertIn('col-vendor text', html_text)
+        self.assertIn(long_name, html_text)
+        self.assertIn(self.vendor.display_name, html_text)
+        self.assertIn('725.00', html_text.replace(',', ''))
+        bill_keys = [column['key'] for column in document['bill_columns']]
+        for key in ('date', 'number', 'vendor', 'status', 'bank', 'osama', 'cash', 'unpaid', 'total'):
+            self.assertIn(key, bill_keys, bill_keys)
+        for column in document['bill_columns']:
+            self.assertIn(column['label'], html_text, column)
+        self.assertIn(document['totals']['label'], html_text)
+        self.assertTrue(document['show_custody'])
+        for kpi in document['kpis']:
+            self.assertIn(kpi['label'], html_text)
+        self.assertTrue(any('العهدة' in kpi['label'] for kpi in document['kpis']), document['kpis'])
+
+        self.assertEqual(paper.print_page_width, 210)
+        self.assertEqual(paper.print_page_height, 297)
+
     def test_export_actions_require_an_authorised_role(self):
         self._bill(40, '2099-11-03')
         report = self._report()

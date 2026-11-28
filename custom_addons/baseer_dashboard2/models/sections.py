@@ -983,11 +983,24 @@ class DashboardSections(models.AbstractModel):
 
 
     def _snapshot(self, ids, start, end, sales_net=None):
+        """One window of overview figures on the session-open-day basis.
+
+        ``sales`` is the figure every overview card must use: the dated sales sources (POS sessions by the day they
+        were opened, Noorix summaries) whenever the window has any, otherwise accounting revenue. Accounting revenue
+        alone dates a session by its closing entry, so a session opened before midnight and closed after it would
+        move into the next day (and a session opened on the last day of a month into the next month).
+        ``net_profit`` is the accounting net re-based on that same sales figure, so sales - purchases - expenses
+        always equals it.
+        """
         accounting = self._accounting_gross(ids, start, end)
         sales, days, _channels, _hours = self._sales_summary(ids, start, end)
-        purchases = self._purchases(ids, start, end, sales_net if sales_net is not None else accounting['sales_net'])
+        from_sources = bool(days) or self._has_pos_session_closings(ids, start, end)
+        basis_sales = sales['gross'] if from_sources else accounting['sales_net']
+        purchases = self._purchases(ids, start, end, sales_net if sales_net is not None else basis_sales)
         expenses = expenses_ex_purchases(accounting)
         return {
+            'sales': basis_sales,
+            'sales_from_sources': from_sources,
             'sales_net': accounting['sales_net'],
             'sales_gross': sales['gross'],
             'apps': sales['apps'],
@@ -996,8 +1009,8 @@ class DashboardSections(models.AbstractModel):
             'purchases': purchases['value'] if purchases.get('available', True) else None,
             'purchases_pct': purchases.get('pct'),
             'expenses': expenses,
-            'expenses_pct': percent(expenses, accounting['sales_net']),
-            'net_profit': accounting['net_profit'],
+            'expenses_pct': percent(expenses, basis_sales),
+            'net_profit': round(accounting['net_profit'] + basis_sales - accounting['sales_net'], 2),
             'days': days,
             'has_sales_days': bool(days),
         }
@@ -1016,15 +1029,14 @@ class DashboardSections(models.AbstractModel):
         return any(start.strftime('%Y-%m') <= month <= end.strftime('%Y-%m') for month in posted)
 
     def _single_day_sales(self, ids, snapshot, day, default):
-        """Day sales for a one-day card.
+        """Sales of a snapshot for a card, or ``default`` when the window has neither a sales source nor revenue.
 
-        Sales come from the dated sales sources (POS sessions by opening day, Noorix summaries). Accounting revenue
-        is only a fallback when the day has no source at all; a POS session closing entry booked on this day belongs
-        to the day the session was opened, so it must not be read back as this day's sales.
+        A POS session closing entry booked on a day belongs to the day the session was opened, so it is never read
+        back as that day's sales while the window has sales sources (see ``_snapshot``).
         """
-        if snapshot['has_sales_days'] or self._has_pos_session_closings(ids, day, day):
-            return snapshot['sales_gross']
-        return snapshot['sales_net'] or default
+        if snapshot['sales_from_sources']:
+            return snapshot['sales']
+        return snapshot['sales'] or default
 
     def _overview_layout(self, ids, start, end, mode, current, previous, result, days, covered, first_data, last_data, companies):
         today = fields.Date.context_today(self)
@@ -1045,22 +1057,13 @@ class DashboardSections(models.AbstractModel):
                 payload.update(extra)
             return payload
 
-        period_snap = {
-            'sales_net': current['sales_net'],
-            'purchases': result['purchases']['value'],
-            'purchases_pct': result['purchases'].get('pct'),
-            'expenses': expenses_ex_purchases(current),
-            'expenses_pct': percent(expenses_ex_purchases(current), current['sales_net']),
-            'net_profit': current['net_profit'],
-        }
-        prev_snap = {
-            'sales_net': previous['sales_net'],
-            'purchases': result['purchases']['previous']['value'] if result['purchases'].get('previous') else None,
-            'expenses': expenses_ex_purchases(previous),
-            'net_profit': previous['net_profit'],
-        }
+        # Every card below reads the same session-open-day basis (see _snapshot): the sales card, the month card,
+        # the net equation and every previous-period / previous-year comparison.
+        period_snap = self._snapshot(ids, start, end)
+        prev_start, prev_end = self._comparison_bounds(start, end, mode, 'previous_period')
+        prev_snap = self._snapshot(ids, prev_start, prev_end)
         year_snap = self._snapshot(ids, year_start, year_end)
-        year_ok = year_ok and (year_snap['sales_net'] or year_snap['has_sales_days'])
+        year_ok = year_ok and (year_snap['sales'] or year_snap['has_sales_days'])
 
         cards = {
             'mode': mode,
@@ -1076,7 +1079,7 @@ class DashboardSections(models.AbstractModel):
             prev_day = self._snapshot(ids, prev_day_start, prev_day_end)
             year_day_start, year_day_end = self._comparison_bounds(focus, focus, 'date', 'previous_year')
             year_day = self._snapshot(ids, year_day_start, year_day_end)
-            year_day_ok = self._window_covered(ids, year_day_start, year_day_end) and (year_day['sales_gross'] or year_day['sales_net'])
+            year_day_ok = self._window_covered(ids, year_day_start, year_day_end) and year_day['sales']
             cards['today_sales'] = pack(
                 {'today_sales': day_value},
                 'today_sales',
@@ -1084,25 +1087,27 @@ class DashboardSections(models.AbstractModel):
                                      self._single_day_sales(ids, year_day, year_day_start, None), year_day_ok),
                 {'date': str(focus)},
             )
-            mtd = self._snapshot(ids, month_start, month_end) if (start, end) != (month_start, month_end) or mode != 'month' else None
-            mtd_sales = (mtd or {'sales_net': current['sales_net']})['sales_net']
-            prev_mtd_start, prev_mtd_end = self._comparison_bounds(month_start, month_end, 'month', 'previous_period')
-            year_mtd_start, year_mtd_end = self._comparison_bounds(month_start, month_end, 'month', 'previous_year')
+            # A one-day view (today / yesterday / a picked day) accumulates the month up to that same day, so the
+            # month card and its previous-month window (the 1st to the same day number) end where the day card does.
+            mtd_end = min(month_end, focus) if mode in ('today', 'date', 'yesterday') else month_end
+            mtd_sales = self._snapshot(ids, month_start, mtd_end)['sales']
+            prev_mtd_start, prev_mtd_end = self._comparison_bounds(month_start, mtd_end, 'month', 'previous_period')
+            year_mtd_start, year_mtd_end = self._comparison_bounds(month_start, mtd_end, 'month', 'previous_year')
             prev_mtd = self._snapshot(ids, prev_mtd_start, prev_mtd_end)
             year_mtd = self._snapshot(ids, year_mtd_start, year_mtd_end)
-            year_mtd_ok = self._window_covered(ids, year_mtd_start, year_mtd_end) and (year_mtd['sales_net'] or year_mtd['has_sales_days'])
+            year_mtd_ok = self._window_covered(ids, year_mtd_start, year_mtd_end) and (year_mtd['sales'] or year_mtd['has_sales_days'])
             cards['period_sales'] = pack(
                 {'period_sales': mtd_sales},
                 'period_sales',
-                self._compare_metric(mtd_sales, prev_mtd['sales_net'] or None, year_mtd['sales_net'] or None, year_mtd_ok),
-                {'date_from': str(month_start), 'date_to': str(month_end), 'kind': 'mtd'},
+                self._compare_metric(mtd_sales, prev_mtd['sales'] or None, year_mtd['sales'] or None, year_mtd_ok),
+                {'date_from': str(month_start), 'date_to': str(mtd_end), 'kind': 'mtd'},
             )
         else:
             cards['period_sales'] = pack(
-                {'period_sales': current['sales_net']},
+                {'period_sales': period_snap['sales']},
                 'period_sales',
-                self._compare_metric(current['sales_net'], previous['sales_net'] if self._window_covered(ids, *self._comparison_bounds(start, end, mode, 'previous_period')) else None,
-                                     year_snap['sales_net'] or None, year_ok),
+                self._compare_metric(period_snap['sales'], prev_snap['sales'] if self._window_covered(ids, prev_start, prev_end) else None,
+                                     year_snap['sales'] or None, year_ok),
                 {'date_from': str(start), 'date_to': str(end), 'kind': 'ytd'},
             )
 
@@ -1117,7 +1122,7 @@ class DashboardSections(models.AbstractModel):
             self._compare_metric(net, prev_net, year_snap['net_profit'], year_ok),
             {
                 'salaries_warning': result.get('salaries_warning'),
-                'equation': {'sales': period_snap['sales_net'], 'purchases': purchases or 0, 'expenses': expenses},
+                'equation': {'sales': period_snap['sales'], 'purchases': purchases or 0, 'expenses': expenses},
             },
         )
         cards['purchases'] = pack(

@@ -161,3 +161,46 @@ class TestSessionOpenDay(TransactionCase):
         session.move_id = move
         self.assertEqual(self.service._sales_vat([self.company.id], d10, d10)['value'], 15)
         self.assertEqual(self.service._sales_vat([self.company.id], d11, d11)['value'], 0)
+
+    def _cards(self, day):
+        data = self.service.get_section('overview', {'company_key': str(self.company.id), 'period': {'mode': 'date', 'date': str(day)}})
+        return data['cards']
+
+    def test_overview_cards_and_comparisons_share_open_day_basis(self):
+        # Previous month (Feb 2031): a shift opened on 31 Jan and closed on 1 Feb, a shift opened on the 11th and
+        # closed after midnight on the 12th. Current month (Mar 2031): the same two patterns.
+        jan31, feb1, feb11, feb12 = date(2031, 1, 31), date(2031, 2, 1), date(2031, 2, 11), date(2031, 2, 12)
+        mar10, mar11, mar12 = date(2031, 3, 10), date(2031, 3, 11), date(2031, 3, 12)
+        self._session(utc(jan31, 16), feb1, [(utc(jan31, 18), 500)])
+        self._session(utc(feb11, 16), feb12, [(utc(feb11, 18), 1000)])
+        self._session(utc(mar10, 16), mar11, [(utc(mar10, 18), 4000), (utc(mar11, 0, 30), 128)])
+        self._session(utc(mar11, 16), mar12, [(utc(mar11, 18), 5860)])
+        cards = self._cards(mar11)
+
+        # Day card: the shift opened on the 11th, not the shift whose entry is dated the 11th.
+        self.assertEqual(cards['today_sales']['value'], 5860)
+        self.assertEqual(cards['today_sales']['previous'], 1000)
+        # Month card runs to the picked day and counts both shifts once; the previous month stops on the same day.
+        self.assertEqual(cards['period_sales']['date_from'], '2031-03-01')
+        self.assertEqual(cards['period_sales']['date_to'], '2031-03-11')
+        self.assertEqual(cards['period_sales']['value'], 9988)
+        self.assertEqual(cards['period_sales']['previous'], 1000)
+        self.assertEqual(cards['period_sales']['previous_change_pct'], 898.8)
+        # Net equation reads the same day sales as the day card and balances exactly.
+        equation = cards['net']['equation']
+        self.assertEqual(equation['sales'], cards['today_sales']['value'])
+        self.assertEqual(cards['net']['value'], round(equation['sales'] - equation['purchases'] - equation['expenses'], 2))
+        self.assertEqual(cards['net']['value'], 5860)
+        # Previous-month net uses the same basis as the previous-month sales (1000 opened on 11 Feb).
+        self.assertEqual(cards['net']['previous'], 1000)
+
+    def test_overview_month_view_counts_open_day_across_month_boundary(self):
+        last, first = date(2031, 9, 30), date(2031, 10, 1)
+        self._session(utc(last, 17), first, [(utc(last, 18), 700)])
+        self._session(utc(first, 17), date(2031, 10, 2), [(utc(first, 18), 300)])
+        for month, expected in (('2031-09', 700), ('2031-10', 300)):
+            data = self.service.get_section('overview', {'company_key': str(self.company.id), 'period': {'mode': 'month', 'month': month}})
+            cards = data['cards']
+            self.assertEqual(cards['period_sales']['value'], expected, month)
+            self.assertEqual(cards['net']['equation']['sales'], expected, month)
+            self.assertEqual(cards['net']['value'], expected, month)
